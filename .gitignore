@@ -1,0 +1,8 @@
+.vscode/
+node_modules/
+*.log
+dist
+.env
+temp/
+build/
+dump.rdb
