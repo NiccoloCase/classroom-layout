@@ -1,10 +1,25 @@
 {
-  "extends": ["tslint:recommended", "tslint-react", "tslint-config-prettier"],
+  "extends": [
+    "../../tslint.json",
+    "tslint-react"
+  ],
+  "rules": {
+    "jsx-no-multiline-js": false,
+    "jsx-boolean-value": false,
+    "no-object-literal-type-assertion": false,
+    "jsx-no-lambda": false,
+    "no-var-requires": false,
+    "jsx-alignment": [
+      "no-newline-before-closing-bracket",
+      "no-newline-before-props"
+    ]
+  },
   "linterOptions": {
     "exclude": [
       "config/**/*.js",
       "node_modules/**/*.ts",
-      "coverage/lcov-report/*.js"
+      "coverage/lcov-report/*.js",
+      "src/generated/**"
     ]
   }
 }

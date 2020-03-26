@@ -3,9 +3,21 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@fortawesome/fontawesome-svg-core": "^1.2.27",
+    "@fortawesome/free-solid-svg-icons": "^5.12.1",
+    "@fortawesome/react-fontawesome": "^0.1.9",
+    "classnames": "^2.2.6",
+    "lodash": "^4.17.15",
+    "node-sass": "^4.12.0",
     "react": "^16.9.0",
+    "react-addons-css-transition-group": "^15.6.2",
     "react-dom": "^16.9.0",
-    "react-scripts-ts": "3.1.0"
+    "react-router-dom": "^5.1.2",
+    "react-scripts-ts": "4.0.8",
+    "react-slick": "^0.25.2",
+    "react-spinners": "^0.8.1",
+    "reactjs-popup": "^1.5.0",
+    "validator": "^12.2.0"
   },
   "scripts": {
     "start": "react-scripts-ts start",
@@ -14,10 +26,22 @@
     "eject": "react-scripts-ts eject"
   },
   "devDependencies": {
+    "@types/classnames": "^2.2.10",
     "@types/jest": "^24.0.18",
     "@types/node": "^12.7.8",
     "@types/react": "^16.9.3",
+    "@types/react-addons-css-transition-group": "^15.0.5",
     "@types/react-dom": "^16.9.1",
+    "@types/react-router-dom": "^5.1.0",
+    "@types/react-slick": "^0.23.4",
+    "@types/validator": "^12.0.1",
+    "typed-scss-modules": "^1.2.0",
     "typescript": "^3.6.3"
-  }
+  },
+  "browserslist": [
+    ">0.2%",
+    "not dead",
+    "not ie <= 11",
+    "not op_mini all"
+  ]
 }
