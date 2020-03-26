@@ -1,0 +1,152 @@
+@import "../../styles/variables";
+
+
+.ClassroomPage {
+    height: calc(100% - #{$top-menu-navigation-height});
+    display: flex;
+
+    .left-menu {
+        background:$dark-grey;
+        width: $left-menu-width;
+        @include side-shadow(right);
+
+        .navLinks {
+            display: flex;
+            flex-direction: column;
+            padding: .5rem;
+            margin-top: 2rem;
+
+            .navLink {
+                background: transparent;
+                border: none;
+                color: $medium-grey;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 1.5rem;
+                padding: .5rem;
+                margin-bottom: 1.5rem;
+                transition: all .4s;
+                &.active { color: $primary-color; }
+                &:hover { color:$background-color;}
+            }
+        }
+    }
+
+    .right-menu {
+        background: #fff;
+        display: flex;
+        flex-direction: column;
+        min-width: 13rem;
+        @include side-shadow(left);
+  
+        .classroom-info {
+            margin-top: 2rem;
+            padding: 1rem;
+            font-family: "Rawson";
+            text-align: right;
+            color: $dark-grey;
+            .classroom-name {
+                font-weight:500;
+            }
+            .classroom-id {
+                font-weight:300;
+                color:$medium-grey;
+            }
+        }
+        .students {
+            padding: 1rem;
+            color: $dark-grey;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+
+            
+            .section-title {
+                border-top: solid 1px $light-grey;
+                text-align: center;
+                padding: 1rem;
+            }
+
+            .students-container {
+                overflow-y: auto;
+                flex:1;
+
+                .student {
+                    display: flex;
+                    align-items: center;
+                    margin-bottom: .5rem;
+        
+                    // THUMBNAIL
+                    $colors: #F5D1D1, #D1F5E9, #D1D7F9, #FFEDCB, #D1EFF9;
+                    @for $i from 1 through length($colors) {
+                        &:nth-child(#{length($colors)}n+#{$i}) {
+                            .thumbnail {
+                               background: nth($colors, $i);
+                                color: darken(nth($colors, $i), 30%);
+
+                          //      background: $shuttle-grey;
+                         //          color: nth($colors, $i);
+                            }
+                        }
+                    }
+                    .thumbnail {
+                        $radius: 1rem;
+                        width: $radius * 2;
+                        height: $radius * 2;
+                        border-radius: $radius;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        text-transform: uppercase;
+                        margin-right: 10px;
+                    }
+                } 
+            }
+        }
+    }
+
+    .content {
+        flex:1;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-top: 2rem;
+    }
+
+    &__MapView {
+        border-radius: 10px;
+        padding: 1rem;
+        background: #fff;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, .1), 0 10px 10px -5px rgba(0, 0, 0, .04);
+
+        .functions {
+            display: flex;
+            justify-content: flex-end;
+         //   background: red;
+
+            .btn {
+                border: none;
+                border-radius: 10px;
+                padding: .5rem 1rem;
+                font-size: 1rem;
+                color: $shuttle-grey;
+                margin-left: .5rem;
+                transition: all .5s;
+
+                a {
+                    text-decoration: none;
+                }
+                
+                &:last-child {
+                    background: $primary-color;
+                    color:#fff; 
+                }
+                &:hover {
+                    background: $shuttle-grey;
+                    color: #fff;
+                }
+            }
+        }
+    }
+}

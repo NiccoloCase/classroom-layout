@@ -1,0 +1,37 @@
+@import "./variables";
+@font-face {
+  font-family: 'Rawson';
+  src: url("../assets/fonts/RawsonPro-Medium.otf") format('woff');
+  font-weight: 500;
+}
+@font-face {
+  font-family: 'Rawson';
+  src: url("../assets/fonts/Rawson-Bold.otf") format('woff');
+  font-weight: bold;
+}
+@font-face {
+  font-family: 'Rawson';
+  src:  url("../assets/fonts/Rawson-Regular.otf") format('woff');
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  outline: none;
+  box-sizing: border-box;
+}
+
+body {
+  background: $background-color;
+  font-family: "Roboto", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body > #root > div {
+  height: 100vh;
+}
+
+.App {
+  min-height:100vh;
+}

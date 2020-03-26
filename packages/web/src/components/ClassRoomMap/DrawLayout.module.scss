@@ -1,0 +1,70 @@
+@import "../../styles/variables";
+
+.tools {
+    $space: 5px;
+    margin-bottom: $space;
+    display: flex;
+
+    .tool,.action {
+        $dimension: 1.7rem;
+        width: $dimension;
+        height: $dimension;
+        border-radius: $space;
+        margin-right: $space;
+        border: none;
+        background: $light-grey;
+        transition: all .4s;
+        &:hover {
+           transform: translateY(-8px)
+        }
+    }
+    
+    .action:active {
+        transform: scale(1.2);
+    }
+
+    .tool {
+        &.active {
+           color:#fff;
+           background: $primary-color;
+        }
+    }
+
+    .actions {
+        $border: 2px;
+        border-left: solid $border $shuttle-grey;
+        padding-left: calc(#{$space} + #{$border});
+    }
+
+    .popUp {
+        display: flex;
+        padding: .5rem 1rem;
+        button {
+            outline: none;
+            border:none;
+        }
+        .left {
+            margin-right: 10px;
+            button {
+                background: $red;
+                padding: .5rem 1rem;
+                color: #fff;
+                border-radius: 5px;
+                margin-top: 10px;
+                &:hover {
+                    animation: wobble .7s;
+                }
+            }
+        }
+        .right {
+           button {
+               color: #000;
+               background: transparent;
+               &:hover {
+                color: $red;
+               }
+           }
+        }
+    }
+}
+
