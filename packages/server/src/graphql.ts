@@ -21,4 +21,6 @@ export interface IMutation {
 
 export interface IQuery {
     getClassroomById(id: string): Classroom | Promise<Classroom>;
+    getClassroomByEmail(email: string): Classroom | Promise<Classroom>;
+    isEmailAlreadyUsed(email: string): boolean | Promise<boolean>;
 }

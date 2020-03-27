@@ -14,17 +14,14 @@ export class ClassroomService {
      * Restituisce la classe associata all'ID dato
      * @param id 
      */
-    async findClassroomById(id: string): Promise<Classroom> {
-        let classroom: Classroom;
+    async findClassroomById(id: string): Promise<Classroom | null> {
         try {
-            classroom = await this.classroomModel.findById(id);
+            const classroom = await this.classroomModel.findById(id);
+            return classroom;
         }
         catch (err) {
             throw new BadRequestException();
         }
-
-        if (!classroom) throw new NotFoundException();
-        return classroom;
     }
 
     /**
@@ -32,14 +29,14 @@ export class ClassroomService {
      * @param id 
      */
     async findClassroomByEmail(email: string): Promise<null | Classroom> {
-        let classroom: Classroom | null;
         try {
-            classroom = await this.classroomModel.findOne({ email });
+            const classroom = await this.classroomModel.findOne({ email });
+            return classroom;
         }
         catch (err) {
             throw new BadRequestException();
         }
-        return classroom;
+
     }
 
     /**
