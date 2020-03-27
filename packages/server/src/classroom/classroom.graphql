@@ -8,6 +8,8 @@ type Classroom {
 
 type Query {
     getClassroomById(id:ID!): Classroom!
+    getClassroomByEmail(email:String!): Classroom!
+    isEmailAlreadyUsed(email:String!): Boolean!
 }
 
 type Mutation {

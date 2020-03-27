@@ -1,19 +1,19 @@
-import { Module, ValidationPipe } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { join } from "path";
 import { GraphQLModule } from "@nestjs/graphql";
 import { MongooseModule } from "@nestjs/mongoose"
 import { ClassroomModule } from './classroom/classroom.module';
-
+import config from "config";
 
 @Module({
   imports: [
     // DATABASEs
-    MongooseModule.forRoot("mongodb://admin:AdminDatabas3@ds331198.mlab.com:31198/school-room-layout"),
+    MongooseModule.forRoot(config.database.URI),
     // GRAPHQL 
     GraphQLModule.forRoot({
       typePaths: ['./**/*.graphql'],
-      debug: false,
-      playground: true,
+      debug: !config.isProduction,
+      playground: !config.isProduction,
       definitions: {
         path: join(process.cwd(), 'src/graphql.ts'),
       },
