@@ -1,0 +1,16 @@
+type Classroom {
+    id: ID!
+    email: String!
+    name: String!
+    desks: String!
+    students: [String!]!
+}
+
+type Query {
+    getClassroomById(id:ID!): Classroom!
+}
+
+type Mutation {
+    createClassroom(email:String!, name: String!, desks: String!, students: [String!]!): Classroom!
+    editClassroom(id: ID!, name: String, desks: String, students: [String!]): Classroom!
+}

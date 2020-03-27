@@ -5,26 +5,20 @@
  */
 
 /* tslint:disable */
-export interface InputStudent {
-    name: string;
-}
-
-export interface Class {
+/* eslint-disable */
+export interface Classroom {
     id: string;
+    email: string;
     name: string;
-    students: Student[];
+    desks: string;
+    students: string[];
 }
 
 export interface IMutation {
-    createClass(name: string, students: InputStudent[]): Class | Promise<Class>;
-    shuffleStudents(classID: string): Student[] | Promise<Student[]>;
+    createClassroom(email: string, name: string, desks: string, students: string[]): Classroom | Promise<Classroom>;
+    editClassroom(id: string, name?: string, desks?: string, students?: string[]): Classroom | Promise<Classroom>;
 }
 
 export interface IQuery {
-    getClass(id: string): Class | Promise<Class>;
-}
-
-export interface Student {
-    name: string;
-    id: string;
+    getClassroomById(id: string): Classroom | Promise<Classroom>;
 }
