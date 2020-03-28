@@ -13,7 +13,6 @@ interface MapViewProps {
 
 export const MapView: React.FC<MapViewProps> = ({ canvasWidth, canvasHeight, desks, students }) => {
 
-
     const downloadMap = () => {
         const canvas: HTMLCanvasElement | null = document.querySelector(".ClassroomPage__MapView canvas");
         if (!canvas) return;
