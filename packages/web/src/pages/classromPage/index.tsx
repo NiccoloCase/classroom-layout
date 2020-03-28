@@ -3,27 +3,34 @@ const { useState, useRef, useEffect } = React;
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEdit, faHistory, faCog, faMap } from '@fortawesome/free-solid-svg-icons';
 import "./classroomPage.scss";
-import { Route, NavLink } from "react-router-dom";
+import { Route, NavLink, RouteComponentProps } from "react-router-dom";
 import { MapView } from './views/MapView';
 import { EditView } from './views/EditView';
 import { HistoryView } from './views/HistoryView';
 import { SettingsView } from './views/SettingsView';
+import { useGetClassroomByIdQueryQuery } from '../../generated/graphql';
+import { HashLoader } from 'react-spinners';
+import { NotFoundView } from '../../components/NotFound';
 
-const STUDENTS_TEST = ["Balidni", "Benucci", "Becagli", "Carifi", "Carone", "Caselli", "Cestelli", "Chini", "Ermini", "Ferradini", "Luti", "Superbi", "Cozzi", "Marzi", "Quaevedo", "Superbi", "Tafuro", "Surianello", "Tarchiani", "Cantini", "wd", "Quaevedo"];
-const DESKS = '[{"x":0,"y":0,"orientation":1},{"x":2,"y":0,"orientation":1},{"x":4,"y":0,"orientation":1},{"x":6,"y":0,"orientation":1},{"x":0,"y":2,"orientation":1},{"x":2,"y":2,"orientation":1},{"x":4,"y":2,"orientation":1},{"x":0,"y":4,"orientation":1},{"x":2,"y":4,"orientation":1},{"x":4,"y":4,"orientation":1},{"x":16,"y":0,"orientation":1},{"x":14,"y":0,"orientation":1},{"x":12,"y":0,"orientation":1},{"x":16,"y":2,"orientation":1},{"x":14,"y":2,"orientation":1},{"x":10,"y":0,"orientation":1},{"x":12,"y":2,"orientation":1},{"x":16,"y":4,"orientation":1},{"x":14,"y":4,"orientation":1},{"x":12,"y":4,"orientation":1},{"x":16,"y":6,"orientation":1},{"x":14,"y":6,"orientation":0}]';
-const ID = "87jskjskjdkjshds";
+interface IParams { class_id: string };
 
-export const ClassroomPage: React.FC = () => {
+export const ClassroomPage: React.FC<RouteComponentProps<IParams>> = props => {
     // dimensioni del canvas
     const [canvasDimensions, setCanvasDimensions] = useState<{ width?: number, height?: number }>({});
-    // contrnitore 
+    // contenitore 
     const contentContainer = useRef<HTMLDivElement>(null);
+    // GRAPHQL
+    const id = props.match.params.class_id;
+    const { loading, error, data } = useGetClassroomByIdQueryQuery({ variables: { id } });
+    const name = data ? data.getClassroomById.name : null;
+    const students = data ? data.getClassroomById.students : null;
+    const desks = data ? data.getClassroomById.desks : null;
 
     useEffect(() => {
         setClassroomDimensions();
         window.addEventListener('resize', setClassroomDimensions);
         return () => window.removeEventListener('resize', setClassroomDimensions);
-    }, [])
+    }, [data])
 
     /**
      * Imposta le dimensioni del canvas
@@ -35,24 +42,50 @@ export const ClassroomPage: React.FC = () => {
         setCanvasDimensions({ width: width - offset, height: height - offset });
     }
 
-    return (
-        <div className="ClassroomPage">
+    /**
+     * Disegna il riquadro degli studenti
+     */
+    const renderStudents = () => {
+        if (!students) return;
+        const cards = students.map((student, index) => (
+            <div className="student" key={index}>
+                <div className="thumbnail" >
+                    {student[0] + student[1]}
+                </div>
+                <p>{student}</p>
+            </div>
+        ));
+        return (
+            <div className="students">
+                <h4 className="section-title">{students.length} studenti:</h4>
+                <div className="students-container">
+                    {cards}
+                </div>
+            </div>
+        );
+    }
+
+    /**
+     * Schermata principale
+     */
+    const mainView = (
+        <React.Fragment>
             <div className="left-menu">
                 <div className="navLinks">
-                    <NavLink to={`/${ID}/`} exact className="navLink"
+                    <NavLink to={`/${id}/`} exact className="navLink"
                         activeClassName="active"
                         title="Mappa della classe" >
                         <FontAwesomeIcon icon={faMap} />
                     </NavLink>
-                    <NavLink to={`/${ID}/edit`} exact className="navLink"
+                    <NavLink to={`/${id}/edit`} exact className="navLink"
                         activeClassName="active" title="Modifica i posti">
                         <FontAwesomeIcon icon={faEdit} />
                     </NavLink>
-                    <NavLink to={`/${ID}/history`} exact className="navLink"
+                    <NavLink to={`/${id}/history`} exact className="navLink"
                         activeClassName="active" title="Cronologia">
                         <FontAwesomeIcon icon={faHistory} />
                     </NavLink>
-                    <NavLink to={`/${ID}/settings`} exact className="navLink"
+                    <NavLink to={`/${id}/settings`} exact className="navLink"
                         activeClassName="active" title="Impostazioni">
                         <FontAwesomeIcon icon={faCog} />
                     </NavLink>
@@ -60,7 +93,7 @@ export const ClassroomPage: React.FC = () => {
             </div>
             <div className="content" ref={contentContainer}>
                 <Route path="/:class_id" exact component={() => (<MapView
-                    desks={DESKS} students={STUDENTS_TEST}
+                    desks={desks!} students={students!}
                     canvasWidth={canvasDimensions.width}
                     canvasHeight={canvasDimensions.height}
                 />)} />
@@ -71,23 +104,53 @@ export const ClassroomPage: React.FC = () => {
             <div className="right-menu">
                 <div className="classroom-info">
                     <h2>CLASSE</h2>
-                    <h3 className="classroom-name">3°A ordinario LSDV</h3>
-                    <h4 className="classroom-id">#w8ew89e</h4>
+                    <h3 className="classroom-name">{name}</h3>
+                    <h4 className="classroom-id">{`#${id}`}</h4>
                 </div>
-                <div className="students">
-                    <h4 className="section-title">{STUDENTS_TEST.length} studenti:</h4>
-                    <div className="students-container">
-                        {STUDENTS_TEST.map((student, index) => (
-                            <div className="student" key={index}>
-                                <div className="thumbnail" >
-                                    {student[0] + student[1]}
-                                </div>
-                                <p>{student}</p>
-                            </div>
-                        ))}
-                    </div>
-                </div>
+                {renderStudents()}
             </div>
+        </React.Fragment>
+    );
+
+    /**
+     * Schermata in caso di errore
+     */
+    const renderErrorView = () => {
+        if (!error) return;
+        const err = error.graphQLErrors[0];
+        // la classe non è stata trovata
+        if (err.extensions && err.extensions.exception.status === 404)
+            return (
+                <div className="content">
+                    <NotFoundView />
+                </div>
+            );
+        // errore sconosciuto
+        return (
+            <div className="content">
+                <h1>C'è stato un errore, riprova piu'tardi</h1>
+            </div>
+        );
+    }
+
+    /**
+     * Schermata di caricamento
+     */
+    const loadingView = (
+        <div className="content">
+            <HashLoader color="#dadfe1" />
+        </div>
+    );
+
+    const renderCorrectView = () => {
+        if (error) return renderErrorView();
+        else if (loading || !data) return loadingView;
+        return mainView;
+    }
+
+    return (
+        <div className="ClassroomPage">
+            {renderCorrectView()}
         </div>
     );
 }

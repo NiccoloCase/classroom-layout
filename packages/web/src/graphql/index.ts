@@ -6,7 +6,7 @@ import config from "config";
 
 const cache = new InMemoryCache();
 const httpLink = new HttpLink({
-    uri: `${config.server.DOMAIN}/grapqhl`
+    uri: `${config.server.DOMAIN}/graphql`
 });
 
 export const client = new ApolloClient({
