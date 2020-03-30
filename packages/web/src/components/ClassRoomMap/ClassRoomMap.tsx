@@ -23,11 +23,19 @@ interface ClassRoomMapProps {
     scale?: number;
     /** Array di studenti */
     students?: string[];
+    /** Indice del banco evidenziato */
+    highlightedDesk?: number;
+    // FUNZIONI
     /**
      * Funzione chiamata ogni vole che avviene un cambiamento 
      * @param desks Array dei banchi in formato JSON
      */
     handleChanges?: (desks: string) => void;
+    /**
+     * Funziuone chiamata quando un banco viene selezionato
+     * @param desks Index del banco
+     */
+    onDeskIsHighlighted?: (index: number | null) => void;
 }
 
 class ClassRoomMap extends React.Component<ClassRoomMapProps> {
@@ -46,10 +54,14 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
     mouse: Mouse;
 
     state = {
+        /** Larghezza del canvas */
         width: this.props.width as number | undefined,
+        /** Altezza del canvas */
         height: this.props.height as number | undefined,
         /** Strumento in uso */
         tool: this.props.notEditable ? ToolType.POINTER : ToolType.ADD,
+        /** Banco evidenziat */
+        highlightedDesk: this.props.highlightedDesk,
         /** Orientamento con cui vengono posizionati i blocchi */
         orientation: Orientation.E,
         /** Orientamento non voluto dall'utente ma proposto a seconda della situazione */
@@ -77,9 +89,10 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
         this.tick();
     }
 
-    UNSAFE_componentWillReceiveProps({ width, height, students }: ClassRoomMapProps) {
+    UNSAFE_componentWillReceiveProps({ width, height, highlightedDesk, students }: ClassRoomMapProps) {
         if (width) this.setState({ width });
         if (height) this.setState({ height });
+        if (highlightedDesk) this.setState({ highlightedDesk });
         if (students) {
             this.students = students;
             Desk.setNames(this.desks, this.students);
@@ -188,6 +201,7 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
         // ragistra la posizione del click
         this.mouse.lastClickPosition = { clientX, clientY, gridX, gridY }
         // STRUMENTI
+        if (this.state.tool === ToolType.POINTER) this.highlightDesk(gridX, gridY);
         if (this.state.tool === ToolType.ADD) this.addDesk(gridX, gridY);
         else if (this.state.tool === ToolType.REMOVE) this.removeDesk(gridX, gridY);
     }
@@ -252,6 +266,17 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
     }
 
     /**
+     * Restituisce l'index del banco alle coordinate passate
+     */
+    private getDeskIndexByCoords = (x: number, y: number): number | null => {
+        for (const [index, desk] of this.desks.entries()) {
+            if ((desk.x1 === x && desk.y1 === y) || (desk.x2 === x && desk.y2 === y))
+                return index;
+        }
+        return null;
+    }
+
+    /**
      * Aggiunge un banco
      */
     private addDesk = (x: number, y: number) => {
@@ -278,6 +303,20 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
         }
         // aggiorna il client
         this.callback();
+    }
+
+    /**
+     * Selezione un banco
+     */
+    private highlightDesk = (x: number, y: number) => {
+        const desk = this.getDeskIndexByCoords(x, y);
+        if (desk === null) return;
+        // Se il banco era già selezionato viene deselezionato
+        const highlightedDesk = desk !== this.state.highlightedDesk ? desk : null
+        this.setState({ highlightedDesk });
+        // chaiama la funzione se passata dal client
+        if (typeof this.props.onDeskIsHighlighted === "function")
+            this.props.onDeskIsHighlighted(highlightedDesk);
     }
 
     /**
@@ -319,7 +358,7 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
                     else if (o === Orientation.N) this.ctx.strokeRect(x, y - 1, 1, 2);
                     this.ctx.restore();
                 }
-                // controlla se non ci sono già dei banchi 
+                // controlla se non ci sono già dei banchi
                 if (!this.isBusy(x, y, orientation)) {
                     f(orientation);
                 } else {
@@ -336,7 +375,6 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
             }
         }
     }
-
 
     /**
      * Disegna la griglia
@@ -377,8 +415,9 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
         // evidenzia la zona in cui può essere piazzato un banco
         this.highlightCursor();
         // disegna i banchi
-        for (const desk of this.desks) {
-            desk.render(this.ctx);
+        for (let i = 0; i < this.desks.length; i++) {
+            const isHighlighted = this.state.highlightedDesk === i;
+            this.desks[i].render(this.ctx, { isHighlighted });
         }
         this.ctx.restore();
 

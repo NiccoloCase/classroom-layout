@@ -1,5 +1,6 @@
 import * as React from 'react';
 const { useState, useRef, useEffect } = React;
+import classnames from "classnames";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEdit, faHistory, faCog, faMap } from '@fortawesome/free-solid-svg-icons';
 import "./classroomPage.scss";
@@ -17,8 +18,12 @@ interface IParams { class_id: string };
 export const ClassroomPage: React.FC<RouteComponentProps<IParams>> = props => {
     // dimensioni del canvas
     const [canvasDimensions, setCanvasDimensions] = useState<{ width?: number, height?: number }>({});
+    // studente selezionato 
+    const [selectedStudent, setSelectedStudent] = React.useState<string | null>(null);
     // contenitore 
     const contentContainer = useRef<HTMLDivElement>(null);
+    // lista degli studenti 
+    const studentsContainer = useRef<HTMLDivElement>(null);
     // GRAPHQL
     const id = props.match.params.class_id;
     const { loading, error, data } = useGetClassroomByIdQuery({ variables: { id } });
@@ -43,22 +48,50 @@ export const ClassroomPage: React.FC<RouteComponentProps<IParams>> = props => {
     }
 
     /**
+     * Funzione che viene chiamata quando viene selezionato / deselezionato un banco
+     * @param index 
+     */
+    const onDeskIsHighlighted = (index: number | null) => {
+        if (index != null && students && studentsContainer.current) {
+            const student = students[index];
+            setSelectedStudent(student);
+            // Sccorre la lista degli alunni fino allo studente selezionato
+            const wrapper = studentsContainer.current;
+            const i = students.sort().indexOf(student);
+            const item = wrapper.childNodes[i] as HTMLElement;
+            if (item) {
+                const count = item.offsetTop - wrapper.scrollTop - 260;
+                wrapper.scrollBy({ top: count, left: 0, behavior: 'smooth' })
+            }
+        }
+        else setSelectedStudent(null)
+    }
+
+    /**
      * Disegna il riquadro degli studenti
      */
     const renderStudents = () => {
         if (!students) return;
-        const cards = students.map((student, index) => (
-            <div className="student" key={index}>
+
+        const selectStudent = (student: string) => {
+            if (selectedStudent !== student) setSelectedStudent(student)
+            else setSelectedStudent(null)
+        }
+
+        const cards = students.sort().map((student, index) => (
+            <button
+                className={classnames("student", { active: selectedStudent === student })}
+                onClick={() => selectStudent(student)} key={index}>
                 <div className="thumbnail" >
                     {student[0] + student[1]}
                 </div>
                 <p>{student}</p>
-            </div>
+            </button>
         ));
         return (
             <div className="students">
                 <h4 className="section-title">{students.length} studenti:</h4>
-                <div className="students-container">
+                <div className="students-container" ref={studentsContainer}>
                     {cards}
                 </div>
             </div>
@@ -92,11 +125,14 @@ export const ClassroomPage: React.FC<RouteComponentProps<IParams>> = props => {
                 </div>
             </div>
             <div className="content" ref={contentContainer}>
-                <Route path="/:class_id" exact component={() => (<MapView
-                    desks={desks!} students={students!}
-                    canvasWidth={canvasDimensions.width}
-                    canvasHeight={canvasDimensions.height}
-                />)} />
+                <Route path="/:class_id" exact component={() => (
+                    <MapView
+                        desks={desks!} students={students!}
+                        canvasWidth={canvasDimensions.width}
+                        canvasHeight={canvasDimensions.height}
+                        highlightedDesk={selectedStudent ? students!.indexOf(selectedStudent) : undefined}
+                        onDeskIsHighlighted={onDeskIsHighlighted}
+                    />)} />
                 <Route path="/:class_id/edit" exact component={EditView} />
                 <Route path="/:class_id/history" exact component={HistoryView} />
                 <Route path="/:class_id/settings" exact component={SettingsView} />
@@ -154,7 +190,3 @@ export const ClassroomPage: React.FC<RouteComponentProps<IParams>> = props => {
         </div>
     );
 }
-
-
-
-
