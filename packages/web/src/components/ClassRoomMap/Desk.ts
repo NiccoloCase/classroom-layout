@@ -1,7 +1,11 @@
 import { Orientation } from './enums';
 
-export class Desk {
+interface DeskRenderOptions {
+    /** Se il banco è selezionato */
+    isHighlighted?: boolean;
+}
 
+export class Desk {
     /**
      * Funzione che converte una stringa JSON in un array di Desks
      * @param json 
@@ -34,8 +38,8 @@ export class Desk {
     y1: number;
     x2: number;
     y2: number;
-    orientation: Orientation;
     name: string;
+    orientation: Orientation;
 
     constructor(x: number, y: number, orientation: Orientation) {
         this.orientation = orientation;
@@ -60,13 +64,17 @@ export class Desk {
         }
     }
 
-    render(ctx: CanvasRenderingContext2D) {
+    /**
+     * Disegna il banco
+     * @param ctx 
+     * @param options 
+     */
+    render(ctx: CanvasRenderingContext2D, options?: DeskRenderOptions) {
         // CALCOLA LE DIMENSIONI
         const x = this.x1 < this.x2 ? this.x1 : this.x2;
         const y = this.y1 > this.y2 ? this.y2 : this.y1;
         let d;
         let h;
-
         if (this.orientation === Orientation.N || this.orientation === Orientation.S) {
             d = 1;
             h = 2;
@@ -89,8 +97,14 @@ export class Desk {
             ctx.lineWidth = 0.03;
         }
 
+        // Se è selezionato
+        if (options && options.isHighlighted) ctx.fillStyle = "#404040";
+
         ctx.fillRect(x, y, d, h);
         ctx.strokeRect(x, y, d, h);
+
+
+
 
         // DISEGNA IL NOME DELL'ALLUNNO SUL BANCO
         if (this.name) {
@@ -102,7 +116,7 @@ export class Desk {
             ctx.font = `${size}px Arial`;
             ctx.fillStyle = "#404040";
             ctx.fillStyle = "#f5f5f5";
-            // ctx.textBaseline = 'middle';
+            ctx.textBaseline = 'middle';
             ctx.textAlign = "center";
             ctx.fillText(this.name, x + d / 2, y + h / 2);
         }

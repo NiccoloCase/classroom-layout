@@ -61,7 +61,6 @@
             flex-direction: column;
             overflow: hidden;
 
-            
             .section-title {
                 border-top: solid 1px $light-grey;
                 text-align: center;
@@ -75,18 +74,35 @@
                 .student {
                     display: flex;
                     align-items: center;
+                    border:none;
+                    font-size: .9rem;
                     margin-bottom: .5rem;
+                    padding: 0 10px 0 0;
+                    background: $background-color;
+                    border-radius: 10px;
+                    border-top-left-radius: 1rem;
+                    border-bottom-left-radius: 1rem;
+                    transition: all .4s;
+                    // non selezionabile
+                    -webkit-user-select: none;  
+                    -moz-user-select: none;     
+                    -ms-user-select: none;    
+                    user-select: none;        
+
+                    &.active {
+                        background: $medium-grey;
+                    }
         
                     // THUMBNAIL
                     $colors: #F5D1D1, #D1F5E9, #D1D7F9, #FFEDCB, #D1EFF9;
                     @for $i from 1 through length($colors) {
                         &:nth-child(#{length($colors)}n+#{$i}) {
                             .thumbnail {
-                               background: nth($colors, $i);
+                              background: nth($colors, $i);
                                 color: darken(nth($colors, $i), 30%);
 
-                          //      background: $shuttle-grey;
-                         //          color: nth($colors, $i);
+                                //background: $shuttle-grey;
+                                   //color: nth($colors, $i);
                             }
                         }
                     }

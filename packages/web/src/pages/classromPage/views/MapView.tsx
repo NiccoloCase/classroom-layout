@@ -5,14 +5,20 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faRandom, faDownload } from '@fortawesome/free-solid-svg-icons';
 
 interface MapViewProps {
-    students: string[],
-    desks: string,
-    canvasWidth?: number,
-    canvasHeight?: number,
+    students: string[];
+    desks: string;
+    canvasWidth?: number;
+    canvasHeight?: number;
+    highlightedDesk?: number;
+    onDeskIsHighlighted?: (index: number | null) => void;
 }
 
-export const MapView: React.FC<MapViewProps> = ({ canvasWidth, canvasHeight, desks, students }) => {
-
+export const MapView: React.FC<MapViewProps> = ({
+    canvasWidth, canvasHeight, desks, students, highlightedDesk, onDeskIsHighlighted
+}) => {
+    /**
+     * Sacrica la piantina della classe
+     */
     const downloadMap = () => {
         const canvas: HTMLCanvasElement | null = document.querySelector(".ClassroomPage__MapView canvas");
         if (!canvas) return;
@@ -29,6 +35,8 @@ export const MapView: React.FC<MapViewProps> = ({ canvasWidth, canvasHeight, des
                 width={canvasWidth!}
                 height={canvasHeight!}
                 students={students}
+                highlightedDesk={highlightedDesk}
+                onDeskIsHighlighted={onDeskIsHighlighted}
                 desks={desks} scale={55} notEditable />
             <div className="functions">
                 <button className="btn" title="Scarica la mappa dei posti" onClick={downloadMap}>
