@@ -6,7 +6,7 @@ import { faTimes } from '@fortawesome/free-solid-svg-icons'
 /** Numero massimo degli studenti */
 const MAX_STDUENTS = 30;
 
-const STUDENTS_TEST = ["Niccolò", "Iacopo", "ijdsiow", "sijwiswos", "ss", "ssqsws", "wssw", "sw", "ew", "dwd", "wd", "dw", "ijdsiow", "sijwiswos", "ss", "ssqsws", "wssw", "sw", "ew", "dwd", "wd", "dw"];
+const STUDENTS_TEST = ["Niccolò", "Iacopo", "Caio", "Sempronio"];
 
 interface StundentsFormProps {
     storeValues: (students: null | string[], id?: number | string) => void;
@@ -98,14 +98,16 @@ export const StundentsForm: React.FC<StundentsFormProps> = ({ storeValues, id })
             <div className="left">
                 <h1 className="subtitle">Registra gli studenti presenti nella classe</h1>
                 <div className="input-box">
-                    <input
-                        type="text" className="input" placeholder="Cognome dello studente"
-                        value={inputValue}
-                        onChange={e => {
-                            setInputValue(e.target.value);
-                            validateInputBox(e.target.value)
-                        }}
-                        onKeyPress={e => { if (e.key === "Enter") addStudent() }} />
+                    <div className="field">
+                        <input
+                            type="text" className="input" placeholder="Cognome dello studente"
+                            value={inputValue}
+                            onChange={e => {
+                                setInputValue(e.target.value);
+                                validateInputBox(e.target.value)
+                            }}
+                            onKeyPress={e => { if (e.key === "Enter") addStudent() }} />
+                    </div>
                     <button
                         onClick={addStudent}
                         disabled={inputError !== null}

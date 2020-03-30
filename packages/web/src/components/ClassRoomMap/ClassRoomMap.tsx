@@ -367,20 +367,21 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
     }
 
     private tick = () => {
-        this.renderGrid();  // disegna la griglia 
-        this.clearBackground(); // pulisce lo sfondo
+        // pulisce lo sfondo
+        this.clearBackground();
+        // disegna la griglia 
+        if (!this.props.notEditable) this.renderGrid();
 
         this.ctx.save();
         this.ctx.scale(this.scale, this.scale);
-        this.highlightCursor(); // evidenzia la zona in cui può essere piazzato un banco
+        // evidenzia la zona in cui può essere piazzato un banco
+        this.highlightCursor();
         // disegna i banchi
         for (const desk of this.desks) {
-            // console.log(desk.x, desk.y)
             desk.render(this.ctx);
-
-
         }
         this.ctx.restore();
+
         requestAnimationFrame(this.tick);
     }
 }

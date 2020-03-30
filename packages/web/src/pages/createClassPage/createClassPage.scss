@@ -36,21 +36,28 @@ $form-height: 60vh;
 
             #CreateClassPage__form-content {
                flex:1;
-               input {
-                    background: $light-grey;
-                    margin: 1.5rem 0;
-                    padding: 0.7rem 0.5rem;
-                    font-size: 1rem;
-                    border: none;
-                    border-radius: 5px;
-                    width: 100%;
-                }
 
                 .subtitle {
                     font-weight: 500;
                     color:#4A4A4A;
                     font-size: 27px;
                     margin-bottom: 1rem;
+                }
+
+                .field {
+                    margin: 1.5rem 0;
+                    width: 100%;
+                    .input {
+                        background: $light-grey;
+                        padding: 0.7rem 0.5rem;
+                        font-size: 1rem;
+                        border: none;
+                        border-radius: 5px;    
+                        width: 100%;   
+                    }
+                    .error-text {
+                        color: $red;
+                    }
                 }
             }
 
@@ -211,20 +218,93 @@ $form-height: 60vh;
     }
 
     .CreateClassPage__LastStep {
-        button {
-            background: #57B845;
-            margin: 1.5rem 0;
-            padding: 0.7rem 2rem;
-            border: none;
-            border-radius: 5px;
-            transition: all .4s;
-            &:hover {
-                @include box-shadow
+        .error-box{
+            h1 {
+                color: #c0392b;
             }
-            a {
-                font-family: 1.3rem;
-                color:#fff;
-                text-decoration: none;
+         .errors {
+            margin: 1rem 0;
+            .error {
+                color: $background-color;
+                background: #96281b;
+                margin-bottom: 20px;
+                border-radius: 5px;
+                padding: .5rem;
+                display: inline-block;
+                
+            }
+          }
+        }
+
+        .loading-box {
+            display: flex;
+            justify-content: center;
+        }
+       
+        .success-box {
+            $green: #57B845;
+
+            h1 {
+            color: $shuttle-grey;
+            svg {color: $green; }
+            }
+
+            p {
+                margin: 1.5rem 0;
+                font-size: 17px;
+                color: $dark-grey;
+            }
+        
+                .id-box {
+                    background: $light-grey;
+                    padding: 0.7rem 2rem;
+                    border-radius: 5px;
+                    border: none;
+                
+                    input {
+                        margin-right: .5rem;
+                        background: transparent;
+                        border:none;
+                        color:$dark-grey;
+                        font-size: 1rem;
+                    }
+
+                    button {
+                        margin-left: .5rem;
+                        background: transparent;
+                        border:none;
+                        color:$dark-grey;
+                        font-size: 1rem;
+                        transition: all .4s;
+                        &:active {
+                            transform: scale(1.2);
+                        }
+                        &:hover {
+                            color:#000;
+                        }
+                    }
+                }
+            
+            .class-link-button {
+                background: $green;
+                margin: 1.5rem 0;
+                padding: 0.7rem 2rem;
+                border: none;
+                border-radius: 5px;
+                display: flex;
+                align-items: center;
+                transition: all .4s;
+                &:hover {
+                    @include box-shadow
+                }
+                a,svg {
+                    color: #fff;
+                    font-size: .9rem;
+                }
+                a {
+                    text-decoration: none;
+                    margin-right: 5px;
+                }
             }
         }
     }

@@ -69,7 +69,7 @@ export const ArrangeDesks: React.FC<ArrangeDesksProps> = ({ studensNumber, store
                         />
                     </div>
                 </div>
-            ) : <HashLoader color={"#dadfe1"} />
+            ) : <HashLoader color="#dadfe1" />
             }
         </div>
     );
