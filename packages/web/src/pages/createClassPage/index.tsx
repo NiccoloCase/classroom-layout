@@ -36,7 +36,7 @@ export class CreateClassPage extends React.Component {
             draggable: false,
             speed: 500,
             slidesToShow: 1,
-            slidesToScroll: 1,
+            slidesToScroll: 1
         }
 
         return (
@@ -54,26 +54,31 @@ export class CreateClassPage extends React.Component {
                                     studensNumber={this.state.form[1].students ?
                                         (this.state.form[1].students as any).length : null
                                     } />
-                                <LastStep />
+                                <LastStep
+                                    name={this.state.form[0].classroomName}
+                                    email={this.state.form[0].email}
+                                    students={this.state.form[1].students}
+                                    desks={this.state.form[2].desks}
+                                />
                             </Slider>
                         </div>
                         <div className="form-footer">
                             <button onClick={this.prevStep} id="btn-prev"
-                                style={{ opacity: this.state.step > 0 ? 100 : 0 }} >
+                                style={{ visibility: this.state.step > 0 ? "visible" : "hidden" }} >
                                 Indietro
                             </button>
                             <div className="dots">
                                 {this.drawDots()}
                             </div>
                             <button onClick={this.nextStep} id="btn-next"
-
+                                style={{ visibility: this.state.step === STEPS_NUMBER - 1 ? "hidden" : "visible" }}
                                 disabled={this.state.nextButtonDisabled[this.state.step]}>
                                 Avanti
                             </button>
                         </div>
                     </div>
                 </div>
-            </div>
+            </div >
         );
     }
 

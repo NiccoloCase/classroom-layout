@@ -1,7 +1,10 @@
 import gql from "graphql-tag";
 
+/**
+ * Restituisce una classe dato l'id
+ */
 export const getClassroomByIdQuery = gql`
-    query GetClassroomByIdQuery($id: ID!) {
+    query GetClassroomById($id: ID!) {
         getClassroomById(id: $id) {
             name
             students
@@ -10,10 +13,23 @@ export const getClassroomByIdQuery = gql`
     }
 `;
 
+/**
+ * Verifica se l'email passata è già associata a un account
+ */
+export const isEmailAlreadyUsedQuery = gql`
+    query isEmailAlreadyUsed($email:String!) {
+        isEmailAlreadyUsed(email: $email)
+    }
+`
+
+/**
+ * Crea una nuova classe
+ */
 export const createClassroomMutation = gql`
-    mutation CreateClassroomMutation($name: String!, $email:String!, $desks: String!, $students: [String!]!){
+    mutation CreateClassroom($name: String!, $email:String!, $desks: String!, $students: [String!]!){
         createClassroom(name: $name, email:$email,desks:$desks, students:$students) {
             id
         }
     }
 `
+

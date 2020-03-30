@@ -8,7 +8,7 @@ import { MapView } from './views/MapView';
 import { EditView } from './views/EditView';
 import { HistoryView } from './views/HistoryView';
 import { SettingsView } from './views/SettingsView';
-import { useGetClassroomByIdQueryQuery } from '../../generated/graphql';
+import { useGetClassroomByIdQuery } from "../../generated/graphql"
 import { HashLoader } from 'react-spinners';
 import { NotFoundView } from '../../components/NotFound';
 
@@ -21,7 +21,7 @@ export const ClassroomPage: React.FC<RouteComponentProps<IParams>> = props => {
     const contentContainer = useRef<HTMLDivElement>(null);
     // GRAPHQL
     const id = props.match.params.class_id;
-    const { loading, error, data } = useGetClassroomByIdQueryQuery({ variables: { id } });
+    const { loading, error, data } = useGetClassroomByIdQuery({ variables: { id } });
     const name = data ? data.getClassroomById.name : null;
     const students = data ? data.getClassroomById.students : null;
     const desks = data ? data.getClassroomById.desks : null;
