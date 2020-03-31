@@ -2,8 +2,23 @@ type Classroom {
     id: ID!
     email: String!
     name: String!
-    desks: String!
+    desks: [Desk!]!
     students: [String!]!
+}
+
+type Desk {
+    id: ID!
+    x: Int!
+    y: Int!
+    orientation: Int!
+    name: String
+}
+
+input DeskInput {
+    x: Int!
+    y: Int!
+    orientation: Int!
+    name: String 
 }
 
 type Query {
@@ -13,6 +28,7 @@ type Query {
 }
 
 type Mutation {
-    createClassroom(email:String!, name: String!, desks: String!, students: [String!]!): Classroom!
+    createClassroom(email:String!, name: String!, desks:[DeskInput!]!, students: [String!]!): Classroom!
     editClassroom(id: ID!, name: String, desks: String, students: [String!]): Classroom!
+    shuffleDesks(classId: ID!):Classroom!
 }
