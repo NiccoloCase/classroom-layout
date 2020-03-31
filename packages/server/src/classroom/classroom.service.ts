@@ -1,4 +1,5 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import * as _ from "lodash";
 import { InjectModel } from '@nestjs/mongoose';
 import { Classroom } from '../graphql';
 import { IClassroomModel } from './classroom.schema';
@@ -44,7 +45,7 @@ export class ClassroomService {
      * @param payload 
      */
     async createNewClassroom(payload: NewClassroomDTO): Promise<Classroom> {
-        const newClassroom = new this.classroomModel({ ...payload })
+        const newClassroom = new this.classroomModel(payload);
         await newClassroom.save();
         return newClassroom;
     }
@@ -65,5 +66,21 @@ export class ClassroomService {
         return classroom;
     }
 
-
+    /**
+     * Cambia i posti
+     * [mescola gli studenti]
+     */
+    async shuffleStudents(id: string): Promise<Classroom> {
+        // trova la classe 
+        try {
+            const classroom = await this.classroomModel.findById(id);
+            if (!classroom) throw new NotFoundException();
+            classroom.students = _.shuffle(classroom.students);
+            await classroom.save();
+            return classroom;
+        }
+        catch (err) {
+            throw new BadRequestException();
+        }
+    }
 }

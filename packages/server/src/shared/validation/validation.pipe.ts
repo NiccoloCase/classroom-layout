@@ -2,7 +2,6 @@ import { BadRequestException, ValidationPipe } from '@nestjs/common';
 import { ValidationError } from 'class-validator';
 
 export const CustumValidationPipe = new ValidationPipe({
-    whitelist: true,
     exceptionFactory: (validationErrors: ValidationError[]) => {
 
         const errors = validationErrors.map(error => {

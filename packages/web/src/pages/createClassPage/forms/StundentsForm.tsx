@@ -34,7 +34,7 @@ export const StundentsForm: React.FC<StundentsFormProps> = ({ storeValues, id })
         }
         // INVIA LE INFORMAZIONI ALL "PARENT CONTAINER"
         // controlla che il numero di studenti sia giusto
-        if (students.length !== 0 && students.length <= MAX_STDUENTS) storeValues(students, id);
+        if (students.length > 1 && students.length <= MAX_STDUENTS) storeValues(students, id);
         else storeValues(null, id);
     }, [students]);
 
