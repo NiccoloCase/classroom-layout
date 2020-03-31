@@ -11,14 +11,12 @@ type Desk {
     x: Int!
     y: Int!
     orientation: Int!
-    name: String
 }
 
 input DeskInput {
     x: Int!
     y: Int!
     orientation: Int!
-    name: String 
 }
 
 type Query {
