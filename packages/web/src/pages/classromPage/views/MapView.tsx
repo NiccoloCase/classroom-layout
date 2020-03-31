@@ -3,10 +3,11 @@ import { HashLoader } from 'react-spinners';
 import { ClassRoomMap } from '../../../components/ClassRoomMap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faRandom, faDownload } from '@fortawesome/free-solid-svg-icons';
+import { DeskInput } from '../../../generated/graphql';
 
 interface MapViewProps {
     students: string[];
-    desks: string;
+    desks: DeskInput[];
     canvasWidth?: number;
     canvasHeight?: number;
     highlightedDesk?: number;

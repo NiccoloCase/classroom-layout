@@ -1,10 +1,11 @@
 import * as React from 'react';
 import { ClassRoomMap } from '../../../components/ClassRoomMap';
 import { HashLoader } from "react-spinners"
+import { DeskInput } from '../../../generated/graphql';
 
 interface ArrangeDesksProps {
     studensNumber?: number | null;
-    storeValues: (desks: string | null, id?: number | string) => void;
+    storeValues: (desks: DeskInput[] | null, id?: number | string) => void;
     id?: any;
 }
 
@@ -12,8 +13,7 @@ export const ArrangeDesks: React.FC<ArrangeDesksProps> = ({ studensNumber, store
 
     const [width, setWith] = React.useState<number | null>(null);
     const [height, setHeight] = React.useState<number | null>(null);
-    const [desks, setDesks] = React.useState("[]");
-    const [desksNumber, setDesksNumber] = React.useState(0);
+    const [desks, setDesks] = React.useState<DeskInput[]>([]);
 
     // Funzione chiamata solo una volta dopo aver renderizzato
     React.useEffect(() => {
@@ -29,26 +29,13 @@ export const ArrangeDesks: React.FC<ArrangeDesksProps> = ({ studensNumber, store
     }, []);
 
     React.useEffect(() => { // invia i valori al form
-        if (desksNumber === studensNumber) storeValues(desks, id);
+        if (desks.length === studensNumber) storeValues(desks, id);
         else storeValues(null, id);
     }, [desks])
 
-    /**
-     * Funzione chiamata quando avviene una modifica nella configurazione
-     * della classe
-     * @param desksJSON 
-     */
-    const handleChanges = (desksJSON: string) => {
-        // salva l'array aggiornato dei banchi e il loro numero
-        const n = JSON.parse(desksJSON).length;
-        setDesksNumber(n);
-        setDesks(desksJSON);
-
-    }
-
     const showText = () => {
         if (!studensNumber) return;
-        const remainingDesks = studensNumber - desksNumber;
+        const remainingDesks = studensNumber - desks.length;
         if (remainingDesks > 0)
             return `Devi ancora disporre ${remainingDesks} ${remainingDesks === 1 ? "banco" : "banchi"}`;
         else return `Hai disposto abbastanza banchi per tutti gli studenti`;
@@ -65,7 +52,7 @@ export const ArrangeDesks: React.FC<ArrangeDesksProps> = ({ studensNumber, store
                             width={width}
                             height={height}
                             maxDesks={studensNumber}
-                            handleChanges={handleChanges}
+                            handleChanges={setDesks}
                         />
                     </div>
                 </div>

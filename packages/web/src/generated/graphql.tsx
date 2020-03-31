@@ -19,21 +19,38 @@ export type Classroom = {
   id: Scalars['ID'];
   email: Scalars['String'];
   name: Scalars['String'];
-  desks: Scalars['String'];
+  desks: Array<Desk>;
   students: Array<Scalars['String']>;
+};
+
+export type Desk = {
+   __typename?: 'Desk';
+  id: Scalars['ID'];
+  x: Scalars['Int'];
+  y: Scalars['Int'];
+  orientation: Scalars['Int'];
+  name?: Maybe<Scalars['String']>;
+};
+
+export type DeskInput = {
+  x: Scalars['Int'];
+  y: Scalars['Int'];
+  orientation: Scalars['Int'];
+  name?: Maybe<Scalars['String']>;
 };
 
 export type Mutation = {
    __typename?: 'Mutation';
   createClassroom: Classroom;
   editClassroom: Classroom;
+  shuffleDesks: Classroom;
 };
 
 
 export type MutationCreateClassroomArgs = {
   email: Scalars['String'];
   name: Scalars['String'];
-  desks: Scalars['String'];
+  desks: Array<DeskInput>;
   students: Array<Scalars['String']>;
 };
 
@@ -43,6 +60,11 @@ export type MutationEditClassroomArgs = {
   name?: Maybe<Scalars['String']>;
   desks?: Maybe<Scalars['String']>;
   students?: Maybe<Array<Scalars['String']>>;
+};
+
+
+export type MutationShuffleDesksArgs = {
+  classId: Scalars['ID'];
 };
 
 export type Query = {
@@ -76,7 +98,11 @@ export type GetClassroomByIdQuery = (
   { __typename?: 'Query' }
   & { getClassroomById: (
     { __typename?: 'Classroom' }
-    & Pick<Classroom, 'name' | 'students' | 'desks'>
+    & Pick<Classroom, 'name' | 'email' | 'students'>
+    & { desks: Array<(
+      { __typename?: 'Desk' }
+      & Pick<Desk, 'x' | 'y' | 'orientation'>
+    )> }
   ) }
 );
 
@@ -93,7 +119,7 @@ export type IsEmailAlreadyUsedQuery = (
 export type CreateClassroomMutationVariables = {
   name: Scalars['String'];
   email: Scalars['String'];
-  desks: Scalars['String'];
+  desks: Array<DeskInput>;
   students: Array<Scalars['String']>;
 };
 
@@ -111,8 +137,13 @@ export const GetClassroomByIdDocument = gql`
     query GetClassroomById($id: ID!) {
   getClassroomById(id: $id) {
     name
+    email
     students
-    desks
+    desks {
+      x
+      y
+      orientation
+    }
   }
 }
     `;
@@ -186,7 +217,7 @@ export type IsEmailAlreadyUsedQueryHookResult = ReturnType<typeof useIsEmailAlre
 export type IsEmailAlreadyUsedLazyQueryHookResult = ReturnType<typeof useIsEmailAlreadyUsedLazyQuery>;
 export type IsEmailAlreadyUsedQueryResult = ApolloReactCommon.QueryResult<IsEmailAlreadyUsedQuery, IsEmailAlreadyUsedQueryVariables>;
 export const CreateClassroomDocument = gql`
-    mutation CreateClassroom($name: String!, $email: String!, $desks: String!, $students: [String!]!) {
+    mutation CreateClassroom($name: String!, $email: String!, $desks: [DeskInput!]!, $students: [String!]!) {
   createClassroom(name: $name, email: $email, desks: $desks, students: $students) {
     id
   }

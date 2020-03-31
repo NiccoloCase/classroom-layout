@@ -1,16 +1,15 @@
 import * as React from "react";
 import VisibilitySensor from "react-visibility-sensor";
-import { useCreateClassroomMutation } from '../../../generated/graphql';
+import { useCreateClassroomMutation, DeskInput } from '../../../generated/graphql';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faExclamationCircle, faCheckSquare, faCopy, faChevronRight } from '@fortawesome/free-solid-svg-icons';
 import { Link } from 'react-router-dom';
 import { FadeLoader } from 'react-spinners';
 
-
 interface LastStepProps {
     name?: string;
     email?: string;
-    desks?: string;
+    desks?: DeskInput[];
     students?: string[];
 }
 
