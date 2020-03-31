@@ -155,7 +155,7 @@ export const ClassroomPage: React.FC<RouteComponentProps<IParams>> = props => {
         if (!error) return;
         const err = error.graphQLErrors[0];
         // la classe non è stata trovata
-        if (err.extensions && err.extensions.exception.status === 404)
+        if (err && err.extensions && err.extensions.exception.status === 404)
             return (
                 <div className="content">
                     <NotFoundView />

@@ -4,6 +4,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus, faMousePointer, faEraser, faTrash, faSearchPlus, faSearchMinus, faSyncAlt, faTimes } from '@fortawesome/free-solid-svg-icons';
 import Popup from "reactjs-popup";
 import * as styles from "./DrawLayout.module.scss";
+import { DeskInput } from '../../generated/graphql';
 import { ToolType, ReferenceSystemType as RSType, Orientation } from './enums';
 import { Mouse } from './Mouse';
 import { Desk } from "./Desk";
@@ -17,8 +18,8 @@ interface ClassRoomMapProps {
     maxDesks?: number;
     /** Se la configurazione non è modificabile */
     notEditable?: boolean;
-    /** Banchi in formato JSON */
-    desks?: string;
+    /** Banchi */
+    desks?: DeskInput[];
     /** Dimnesione delle celle */
     scale?: number;
     /** Array di studenti */
@@ -28,9 +29,9 @@ interface ClassRoomMapProps {
     // FUNZIONI
     /**
      * Funzione chiamata ogni vole che avviene un cambiamento 
-     * @param desks Array dei banchi in formato JSON
+     * @param desks Array di banchi nel formato oggetto
      */
-    handleChanges?: (desks: string) => void;
+    handleChanges?: (desks: DeskInput[]) => void;
     /**
      * Funziuone chiamata quando un banco viene selezionato
      * @param desks Index del banco
@@ -52,6 +53,8 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
     deltaZoom: number;
     /** Mouse */
     mouse: Mouse;
+    /** Banco evidenziato */
+    highlightedDesk?: number | null;
 
     state = {
         /** Larghezza del canvas */
@@ -60,8 +63,6 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
         height: this.props.height as number | undefined,
         /** Strumento in uso */
         tool: this.props.notEditable ? ToolType.POINTER : ToolType.ADD,
-        /** Banco evidenziat */
-        highlightedDesk: this.props.highlightedDesk,
         /** Orientamento con cui vengono posizionati i blocchi */
         orientation: Orientation.E,
         /** Orientamento non voluto dall'utente ma proposto a seconda della situazione */
@@ -76,12 +77,13 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
         this.deltaZoom = 5;
         this.students = this.props.students;
         this.ctx = this.canvas.getContext("2d")!;
+        this.highlightedDesk = this.props.highlightedDesk;
         // EVENTI
         this.mouse = new Mouse();
         this.canvas.addEventListener("mousedown", this.onMouseClick);
         this.canvas.addEventListener("mousemove", this.onMouseMove);
         // BANCHI
-        this.desks = this.props.desks ? Desk.jsonToDesks(this.props.desks) : [];
+        this.desks = this.props.desks ? Desk.objsToDesks(this.props.desks) : [];
         if (this.students) Desk.setNames(this.desks, this.students);
         // chaiama la funzione se passata tra le proprietà
         this.callback();
@@ -92,7 +94,7 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
     UNSAFE_componentWillReceiveProps({ width, height, highlightedDesk, students }: ClassRoomMapProps) {
         if (width) this.setState({ width });
         if (height) this.setState({ height });
-        if (highlightedDesk) this.setState({ highlightedDesk });
+        if (highlightedDesk) this.highlightDesk = this.highlightDesk;
         if (students) {
             this.students = students;
             Desk.setNames(this.desks, this.students);
@@ -156,7 +158,7 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
     private callback = () => {
         // verifica se la funzione è stata passata tra le proprietà
         if (typeof this.props.handleChanges === "function")
-            this.props.handleChanges(this.desksToJSON());
+            this.props.handleChanges(this.desksToObjects());
     }
 
     /**
@@ -167,11 +169,11 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
     }
 
     /**
-     * Converte i banche in formato JSON
+     * Converte i banche nel formato oggetto
      */
-    private desksToJSON = (): string => {
+    private desksToObjects = (): DeskInput[] => {
         const objs = this.desks.map(desk => desk.object);
-        return JSON.stringify(objs);
+        return objs;
     }
 
     /**
@@ -306,14 +308,14 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
     }
 
     /**
-     * Selezione un banco
+     * Evidenzia il banco alla posizione passata
      */
     private highlightDesk = (x: number, y: number) => {
         const desk = this.getDeskIndexByCoords(x, y);
         if (desk === null) return;
         // Se il banco era già selezionato viene deselezionato
-        const highlightedDesk = desk !== this.state.highlightedDesk ? desk : null
-        this.setState({ highlightedDesk });
+        const highlightedDesk = desk !== this.highlightedDesk ? desk : null
+        this.highlightedDesk = highlightedDesk;
         // chaiama la funzione se passata dal client
         if (typeof this.props.onDeskIsHighlighted === "function")
             this.props.onDeskIsHighlighted(highlightedDesk);
@@ -416,7 +418,7 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
         this.highlightCursor();
         // disegna i banchi
         for (let i = 0; i < this.desks.length; i++) {
-            const isHighlighted = this.state.highlightedDesk === i;
+            const isHighlighted = this.highlightedDesk === i;
             this.desks[i].render(this.ctx, { isHighlighted });
         }
         this.ctx.restore();

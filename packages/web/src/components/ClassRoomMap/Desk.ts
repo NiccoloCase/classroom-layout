@@ -1,4 +1,5 @@
 import { Orientation } from './enums';
+import { DeskInput } from '../../generated/graphql';
 
 interface DeskRenderOptions {
     /** Se il banco è selezionato */
@@ -7,13 +8,12 @@ interface DeskRenderOptions {
 
 export class Desk {
     /**
-     * Funzione che converte una stringa JSON in un array di Desks
-     * @param json 
+     * Funzione che converte una array di oggetti in uno di Desks
+     * @param desks 
      */
-    static jsonToDesks(json: string): Desk[] {
-        const array = JSON.parse(json);
+    static objsToDesks(desksObjs: DeskInput[]): Desk[] {
         const desks = [];
-        for (const obj of array) {
+        for (const obj of desksObjs) {
             desks.push(
                 new this(obj.x, obj.y, obj.orientation)
             );
@@ -103,9 +103,6 @@ export class Desk {
         ctx.fillRect(x, y, d, h);
         ctx.strokeRect(x, y, d, h);
 
-
-
-
         // DISEGNA IL NOME DELL'ALLUNNO SUL BANCO
         if (this.name) {
             const defaultSize = d / 6;
@@ -122,10 +119,8 @@ export class Desk {
         }
     }
 
-    get object(): { x: number, y: number, orientation: Orientation, name?: string } {
-        const obj = {
-            x: this.x1, y: this.y1, orientation: this.orientation, name: this.name
-        };
+    get object(): DeskInput {
+        const obj = { x: this.x1, y: this.y1, orientation: this.orientation };
         return obj;
     }
 }
