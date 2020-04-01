@@ -58,11 +58,13 @@ export class ClassroomService {
     async editClassroom(id: string, edits: EditClassroomDTO): Promise<Classroom> {
         let classroom: Classroom;
         try {
-            classroom = await this.classroomModel.findByIdAndUpdate(id, edits, { new: true });
+            console.log("edit", edits);
+            classroom = await this.classroomModel.findByIdAndUpdate(id, edits, { new: true, });
         } catch (err) {
             throw new BadRequestException();
         }
         if (!classroom) throw new NotFoundException();
+        console.log(classroom);
         return classroom;
     }
 

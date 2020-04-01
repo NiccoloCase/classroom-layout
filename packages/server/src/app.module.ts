@@ -8,7 +8,8 @@ import config from "config";
 @Module({
   imports: [
     // DATABASEs
-    MongooseModule.forRoot(config.database.URI),
+    MongooseModule.forRoot(config.database.URI,
+      { useNewUrlParser: true, useFindAndModify: false, useCreateIndex: true }),
     // GRAPHQL 
     GraphQLModule.forRoot({
       typePaths: ['./**/*.graphql'],

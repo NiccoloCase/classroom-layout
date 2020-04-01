@@ -29,14 +29,12 @@ export type Desk = {
   x: Scalars['Int'];
   y: Scalars['Int'];
   orientation: Scalars['Int'];
-  name?: Maybe<Scalars['String']>;
 };
 
 export type DeskInput = {
   x: Scalars['Int'];
   y: Scalars['Int'];
   orientation: Scalars['Int'];
-  name?: Maybe<Scalars['String']>;
 };
 
 export type Mutation = {
@@ -58,7 +56,7 @@ export type MutationCreateClassroomArgs = {
 export type MutationEditClassroomArgs = {
   id: Scalars['ID'];
   name?: Maybe<Scalars['String']>;
-  desks?: Maybe<Scalars['String']>;
+  desks?: Maybe<Array<DeskInput>>;
   students?: Maybe<Array<Scalars['String']>>;
 };
 
@@ -142,6 +140,26 @@ export type ShuffleDesksMutation = (
   & { shuffleDesks: (
     { __typename?: 'Classroom' }
     & Pick<Classroom, 'students'>
+  ) }
+);
+
+export type EditClassroomMutationVariables = {
+  id: Scalars['ID'];
+  name?: Maybe<Scalars['String']>;
+  desks?: Maybe<Array<DeskInput>>;
+  students?: Maybe<Array<Scalars['String']>>;
+};
+
+
+export type EditClassroomMutation = (
+  { __typename?: 'Mutation' }
+  & { editClassroom: (
+    { __typename?: 'Classroom' }
+    & Pick<Classroom, 'name' | 'email' | 'students'>
+    & { desks: Array<(
+      { __typename?: 'Desk' }
+      & Pick<Desk, 'x' | 'y' | 'orientation'>
+    )> }
   ) }
 );
 
@@ -308,3 +326,51 @@ export function useShuffleDesksMutation(baseOptions?: ApolloReactHooks.MutationH
 export type ShuffleDesksMutationHookResult = ReturnType<typeof useShuffleDesksMutation>;
 export type ShuffleDesksMutationResult = ApolloReactCommon.MutationResult<ShuffleDesksMutation>;
 export type ShuffleDesksMutationOptions = ApolloReactCommon.BaseMutationOptions<ShuffleDesksMutation, ShuffleDesksMutationVariables>;
+export const EditClassroomDocument = gql`
+    mutation EditClassroom($id: ID!, $name: String, $desks: [DeskInput!], $students: [String!]) {
+  editClassroom(id: $id, name: $name, desks: $desks, students: $students) {
+    name
+    email
+    students
+    desks {
+      x
+      y
+      orientation
+    }
+  }
+}
+    `;
+export type EditClassroomMutationFn = ApolloReactCommon.MutationFunction<EditClassroomMutation, EditClassroomMutationVariables>;
+export type EditClassroomComponentProps = Omit<ApolloReactComponents.MutationComponentOptions<EditClassroomMutation, EditClassroomMutationVariables>, 'mutation'>;
+
+    export const EditClassroomComponent = (props: EditClassroomComponentProps) => (
+      <ApolloReactComponents.Mutation<EditClassroomMutation, EditClassroomMutationVariables> mutation={EditClassroomDocument} {...props} />
+    );
+    
+
+/**
+ * __useEditClassroomMutation__
+ *
+ * To run a mutation, you first call `useEditClassroomMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useEditClassroomMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [editClassroomMutation, { data, loading, error }] = useEditClassroomMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *      name: // value for 'name'
+ *      desks: // value for 'desks'
+ *      students: // value for 'students'
+ *   },
+ * });
+ */
+export function useEditClassroomMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<EditClassroomMutation, EditClassroomMutationVariables>) {
+        return ApolloReactHooks.useMutation<EditClassroomMutation, EditClassroomMutationVariables>(EditClassroomDocument, baseOptions);
+      }
+export type EditClassroomMutationHookResult = ReturnType<typeof useEditClassroomMutation>;
+export type EditClassroomMutationResult = ApolloReactCommon.MutationResult<EditClassroomMutation>;
+export type EditClassroomMutationOptions = ApolloReactCommon.BaseMutationOptions<EditClassroomMutation, EditClassroomMutationVariables>;

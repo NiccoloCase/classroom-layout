@@ -1,8 +1,7 @@
 import { Resolver, Query, Args, Mutation } from '@nestjs/graphql';
 import { ClassroomService } from './classroom.service';
 import { NewClassroomDTO, EditClassroomDTO } from './classroom.dto';
-import { NotFoundException, BadRequestException } from '@nestjs/common';
-import { ValidationError } from 'class-validator';
+import { NotFoundException } from '@nestjs/common';
 
 
 @Resolver('Classroom')
@@ -37,13 +36,15 @@ export class ClassroomResolver {
 
     @Mutation()
     async editClassroom(@Args() args) {
-        console.log(args);
-        const changes: EditClassroomDTO = {
-            name: args.name,
-            desks: args.desks,
-            students: args.students
+        // rimuove i valori vuoti
+        for (let propName in args) {
+            if (args[propName] === null || args[propName] === undefined)
+                delete args[propName];
         }
-        return this.classroomService.editClassroom(args.id, changes);
+        const edits = { ...args };
+        delete edits.id;
+
+        return this.classroomService.editClassroom(args.id, edits);
     }
 
     @Mutation()

@@ -49,3 +49,21 @@ export const shuffleDesksMutation = gql`
     }
 `
 
+/**
+ * Cabia i banchi
+ */
+export const editClassroomMutation = gql`
+    mutation EditClassroom($id: ID!, $name: String, $desks: [DeskInput!], $students: [String!]){
+        editClassroom(id: $id, name: $name, desks: $desks, students: $students) {
+            name
+            email
+            students
+            desks {
+                x
+                y
+                orientation
+            }
+        }
+    }
+`
+
