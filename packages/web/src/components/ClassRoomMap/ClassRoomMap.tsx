@@ -91,10 +91,11 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
         this.tick();
     }
 
-    UNSAFE_componentWillReceiveProps({ width, height, highlightedDesk, students }: ClassRoomMapProps) {
+    UNSAFE_componentWillReceiveProps({ width, height, highlightedDesk, students, desks }: ClassRoomMapProps) {
         if (width) this.setState({ width });
         if (height) this.setState({ height });
         if (highlightedDesk) this.highlightDesk = this.highlightDesk;
+        if (desks) this.desks = Desk.objsToDesks(desks);
         if (students) {
             this.students = students;
             Desk.setNames(this.desks, this.students);
@@ -340,7 +341,8 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
      * Evidenzia l'area in cui può essere piazzato un banco
      */
     private highlightCursor = () => {
-        if (this.state.tool === ToolType.ADD) {
+        if ((this.state.tool === ToolType.ADD && this.props.maxDesks !== this.desks.length) ||
+            this.state.tool === ToolType.REMOVE) {
             const [x, y] = this.mouse.getMousePosition(RSType.GRID);
             let { orientation } = this.state;
             const recommendedOrientation = this.state.recommendedOrientation.value;

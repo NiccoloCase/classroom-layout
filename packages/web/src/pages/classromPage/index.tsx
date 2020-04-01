@@ -49,7 +49,7 @@ export const ClassroomPage: React.FC<RouteComponentProps<IParams>> = props => {
     const setClassroomDimensions = () => {
         if (!contentContainer) return;
         const { width, height } = contentContainer.getBoundingClientRect();
-        const offset = 100;
+        const offset = 130;
         setCanvasDimensions({ width: width - offset, height: height - offset });
     }
 
@@ -150,8 +150,13 @@ export const ClassroomPage: React.FC<RouteComponentProps<IParams>> = props => {
                         onDeskIsHighlighted={onDeskIsHighlighted}
                         onDesksAreShuffled={onDesksAreShuffled}
                     />)} />
-
-                <Route path="/:class_id/edit" exact component={EditView} />
+                <Route path="/:class_id/edit" exact component={() =>
+                    <EditView
+                        classId={id}
+                        desks={desks} students={students}
+                        canvasWidth={canvasDimensions.width}
+                        canvasHeight={canvasDimensions.height} />}
+                />
                 <Route path="/:class_id/history" exact component={HistoryView} />
                 <Route path="/:class_id/settings" exact component={SettingsView} />
             </div>
