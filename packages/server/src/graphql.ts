@@ -10,7 +10,6 @@ export interface DeskInput {
     x: number;
     y: number;
     orientation: number;
-    name?: string;
 }
 
 export interface Classroom {
@@ -26,7 +25,6 @@ export interface Desk {
     x: number;
     y: number;
     orientation: number;
-    name?: string;
 }
 
 export interface IMutation {

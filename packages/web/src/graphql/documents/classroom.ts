@@ -38,3 +38,14 @@ export const createClassroomMutation = gql`
     }
 `
 
+/**
+ * Cabia i posti
+ */
+export const shuffleDesksMutation = gql`
+    mutation ShuffleDesks($id: ID!){
+        shuffleDesks(classId: $id) {
+            students
+        }
+    }
+`
+

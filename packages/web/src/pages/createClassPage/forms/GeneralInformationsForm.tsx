@@ -23,7 +23,6 @@ export const GeneralInformationsForm: React.FC<GeneralInformationsFormProps> = (
         }
     }, [data])
 
-
     // Funzione chiamata ogni volta che i valori di "name" e di "email" si aggiornano
     React.useEffect(() => {
         // Invia al form parente i valori dei campi
@@ -35,7 +34,7 @@ export const GeneralInformationsForm: React.FC<GeneralInformationsFormProps> = (
      * Validazione del campo del nome della classe
      * @param value Nome della classe
      */
-    const validateName = (value: string) => {
+    const validateName = async (value: string) => {
         if (validator.isEmpty(value)) setNameError("Questo campo è richisto")
         else if (!validator.isLength(value, { min: 2 })) setNameError("Il nome è troppo corto");
         else if (!validator.isLength(value, { max: 20 })) setNameError("Il nome è troppo lungo");
@@ -49,7 +48,12 @@ export const GeneralInformationsForm: React.FC<GeneralInformationsFormProps> = (
     const validateEmail = (value: string) => {
         if (validator.isEmpty(value)) setEmailError("Questo campo è richisto")
         else if (!validator.isEmail(value)) setEmailError("E' richiesta un'email coretta");
-        else setEmailError(null);
+        else {
+            // se non stono stati trovati altri errori controlla se l'email non sia già stata utilizzata
+            checkEmail({ variables: { email: value } });
+            // Eliina tutti gli errori
+            setEmailError(null);
+        }
     }
 
     /**
@@ -77,8 +81,8 @@ export const GeneralInformationsForm: React.FC<GeneralInformationsFormProps> = (
                     <span className="error-text">{nameError}</span>
                 </div>
                 <div className="field">
-                    <input type="email" name="email" className="input" placeholder="Email" value={email}
-                        onChange={onChange} onBlur={() => checkEmail({ variables: { email } })} />
+                    <input type="email" name="email" className="input" placeholder="Email"
+                        value={email} onChange={onChange} />
                     <span className="error-text">{emailError}</span>
                 </div>
             </div>

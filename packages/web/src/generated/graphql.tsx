@@ -132,6 +132,19 @@ export type CreateClassroomMutation = (
   ) }
 );
 
+export type ShuffleDesksMutationVariables = {
+  id: Scalars['ID'];
+};
+
+
+export type ShuffleDesksMutation = (
+  { __typename?: 'Mutation' }
+  & { shuffleDesks: (
+    { __typename?: 'Classroom' }
+    & Pick<Classroom, 'students'>
+  ) }
+);
+
 
 export const GetClassroomByIdDocument = gql`
     query GetClassroomById($id: ID!) {
@@ -257,3 +270,41 @@ export function useCreateClassroomMutation(baseOptions?: ApolloReactHooks.Mutati
 export type CreateClassroomMutationHookResult = ReturnType<typeof useCreateClassroomMutation>;
 export type CreateClassroomMutationResult = ApolloReactCommon.MutationResult<CreateClassroomMutation>;
 export type CreateClassroomMutationOptions = ApolloReactCommon.BaseMutationOptions<CreateClassroomMutation, CreateClassroomMutationVariables>;
+export const ShuffleDesksDocument = gql`
+    mutation ShuffleDesks($id: ID!) {
+  shuffleDesks(classId: $id) {
+    students
+  }
+}
+    `;
+export type ShuffleDesksMutationFn = ApolloReactCommon.MutationFunction<ShuffleDesksMutation, ShuffleDesksMutationVariables>;
+export type ShuffleDesksComponentProps = Omit<ApolloReactComponents.MutationComponentOptions<ShuffleDesksMutation, ShuffleDesksMutationVariables>, 'mutation'>;
+
+    export const ShuffleDesksComponent = (props: ShuffleDesksComponentProps) => (
+      <ApolloReactComponents.Mutation<ShuffleDesksMutation, ShuffleDesksMutationVariables> mutation={ShuffleDesksDocument} {...props} />
+    );
+    
+
+/**
+ * __useShuffleDesksMutation__
+ *
+ * To run a mutation, you first call `useShuffleDesksMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useShuffleDesksMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [shuffleDesksMutation, { data, loading, error }] = useShuffleDesksMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useShuffleDesksMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<ShuffleDesksMutation, ShuffleDesksMutationVariables>) {
+        return ApolloReactHooks.useMutation<ShuffleDesksMutation, ShuffleDesksMutationVariables>(ShuffleDesksDocument, baseOptions);
+      }
+export type ShuffleDesksMutationHookResult = ReturnType<typeof useShuffleDesksMutation>;
+export type ShuffleDesksMutationResult = ApolloReactCommon.MutationResult<ShuffleDesksMutation>;
+export type ShuffleDesksMutationOptions = ApolloReactCommon.BaseMutationOptions<ShuffleDesksMutation, ShuffleDesksMutationVariables>;
