@@ -2,16 +2,19 @@ import * as React from "react";
 import { DeskInput, useEditClassroomMutation } from '../../../generated/graphql';
 import { HashLoader } from 'react-spinners';
 import { ClassRoomMap } from '../../../components/ClassRoomMap';
+import { RouteComponentProps, withRouter } from "react-router-dom"
 
-interface EditViewProps {
+interface EditViewProps extends RouteComponentProps<any> {
     classId: string;
     students: string[];
     desks: DeskInput[];
     canvasWidth?: number;
     canvasHeight?: number;
+    /** Funzione chiamata quando vengono salvate le modifiche */
+    onSave: (desks: DeskInput[]) => void;
 }
 
-export const EditView: React.FC<EditViewProps> = props => {
+const EditView: React.FC<EditViewProps> = props => {
     const [desks, setDesks] = React.useState(props.desks);
     // GRAPHQL
     const [editClass] = useEditClassroomMutation()
@@ -25,9 +28,11 @@ export const EditView: React.FC<EditViewProps> = props => {
      * Salva le modifiche
      */
     const saveEdits = async () => {
-        console.log("sciao");
-        const { data, errors } = await editClass({ variables: { id: props.classId, desks } });
-        console.log(data, errors);
+        const { data } = await editClass({ variables: { id: props.classId, desks } });
+        if (!data) return;
+        props.onSave(data.editClassroom.desks);
+        // ritona alla schermata principale
+        props.history.push(`/${props.classId}`);
     }
 
     /**
@@ -81,5 +86,6 @@ export const EditView: React.FC<EditViewProps> = props => {
             {props.canvasWidth && props.canvasHeight ? content : <HashLoader color="#dadfe1" />}
         </div>
     );
-
 }
+
+export default withRouter(EditView);

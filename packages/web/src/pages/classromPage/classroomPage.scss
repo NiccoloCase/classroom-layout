@@ -100,9 +100,8 @@
                             .thumbnail {
                               background: nth($colors, $i);
                                 color: darken(nth($colors, $i), 30%);
-
                                 //background: $shuttle-grey;
-                                   //color: nth($colors, $i);
+                                //color: nth($colors, $i);
                             }
                         }
                     }
@@ -121,13 +120,20 @@
             }
         }
     }
-
     .content {
         flex:1;
         display: flex;
         justify-content: center;
         align-items: center;
         margin-top: 2rem;
+
+        .title {
+            font-family: "Rawson";
+            font-size: 27px;
+            font-weight: 500;
+            color:#4A4A4A;
+            margin-bottom: 1rem;
+        }
     }
 
     &__MapView {
@@ -148,10 +154,8 @@
             font-weight: bold;
             flex:1;
             cursor: default;
-            
         }
     }
-
     &__MapView, &__EditView {
         .functions {
             display: flex;
@@ -186,5 +190,10 @@
             }
         }
     }
-
+    &__SettingsView {
+        border-radius: 10px;
+        padding: 1rem;
+        background: #fff;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, .1), 0 10px 10px -5px rgba(0, 0, 0, .04);
+    }
 }

@@ -6,10 +6,10 @@ import { faEdit, faHistory, faCog, faMap } from '@fortawesome/free-solid-svg-ico
 import "./classroomPage.scss";
 import { Route, NavLink, RouteComponentProps } from "react-router-dom";
 import { MapView } from './views/MapView';
-import { EditView } from './views/EditView';
+import EditView from './views/EditView';
 import { HistoryView } from './views/HistoryView';
 import { SettingsView } from './views/SettingsView';
-import { useGetClassroomByIdQuery, Classroom } from "../../generated/graphql"
+import { useGetClassroomByIdQuery, Classroom, Desk } from "../../generated/graphql"
 import { HashLoader } from 'react-spinners';
 import { NotFoundView } from '../../components/NotFound';
 
@@ -77,12 +77,21 @@ export const ClassroomPage: React.FC<RouteComponentProps<IParams>> = props => {
     }
 
     const onDesksAreShuffled = (shuffledStudents: string[]) => {
-        if (classroom) {
-            const newClassroom = { ...classroom }
-            newClassroom.students = shuffledStudents;
-            setClassroom(newClassroom);
-        }
+        if (!classroom) return;
+        const newClassroom = { ...classroom }
+        newClassroom.students = shuffledStudents;
+        setClassroom(newClassroom);
+
     }
+
+    const onDesksAreUpdated = (newDesks: Desk[]) => {
+        if (!classroom) return;
+        const newClassroom = { ...classroom };
+        newClassroom.desks = newDesks;
+        setClassroom(newClassroom);
+    }
+
+
     /**
      * Disegna il riquadro degli studenti
      */
@@ -155,7 +164,9 @@ export const ClassroomPage: React.FC<RouteComponentProps<IParams>> = props => {
                         classId={id}
                         desks={desks} students={students}
                         canvasWidth={canvasDimensions.width}
-                        canvasHeight={canvasDimensions.height} />}
+                        canvasHeight={canvasDimensions.height}
+                        onSave={onDesksAreUpdated}
+                    />}
                 />
                 <Route path="/:class_id/history" exact component={HistoryView} />
                 <Route path="/:class_id/settings" exact component={SettingsView} />
