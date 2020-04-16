@@ -1,6 +1,7 @@
 import { IConfiguration } from "./config.type";
 
 export const developmentKeys: IConfiguration = {
+    APP_NAME: "Classroom layout",
     isProduction: false,
     server: {
         PORT: 5000,

@@ -4,6 +4,7 @@ import { ClassRoomMap } from '../../../components/ClassRoomMap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faRandom, faDownload } from '@fortawesome/free-solid-svg-icons';
 import { DeskInput, useShuffleDesksMutation } from '../../../generated/graphql';
+import { TitleComponent } from '../../../components/TitleComponent';
 
 interface MapViewProps {
     classId: string;
@@ -63,6 +64,7 @@ export const MapView: React.FC<MapViewProps> = props => {
 
     return (
         <div className="ClassroomPage__MapView">
+            <TitleComponent title="Gestisci la tua classe" />
             {props.canvasWidth && props.canvasHeight ? content : <HashLoader color="#dadfe1" />}
         </div>
     );

@@ -1,0 +1,853 @@
+'use strict';
+
+exports.__esModule = true;
+
+var _declaration = require('./declaration');
+
+var _declaration2 = _interopRequireDefault(_declaration);
+
+var _processor = require('./processor');
+
+var _processor2 = _interopRequireDefault(_processor);
+
+var _stringify = require('./stringify');
+
+var _stringify2 = _interopRequireDefault(_stringify);
+
+var _comment = require('./comment');
+
+var _comment2 = _interopRequireDefault(_comment);
+
+var _atRule = require('./at-rule');
+
+var _atRule2 = _interopRequireDefault(_atRule);
+
+var _vendor = require('./vendor');
+
+var _vendor2 = _interopRequireDefault(_vendor);
+
+var _parse = require('./parse');
+
+var _parse2 = _interopRequireDefault(_parse);
+
+var _list = require('./list');
+
+var _list2 = _interopRequireDefault(_list);
+
+var _rule = require('./rule');
+
+var _rule2 = _interopRequireDefault(_rule);
+
+var _root = require('./root');
+
+var _root2 = _interopRequireDefault(_root);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+/**
+ * Create a new {@link Processor} instance that will apply `plugins`
+ * as CSS processors.
+ *
+ * @param {Array.<Plugin|pluginFunction>|Processor} plugins - PostCSS
+ *        plugins. See {@link Processor#use} for plugin format.
+ *
+ * @return {Processor} Processor to process multiple CSS
+ *
+ * @example
+ * import postcss from 'postcss';
+ *
+ * postcss(plugins).process(css, { from, to }).then(result => {
+ *   console.log(result.css);
+ * });
+ *
+ * @namespace postcss
+ */
+function postcss() {
+  for (var _len = arguments.length, plugins = Array(_len), _key = 0; _key < _len; _key++) {
+    plugins[_key] = arguments[_key];
+  }
+
+  if (plugins.length === 1 && Array.isArray(plugins[0])) {
+    plugins = plugins[0];
+  }
+  return new _processor2.default(plugins);
+}
+
+/**
+ * Creates a PostCSS plugin with a standard API.
+ *
+ * The newly-wrapped function will provide both the name and PostCSS
+ * version of the plugin.
+ *
+ * ```js
+ *  const processor = postcss([replace]);
+ *  processor.plugins[0].postcssPlugin  //=> 'postcss-replace'
+ *  processor.plugins[0].postcssVersion //=> '5.1.0'
+ * ```
+ *
+ * The plugin function receives 2 arguments: {@link Root}
+ * and {@link Result} instance. The function should mutate the provided
+ * `Root` node. Alternatively, you can create a new `Root` node
+ * and override the `result.root` property.
+ *
+ * ```js
+ * const cleaner = postcss.plugin('postcss-cleaner', () => {
+ *   return (root, result) => {
+ *     result.root = postcss.root();
+ *   };
+ * });
+ * ```
+ *
+ * As a convenience, plugins also expose a `process` method so that you can use
+ * them as standalone tools.
+ *
+ * ```js
+ * cleaner.process(css, processOpts, pluginOpts);
+ * // This is equivalent to:
+ * postcss([ cleaner(pluginOpts) ]).process(css, processOpts);
+ * ```
+ *
+ * Asynchronous plugins should return a `Promise` instance.
+ *
+ * ```js
+ * postcss.plugin('postcss-import', () => {
+ *   return (root, result) => {
+ *     return new Promise( (resolve, reject) => {
+ *       fs.readFile('base.css', (base) => {
+ *         root.prepend(base);
+ *         resolve();
+ *       });
+ *     });
+ *   };
+ * });
+ * ```
+ *
+ * Add warnings using the {@link Node#warn} method.
+ * Send data to other plugins using the {@link Result#messages} array.
+ *
+ * ```js
+ * postcss.plugin('postcss-caniuse-test', () => {
+ *   return (root, result) => {
+ *     root.walkDecls(decl => {
+ *       if ( !caniuse.support(decl.prop) ) {
+ *         decl.warn(result, 'Some browsers do not support ' + decl.prop);
+ *       }
+ *     });
+ *   };
+ * });
+ * ```
+ *
+ * @param {string} name          - PostCSS plugin name. Same as in `name`
+ *                                 property in `package.json`. It will be saved
+ *                                 in `plugin.postcssPlugin` property.
+ * @param {function} initializer - will receive plugin options
+ *                                 and should return {@link pluginFunction}
+ *
+ * @return {Plugin} PostCSS plugin
+ */
+postcss.plugin = function plugin(name, initializer) {
+  var creator = function creator() {
+    var transformer = initializer.apply(undefined, arguments);
+    transformer.postcssPlugin = name;
+    transformer.postcssVersion = new _processor2.default().version;
+    return transformer;
+  };
+
+  var cache = void 0;
+  Object.defineProperty(creator, 'postcss', {
+    get: function get() {
+      if (!cache) cache = creator();
+      return cache;
+    }
+  });
+
+  creator.process = function (css, processOpts, pluginOpts) {
+    return postcss([creator(pluginOpts)]).process(css, processOpts);
+  };
+
+  return creator;
+};
+
+/**
+ * Default function to convert a node tree into a CSS string.
+ *
+ * @param {Node} node       - start node for stringifing. Usually {@link Root}.
+ * @param {builder} builder - function to concatenate CSS from node’s parts
+ *                            or generate string and source map
+ *
+ * @return {void}
+ *
+ * @function
+ */
+postcss.stringify = _stringify2.default;
+
+/**
+ * Parses source css and returns a new {@link Root} node,
+ * which contains the source CSS nodes.
+ *
+ * @param {string|toString} css   - string with input CSS or any object
+ *                                  with toString() method, like a Buffer
+ * @param {processOptions} [opts] - options with only `from` and `map` keys
+ *
+ * @return {Root} PostCSS AST
+ *
+ * @example
+ * // Simple CSS concatenation with source map support
+ * const root1 = postcss.parse(css1, { from: file1 });
+ * const root2 = postcss.parse(css2, { from: file2 });
+ * root1.append(root2).toResult().css;
+ *
+ * @function
+ */
+postcss.parse = _parse2.default;
+
+/**
+ * @member {vendor} - Contains the {@link vendor} module.
+ *
+ * @example
+ * postcss.vendor.unprefixed('-moz-tab') //=> ['tab']
+ */
+postcss.vendor = _vendor2.default;
+
+/**
+ * @member {list} - Contains the {@link list} module.
+ *
+ * @example
+ * postcss.list.space('5px calc(10% + 5px)') //=> ['5px', 'calc(10% + 5px)']
+ */
+postcss.list = _list2.default;
+
+/**
+ * Creates a new {@link Comment} node.
+ *
+ * @param {object} [defaults] - properties for the new node.
+ *
+ * @return {Comment} new Comment node
+ *
+ * @example
+ * postcss.comment({ text: 'test' })
+ */
+postcss.comment = function (defaults) {
+  return new _comment2.default(defaults);
+};
+
+/**
+ * Creates a new {@link AtRule} node.
+ *
+ * @param {object} [defaults] - properties for the new node.
+ *
+ * @return {AtRule} new AtRule node
+ *
+ * @example
+ * postcss.atRule({ name: 'charset' }).toString() //=> "@charset"
+ */
+postcss.atRule = function (defaults) {
+  return new _atRule2.default(defaults);
+};
+
+/**
+ * Creates a new {@link Declaration} node.
+ *
+ * @param {object} [defaults] - properties for the new node.
+ *
+ * @return {Declaration} new Declaration node
+ *
+ * @example
+ * postcss.decl({ prop: 'color', value: 'red' }).toString() //=> "color: red"
+ */
+postcss.decl = function (defaults) {
+  return new _declaration2.default(defaults);
+};
+
+/**
+ * Creates a new {@link Rule} node.
+ *
+ * @param {object} [defaults] - properties for the new node.
+ *
+ * @return {Rule} new Rule node
+ *
+ * @example
+ * postcss.rule({ selector: 'a' }).toString() //=> "a {\n}"
+ */
+postcss.rule = function (defaults) {
+  return new _rule2.default(defaults);
+};
+
+/**
+ * Creates a new {@link Root} node.
+ *
+ * @param {object} [defaults] - properties for the new node.
+ *
+ * @return {Root} new Root node
+ *
+ * @example
+ * postcss.root({ after: '\n' }).toString() //=> "\n"
+ */
+postcss.root = function (defaults) {
+  return new _root2.default(defaults);
+};
+
+exports.default = postcss;
+module.exports = exports['default'];
+//# sourceMappingURL=data:application/json;charset=utf8;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbInBvc3Rjc3MuZXM2Il0sIm5hbWVzIjpbInBvc3Rjc3MiLCJwbHVnaW5zIiwibGVuZ3RoIiwiQXJyYXkiLCJpc0FycmF5IiwiUHJvY2Vzc29yIiwicGx1Z2luIiwibmFtZSIsImluaXRpYWxpemVyIiwiY3JlYXRvciIsInRyYW5zZm9ybWVyIiwicG9zdGNzc1BsdWdpbiIsInBvc3Rjc3NWZXJzaW9uIiwidmVyc2lvbiIsImNhY2hlIiwiT2JqZWN0IiwiZGVmaW5lUHJvcGVydHkiLCJnZXQiLCJwcm9jZXNzIiwiY3NzIiwicHJvY2Vzc09wdHMiLCJwbHVnaW5PcHRzIiwic3RyaW5naWZ5IiwicGFyc2UiLCJ2ZW5kb3IiLCJsaXN0IiwiY29tbWVudCIsIkNvbW1lbnQiLCJkZWZhdWx0cyIsImF0UnVsZSIsIkF0UnVsZSIsImRlY2wiLCJEZWNsYXJhdGlvbiIsInJ1bGUiLCJSdWxlIiwicm9vdCIsIlJvb3QiXSwibWFwcGluZ3MiOiI7Ozs7QUFBQTs7OztBQUNBOzs7O0FBQ0E7Ozs7QUFDQTs7OztBQUNBOzs7O0FBQ0E7Ozs7QUFDQTs7OztBQUNBOzs7O0FBQ0E7Ozs7QUFDQTs7Ozs7O0FBRUE7Ozs7Ozs7Ozs7Ozs7Ozs7OztBQWtCQSxTQUFTQSxPQUFULEdBQTZCO0FBQUEsb0NBQVRDLE9BQVM7QUFBVEEsV0FBUztBQUFBOztBQUN6QixNQUFLQSxRQUFRQyxNQUFSLEtBQW1CLENBQW5CLElBQXdCQyxNQUFNQyxPQUFOLENBQWNILFFBQVEsQ0FBUixDQUFkLENBQTdCLEVBQXlEO0FBQ3JEQSxjQUFVQSxRQUFRLENBQVIsQ0FBVjtBQUNIO0FBQ0QsU0FBTyxJQUFJSSxtQkFBSixDQUFjSixPQUFkLENBQVA7QUFDSDs7QUFFRDs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7O0FBd0VBRCxRQUFRTSxNQUFSLEdBQWlCLFNBQVNBLE1BQVQsQ0FBZ0JDLElBQWhCLEVBQXNCQyxXQUF0QixFQUFtQztBQUNoRCxNQUFJQyxVQUFVLFNBQVZBLE9BQVUsR0FBbUI7QUFDN0IsUUFBSUMsY0FBY0YsdUNBQWxCO0FBQ0FFLGdCQUFZQyxhQUFaLEdBQTZCSixJQUE3QjtBQUNBRyxnQkFBWUUsY0FBWixHQUE4QixJQUFJUCxtQkFBSixFQUFELENBQWtCUSxPQUEvQztBQUNBLFdBQU9ILFdBQVA7QUFDSCxHQUxEOztBQU9BLE1BQUlJLGNBQUo7QUFDQUMsU0FBT0MsY0FBUCxDQUFzQlAsT0FBdEIsRUFBK0IsU0FBL0IsRUFBMEM7QUFDdENRLE9BRHNDLGlCQUNoQztBQUNGLFVBQUssQ0FBQ0gsS0FBTixFQUFjQSxRQUFRTCxTQUFSO0FBQ2QsYUFBT0ssS0FBUDtBQUNIO0FBSnFDLEdBQTFDOztBQU9BTCxVQUFRUyxPQUFSLEdBQWtCLFVBQVVDLEdBQVYsRUFBZUMsV0FBZixFQUE0QkMsVUFBNUIsRUFBd0M7QUFDdEQsV0FBT3JCLFFBQVEsQ0FBRVMsUUFBUVksVUFBUixDQUFGLENBQVIsRUFBaUNILE9BQWpDLENBQXlDQyxHQUF6QyxFQUE4Q0MsV0FBOUMsQ0FBUDtBQUNILEdBRkQ7O0FBSUEsU0FBT1gsT0FBUDtBQUNILENBckJEOztBQXVCQTs7Ozs7Ozs7Ozs7QUFXQVQsUUFBUXNCLFNBQVIsR0FBb0JBLG1CQUFwQjs7QUFFQTs7Ozs7Ozs7Ozs7Ozs7Ozs7O0FBa0JBdEIsUUFBUXVCLEtBQVIsR0FBZ0JBLGVBQWhCOztBQUVBOzs7Ozs7QUFNQXZCLFFBQVF3QixNQUFSLEdBQWlCQSxnQkFBakI7O0FBRUE7Ozs7OztBQU1BeEIsUUFBUXlCLElBQVIsR0FBZUEsY0FBZjs7QUFFQTs7Ozs7Ozs7OztBQVVBekIsUUFBUTBCLE9BQVIsR0FBa0I7QUFBQSxTQUFZLElBQUlDLGlCQUFKLENBQVlDLFFBQVosQ0FBWjtBQUFBLENBQWxCOztBQUVBOzs7Ozs7Ozs7O0FBVUE1QixRQUFRNkIsTUFBUixHQUFpQjtBQUFBLFNBQVksSUFBSUMsZ0JBQUosQ0FBV0YsUUFBWCxDQUFaO0FBQUEsQ0FBakI7O0FBRUE7Ozs7Ozs7Ozs7QUFVQTVCLFFBQVErQixJQUFSLEdBQWU7QUFBQSxTQUFZLElBQUlDLHFCQUFKLENBQWdCSixRQUFoQixDQUFaO0FBQUEsQ0FBZjs7QUFFQTs7Ozs7Ozs7OztBQVVBNUIsUUFBUWlDLElBQVIsR0FBZTtBQUFBLFNBQVksSUFBSUMsY0FBSixDQUFTTixRQUFULENBQVo7QUFBQSxDQUFmOztBQUVBOzs7Ozs7Ozs7O0FBVUE1QixRQUFRbUMsSUFBUixHQUFlO0FBQUEsU0FBWSxJQUFJQyxjQUFKLENBQVNSLFFBQVQsQ0FBWjtBQUFBLENBQWY7O2tCQUVlNUIsTyIsImZpbGUiOiJwb3N0Y3NzLmpzIiwic291cmNlc0NvbnRlbnQiOlsiaW1wb3J0IERlY2xhcmF0aW9uIGZyb20gJy4vZGVjbGFyYXRpb24nO1xuaW1wb3J0IFByb2Nlc3NvciAgIGZyb20gJy4vcHJvY2Vzc29yJztcbmltcG9ydCBzdHJpbmdpZnkgICBmcm9tICcuL3N0cmluZ2lmeSc7XG5pbXBvcnQgQ29tbWVudCAgICAgZnJvbSAnLi9jb21tZW50JztcbmltcG9ydCBBdFJ1bGUgICAgICBmcm9tICcuL2F0LXJ1bGUnO1xuaW1wb3J0IHZlbmRvciAgICAgIGZyb20gJy4vdmVuZG9yJztcbmltcG9ydCBwYXJzZSAgICAgICBmcm9tICcuL3BhcnNlJztcbmltcG9ydCBsaXN0ICAgICAgICBmcm9tICcuL2xpc3QnO1xuaW1wb3J0IFJ1bGUgICAgICAgIGZyb20gJy4vcnVsZSc7XG5pbXBvcnQgUm9vdCAgICAgICAgZnJvbSAnLi9yb290JztcblxuLyoqXG4gKiBDcmVhdGUgYSBuZXcge0BsaW5rIFByb2Nlc3Nvcn0gaW5zdGFuY2UgdGhhdCB3aWxsIGFwcGx5IGBwbHVnaW5zYFxuICogYXMgQ1NTIHByb2Nlc3NvcnMuXG4gKlxuICogQHBhcmFtIHtBcnJheS48UGx1Z2lufHBsdWdpbkZ1bmN0aW9uPnxQcm9jZXNzb3J9IHBsdWdpbnMgLSBQb3N0Q1NTXG4gKiAgICAgICAgcGx1Z2lucy4gU2VlIHtAbGluayBQcm9jZXNzb3IjdXNlfSBmb3IgcGx1Z2luIGZvcm1hdC5cbiAqXG4gKiBAcmV0dXJuIHtQcm9jZXNzb3J9IFByb2Nlc3NvciB0byBwcm9jZXNzIG11bHRpcGxlIENTU1xuICpcbiAqIEBleGFtcGxlXG4gKiBpbXBvcnQgcG9zdGNzcyBmcm9tICdwb3N0Y3NzJztcbiAqXG4gKiBwb3N0Y3NzKHBsdWdpbnMpLnByb2Nlc3MoY3NzLCB7IGZyb20sIHRvIH0pLnRoZW4ocmVzdWx0ID0+IHtcbiAqICAgY29uc29sZS5sb2cocmVzdWx0LmNzcyk7XG4gKiB9KTtcbiAqXG4gKiBAbmFtZXNwYWNlIHBvc3Rjc3NcbiAqL1xuZnVuY3Rpb24gcG9zdGNzcyguLi5wbHVnaW5zKSB7XG4gICAgaWYgKCBwbHVnaW5zLmxlbmd0aCA9PT0gMSAmJiBBcnJheS5pc0FycmF5KHBsdWdpbnNbMF0pICkge1xuICAgICAgICBwbHVnaW5zID0gcGx1Z2luc1swXTtcbiAgICB9XG4gICAgcmV0dXJuIG5ldyBQcm9jZXNzb3IocGx1Z2lucyk7XG59XG5cbi8qKlxuICogQ3JlYXRlcyBhIFBvc3RDU1MgcGx1Z2luIHdpdGggYSBzdGFuZGFyZCBBUEkuXG4gKlxuICogVGhlIG5ld2x5LXdyYXBwZWQgZnVuY3Rpb24gd2lsbCBwcm92aWRlIGJvdGggdGhlIG5hbWUgYW5kIFBvc3RDU1NcbiAqIHZlcnNpb24gb2YgdGhlIHBsdWdpbi5cbiAqXG4gKiBgYGBqc1xuICogIGNvbnN0IHByb2Nlc3NvciA9IHBvc3Rjc3MoW3JlcGxhY2VdKTtcbiAqICBwcm9jZXNzb3IucGx1Z2luc1swXS5wb3N0Y3NzUGx1Z2luICAvLz0+ICdwb3N0Y3NzLXJlcGxhY2UnXG4gKiAgcHJvY2Vzc29yLnBsdWdpbnNbMF0ucG9zdGNzc1ZlcnNpb24gLy89PiAnNS4xLjAnXG4gKiBgYGBcbiAqXG4gKiBUaGUgcGx1Z2luIGZ1bmN0aW9uIHJlY2VpdmVzIDIgYXJndW1lbnRzOiB7QGxpbmsgUm9vdH1cbiAqIGFuZCB7QGxpbmsgUmVzdWx0fSBpbnN0YW5jZS4gVGhlIGZ1bmN0aW9uIHNob3VsZCBtdXRhdGUgdGhlIHByb3ZpZGVkXG4gKiBgUm9vdGAgbm9kZS4gQWx0ZXJuYXRpdmVseSwgeW91IGNhbiBjcmVhdGUgYSBuZXcgYFJvb3RgIG5vZGVcbiAqIGFuZCBvdmVycmlkZSB0aGUgYHJlc3VsdC5yb290YCBwcm9wZXJ0eS5cbiAqXG4gKiBgYGBqc1xuICogY29uc3QgY2xlYW5lciA9IHBvc3Rjc3MucGx1Z2luKCdwb3N0Y3NzLWNsZWFuZXInLCAoKSA9PiB7XG4gKiAgIHJldHVybiAocm9vdCwgcmVzdWx0KSA9PiB7XG4gKiAgICAgcmVzdWx0LnJvb3QgPSBwb3N0Y3NzLnJvb3QoKTtcbiAqICAgfTtcbiAqIH0pO1xuICogYGBgXG4gKlxuICogQXMgYSBjb252ZW5pZW5jZSwgcGx1Z2lucyBhbHNvIGV4cG9zZSBhIGBwcm9jZXNzYCBtZXRob2Qgc28gdGhhdCB5b3UgY2FuIHVzZVxuICogdGhlbSBhcyBzdGFuZGFsb25lIHRvb2xzLlxuICpcbiAqIGBgYGpzXG4gKiBjbGVhbmVyLnByb2Nlc3MoY3NzLCBwcm9jZXNzT3B0cywgcGx1Z2luT3B0cyk7XG4gKiAvLyBUaGlzIGlzIGVxdWl2YWxlbnQgdG86XG4gKiBwb3N0Y3NzKFsgY2xlYW5lcihwbHVnaW5PcHRzKSBdKS5wcm9jZXNzKGNzcywgcHJvY2Vzc09wdHMpO1xuICogYGBgXG4gKlxuICogQXN5bmNocm9ub3VzIHBsdWdpbnMgc2hvdWxkIHJldHVybiBhIGBQcm9taXNlYCBpbnN0YW5jZS5cbiAqXG4gKiBgYGBqc1xuICogcG9zdGNzcy5wbHVnaW4oJ3Bvc3Rjc3MtaW1wb3J0JywgKCkgPT4ge1xuICogICByZXR1cm4gKHJvb3QsIHJlc3VsdCkgPT4ge1xuICogICAgIHJldHVybiBuZXcgUHJvbWlzZSggKHJlc29sdmUsIHJlamVjdCkgPT4ge1xuICogICAgICAgZnMucmVhZEZpbGUoJ2Jhc2UuY3NzJywgKGJhc2UpID0+IHtcbiAqICAgICAgICAgcm9vdC5wcmVwZW5kKGJhc2UpO1xuICogICAgICAgICByZXNvbHZlKCk7XG4gKiAgICAgICB9KTtcbiAqICAgICB9KTtcbiAqICAgfTtcbiAqIH0pO1xuICogYGBgXG4gKlxuICogQWRkIHdhcm5pbmdzIHVzaW5nIHRoZSB7QGxpbmsgTm9kZSN3YXJufSBtZXRob2QuXG4gKiBTZW5kIGRhdGEgdG8gb3RoZXIgcGx1Z2lucyB1c2luZyB0aGUge0BsaW5rIFJlc3VsdCNtZXNzYWdlc30gYXJyYXkuXG4gKlxuICogYGBganNcbiAqIHBvc3Rjc3MucGx1Z2luKCdwb3N0Y3NzLWNhbml1c2UtdGVzdCcsICgpID0+IHtcbiAqICAgcmV0dXJuIChyb290LCByZXN1bHQpID0+IHtcbiAqICAgICByb290LndhbGtEZWNscyhkZWNsID0+IHtcbiAqICAgICAgIGlmICggIWNhbml1c2Uuc3VwcG9ydChkZWNsLnByb3ApICkge1xuICogICAgICAgICBkZWNsLndhcm4ocmVzdWx0LCAnU29tZSBicm93c2VycyBkbyBub3Qgc3VwcG9ydCAnICsgZGVjbC5wcm9wKTtcbiAqICAgICAgIH1cbiAqICAgICB9KTtcbiAqICAgfTtcbiAqIH0pO1xuICogYGBgXG4gKlxuICogQHBhcmFtIHtzdHJpbmd9IG5hbWUgICAgICAgICAgLSBQb3N0Q1NTIHBsdWdpbiBuYW1lLiBTYW1lIGFzIGluIGBuYW1lYFxuICogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBwcm9wZXJ0eSBpbiBgcGFja2FnZS5qc29uYC4gSXQgd2lsbCBiZSBzYXZlZFxuICogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBpbiBgcGx1Z2luLnBvc3Rjc3NQbHVnaW5gIHByb3BlcnR5LlxuICogQHBhcmFtIHtmdW5jdGlvbn0gaW5pdGlhbGl6ZXIgLSB3aWxsIHJlY2VpdmUgcGx1Z2luIG9wdGlvbnNcbiAqICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgYW5kIHNob3VsZCByZXR1cm4ge0BsaW5rIHBsdWdpbkZ1bmN0aW9ufVxuICpcbiAqIEByZXR1cm4ge1BsdWdpbn0gUG9zdENTUyBwbHVnaW5cbiAqL1xucG9zdGNzcy5wbHVnaW4gPSBmdW5jdGlvbiBwbHVnaW4obmFtZSwgaW5pdGlhbGl6ZXIpIHtcbiAgICBsZXQgY3JlYXRvciA9IGZ1bmN0aW9uICguLi5hcmdzKSB7XG4gICAgICAgIGxldCB0cmFuc2Zvcm1lciA9IGluaXRpYWxpemVyKC4uLmFyZ3MpO1xuICAgICAgICB0cmFuc2Zvcm1lci5wb3N0Y3NzUGx1Z2luICA9IG5hbWU7XG4gICAgICAgIHRyYW5zZm9ybWVyLnBvc3Rjc3NWZXJzaW9uID0gKG5ldyBQcm9jZXNzb3IoKSkudmVyc2lvbjtcbiAgICAgICAgcmV0dXJuIHRyYW5zZm9ybWVyO1xuICAgIH07XG5cbiAgICBsZXQgY2FjaGU7XG4gICAgT2JqZWN0LmRlZmluZVByb3BlcnR5KGNyZWF0b3IsICdwb3N0Y3NzJywge1xuICAgICAgICBnZXQoKSB7XG4gICAgICAgICAgICBpZiAoICFjYWNoZSApIGNhY2hlID0gY3JlYXRvcigpO1xuICAgICAgICAgICAgcmV0dXJuIGNhY2hlO1xuICAgICAgICB9XG4gICAgfSk7XG5cbiAgICBjcmVhdG9yLnByb2Nlc3MgPSBmdW5jdGlvbiAoY3NzLCBwcm9jZXNzT3B0cywgcGx1Z2luT3B0cykge1xuICAgICAgICByZXR1cm4gcG9zdGNzcyhbIGNyZWF0b3IocGx1Z2luT3B0cykgXSkucHJvY2Vzcyhjc3MsIHByb2Nlc3NPcHRzKTtcbiAgICB9O1xuXG4gICAgcmV0dXJuIGNyZWF0b3I7XG59O1xuXG4vKipcbiAqIERlZmF1bHQgZnVuY3Rpb24gdG8gY29udmVydCBhIG5vZGUgdHJlZSBpbnRvIGEgQ1NTIHN0cmluZy5cbiAqXG4gKiBAcGFyYW0ge05vZGV9IG5vZGUgICAgICAgLSBzdGFydCBub2RlIGZvciBzdHJpbmdpZmluZy4gVXN1YWxseSB7QGxpbmsgUm9vdH0uXG4gKiBAcGFyYW0ge2J1aWxkZXJ9IGJ1aWxkZXIgLSBmdW5jdGlvbiB0byBjb25jYXRlbmF0ZSBDU1MgZnJvbSBub2Rl4oCZcyBwYXJ0c1xuICogICAgICAgICAgICAgICAgICAgICAgICAgICAgb3IgZ2VuZXJhdGUgc3RyaW5nIGFuZCBzb3VyY2UgbWFwXG4gKlxuICogQHJldHVybiB7dm9pZH1cbiAqXG4gKiBAZnVuY3Rpb25cbiAqL1xucG9zdGNzcy5zdHJpbmdpZnkgPSBzdHJpbmdpZnk7XG5cbi8qKlxuICogUGFyc2VzIHNvdXJjZSBjc3MgYW5kIHJldHVybnMgYSBuZXcge0BsaW5rIFJvb3R9IG5vZGUsXG4gKiB3aGljaCBjb250YWlucyB0aGUgc291cmNlIENTUyBub2Rlcy5cbiAqXG4gKiBAcGFyYW0ge3N0cmluZ3x0b1N0cmluZ30gY3NzICAgLSBzdHJpbmcgd2l0aCBpbnB1dCBDU1Mgb3IgYW55IG9iamVjdFxuICogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgd2l0aCB0b1N0cmluZygpIG1ldGhvZCwgbGlrZSBhIEJ1ZmZlclxuICogQHBhcmFtIHtwcm9jZXNzT3B0aW9uc30gW29wdHNdIC0gb3B0aW9ucyB3aXRoIG9ubHkgYGZyb21gIGFuZCBgbWFwYCBrZXlzXG4gKlxuICogQHJldHVybiB7Um9vdH0gUG9zdENTUyBBU1RcbiAqXG4gKiBAZXhhbXBsZVxuICogLy8gU2ltcGxlIENTUyBjb25jYXRlbmF0aW9uIHdpdGggc291cmNlIG1hcCBzdXBwb3J0XG4gKiBjb25zdCByb290MSA9IHBvc3Rjc3MucGFyc2UoY3NzMSwgeyBmcm9tOiBmaWxlMSB9KTtcbiAqIGNvbnN0IHJvb3QyID0gcG9zdGNzcy5wYXJzZShjc3MyLCB7IGZyb206IGZpbGUyIH0pO1xuICogcm9vdDEuYXBwZW5kKHJvb3QyKS50b1Jlc3VsdCgpLmNzcztcbiAqXG4gKiBAZnVuY3Rpb25cbiAqL1xucG9zdGNzcy5wYXJzZSA9IHBhcnNlO1xuXG4vKipcbiAqIEBtZW1iZXIge3ZlbmRvcn0gLSBDb250YWlucyB0aGUge0BsaW5rIHZlbmRvcn0gbW9kdWxlLlxuICpcbiAqIEBleGFtcGxlXG4gKiBwb3N0Y3NzLnZlbmRvci51bnByZWZpeGVkKCctbW96LXRhYicpIC8vPT4gWyd0YWInXVxuICovXG5wb3N0Y3NzLnZlbmRvciA9IHZlbmRvcjtcblxuLyoqXG4gKiBAbWVtYmVyIHtsaXN0fSAtIENvbnRhaW5zIHRoZSB7QGxpbmsgbGlzdH0gbW9kdWxlLlxuICpcbiAqIEBleGFtcGxlXG4gKiBwb3N0Y3NzLmxpc3Quc3BhY2UoJzVweCBjYWxjKDEwJSArIDVweCknKSAvLz0+IFsnNXB4JywgJ2NhbGMoMTAlICsgNXB4KSddXG4gKi9cbnBvc3Rjc3MubGlzdCA9IGxpc3Q7XG5cbi8qKlxuICogQ3JlYXRlcyBhIG5ldyB7QGxpbmsgQ29tbWVudH0gbm9kZS5cbiAqXG4gKiBAcGFyYW0ge29iamVjdH0gW2RlZmF1bHRzXSAtIHByb3BlcnRpZXMgZm9yIHRoZSBuZXcgbm9kZS5cbiAqXG4gKiBAcmV0dXJuIHtDb21tZW50fSBuZXcgQ29tbWVudCBub2RlXG4gKlxuICogQGV4YW1wbGVcbiAqIHBvc3Rjc3MuY29tbWVudCh7IHRleHQ6ICd0ZXN0JyB9KVxuICovXG5wb3N0Y3NzLmNvbW1lbnQgPSBkZWZhdWx0cyA9PiBuZXcgQ29tbWVudChkZWZhdWx0cyk7XG5cbi8qKlxuICogQ3JlYXRlcyBhIG5ldyB7QGxpbmsgQXRSdWxlfSBub2RlLlxuICpcbiAqIEBwYXJhbSB7b2JqZWN0fSBbZGVmYXVsdHNdIC0gcHJvcGVydGllcyBmb3IgdGhlIG5ldyBub2RlLlxuICpcbiAqIEByZXR1cm4ge0F0UnVsZX0gbmV3IEF0UnVsZSBub2RlXG4gKlxuICogQGV4YW1wbGVcbiAqIHBvc3Rjc3MuYXRSdWxlKHsgbmFtZTogJ2NoYXJzZXQnIH0pLnRvU3RyaW5nKCkgLy89PiBcIkBjaGFyc2V0XCJcbiAqL1xucG9zdGNzcy5hdFJ1bGUgPSBkZWZhdWx0cyA9PiBuZXcgQXRSdWxlKGRlZmF1bHRzKTtcblxuLyoqXG4gKiBDcmVhdGVzIGEgbmV3IHtAbGluayBEZWNsYXJhdGlvbn0gbm9kZS5cbiAqXG4gKiBAcGFyYW0ge29iamVjdH0gW2RlZmF1bHRzXSAtIHByb3BlcnRpZXMgZm9yIHRoZSBuZXcgbm9kZS5cbiAqXG4gKiBAcmV0dXJuIHtEZWNsYXJhdGlvbn0gbmV3IERlY2xhcmF0aW9uIG5vZGVcbiAqXG4gKiBAZXhhbXBsZVxuICogcG9zdGNzcy5kZWNsKHsgcHJvcDogJ2NvbG9yJywgdmFsdWU6ICdyZWQnIH0pLnRvU3RyaW5nKCkgLy89PiBcImNvbG9yOiByZWRcIlxuICovXG5wb3N0Y3NzLmRlY2wgPSBkZWZhdWx0cyA9PiBuZXcgRGVjbGFyYXRpb24oZGVmYXVsdHMpO1xuXG4vKipcbiAqIENyZWF0ZXMgYSBuZXcge0BsaW5rIFJ1bGV9IG5vZGUuXG4gKlxuICogQHBhcmFtIHtvYmplY3R9IFtkZWZhdWx0c10gLSBwcm9wZXJ0aWVzIGZvciB0aGUgbmV3IG5vZGUuXG4gKlxuICogQHJldHVybiB7UnVsZX0gbmV3IFJ1bGUgbm9kZVxuICpcbiAqIEBleGFtcGxlXG4gKiBwb3N0Y3NzLnJ1bGUoeyBzZWxlY3RvcjogJ2EnIH0pLnRvU3RyaW5nKCkgLy89PiBcImEge1xcbn1cIlxuICovXG5wb3N0Y3NzLnJ1bGUgPSBkZWZhdWx0cyA9PiBuZXcgUnVsZShkZWZhdWx0cyk7XG5cbi8qKlxuICogQ3JlYXRlcyBhIG5ldyB7QGxpbmsgUm9vdH0gbm9kZS5cbiAqXG4gKiBAcGFyYW0ge29iamVjdH0gW2RlZmF1bHRzXSAtIHByb3BlcnRpZXMgZm9yIHRoZSBuZXcgbm9kZS5cbiAqXG4gKiBAcmV0dXJuIHtSb290fSBuZXcgUm9vdCBub2RlXG4gKlxuICogQGV4YW1wbGVcbiAqIHBvc3Rjc3Mucm9vdCh7IGFmdGVyOiAnXFxuJyB9KS50b1N0cmluZygpIC8vPT4gXCJcXG5cIlxuICovXG5wb3N0Y3NzLnJvb3QgPSBkZWZhdWx0cyA9PiBuZXcgUm9vdChkZWZhdWx0cyk7XG5cbmV4cG9ydCBkZWZhdWx0IHBvc3Rjc3M7XG4iXX0=
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 'use strict';
+
+exports.__esModule = true;
+
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _cssSyntaxError = require('./css-syntax-error');
+
+var _cssSyntaxError2 = _interopRequireDefault(_cssSyntaxError);
+
+var _previousMap = require('./previous-map');
+
+var _previousMap2 = _interopRequireDefault(_previousMap);
+
+var _path = require('path');
+
+var _path2 = _interopRequireDefault(_path);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+var sequence = 0;
+
+/**
+ * Represents the source CSS.
+ *
+ * @example
+ * const root  = postcss.parse(css, { from: file });
+ * const input = root.source.input;
+ */
+
+var Input = function () {
+
+    /**
+     * @param {string} css    - input CSS source
+     * @param {object} [opts] - {@link Processor#process} options
+     */
+    function Input(css) {
+        var opts = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+
+        _classCallCheck(this, Input);
+
+        if (css === null || (typeof css === 'undefined' ? 'undefined' : _typeof(css)) === 'object' && !css.toString) {
+            throw new Error('PostCSS received ' + css + ' instead of CSS string');
+        }
+
+        /**
+         * @member {string} - input CSS source
+         *
+         * @example
+         * const input = postcss.parse('a{}', { from: file }).input;
+         * input.css //=> "a{}";
+         */
+        this.css = css.toString();
+
+        if (this.css[0] === '\uFEFF' || this.css[0] === '\uFFFE') {
+            this.css = this.css.slice(1);
+        }
+
+        if (opts.from) {
+            if (/^\w+:\/\//.test(opts.from)) {
+                /**
+                 * @member {string} - The absolute path to the CSS source file
+                 *                    defined with the `from` option.
+                 *
+                 * @example
+                 * const root = postcss.parse(css, { from: 'a.css' });
+                 * root.source.input.file //=> '/home/ai/a.css'
+                 */
+                this.file = opts.from;
+            } else {
+                this.file = _path2.default.resolve(opts.from);
+            }
+        }
+
+        var map = new _previousMap2.default(this.css, opts);
+        if (map.text) {
+            /**
+             * @member {PreviousMap} - The input source map passed from
+             *                         a compilation step before PostCSS
+             *                         (for example, from Sass compiler).
+             *
+             * @example
+             * root.source.input.map.consumer().sources //=> ['a.sass']
+             */
+            this.map = map;
+            var file = map.consumer().file;
+            if (!this.file && file) this.file = this.mapResolve(file);
+        }
+
+        if (!this.file) {
+            sequence += 1;
+            /**
+             * @member {string} - The unique ID of the CSS source. It will be
+             *                    created if `from` option is not provided
+             *                    (because PostCSS does not know the file path).
+             *
+             * @example
+             * const root = postcss.parse(css);
+             * root.source.input.file //=> undefined
+             * root.source.input.id   //=> "<input css 1>"
+             */
+            this.id = '<input css ' + sequence + '>';
+        }
+        if (this.map) this.map.file = this.from;
+    }
+
+    Input.prototype.error = function error(message, line, column) {
+        var opts = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
+
+        var result = void 0;
+        var origin = this.origin(line, column);
+        if (origin) {
+            result = new _cssSyntaxError2.default(message, origin.line, origin.column, origin.source, origin.file, opts.plugin);
+        } else {
+            result = new _cssSyntaxError2.default(message, line, column, this.css, this.file, opts.plugin);
+        }
+
+        result.input = { line: line, column: column, source: this.css };
+        if (this.file) result.input.file = this.file;
+
+        return result;
+    };
+
+    /**
+     * Reads the input source map and returns a symbol position
+     * in the input source (e.g., in a Sass file that was compiled
+     * to CSS before being passed to PostCSS).
+     *
+     * @param {number} line   - line in input CSS
+     * @param {number} column - column in input CSS
+     *
+     * @return {filePosition} position in input source
+     *
+     * @example
+     * root.source.input.origin(1, 1) //=> { file: 'a.css', line: 3, column: 1 }
+     */
+
+
+    Input.prototype.origin = function origin(line, column) {
+        if (!this.map) return false;
+        var consumer = this.map.consumer();
+
+        var from = consumer.originalPositionFor({ line: line, column: column });
+        if (!from.source) return false;
+
+        var result = {
+            file: this.mapResolve(from.source),
+            line: from.line,
+            column: from.column
+        };
+
+        var source = consumer.sourceContentFor(from.source);
+        if (source) result.source = source;
+
+        return result;
+    };
+
+    Input.prototype.mapResolve = function mapResolve(file) {
+        if (/^\w+:\/\//.test(file)) {
+            return file;
+        } else {
+            return _path2.default.resolve(this.map.consumer().sourceRoot || '.', file);
+        }
+    };
+
+    /**
+     * The CSS source identifier. Contains {@link Input#file} if the user
+     * set the `from` option, or {@link Input#id} if they did not.
+     * @type {string}
+     *
+     * @example
+     * const root = postcss.parse(css, { from: 'a.css' });
+     * root.source.input.from //=> "/home/ai/a.css"
+     *
+     * const root = postcss.parse(css);
+     * root.source.input.from //=> "<input css 1>"
+     */
+
+
+    _createClass(Input, [{
+        key: 'from',
+        get: function get() {
+            return this.file || this.id;
+        }
+    }]);
+
+    return Input;
+}();
+
+exports.default = Input;
+
+/**
+ * @typedef  {object} filePosition
+ * @property {string} file   - path to file
+ * @property {number} line   - source line in file
+ * @property {number} column - source column in file
+ */
+
+module.exports = exports['default'];
+//# sourceMappingURL=data:application/json;charset=utf8;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbImlucHV0LmVzNiJdLCJuYW1lcyI6WyJzZXF1ZW5jZSIsIklucHV0IiwiY3NzIiwib3B0cyIsInRvU3RyaW5nIiwiRXJyb3IiLCJzbGljZSIsImZyb20iLCJ0ZXN0IiwiZmlsZSIsInBhdGgiLCJyZXNvbHZlIiwibWFwIiwiUHJldmlvdXNNYXAiLCJ0ZXh0IiwiY29uc3VtZXIiLCJtYXBSZXNvbHZlIiwiaWQiLCJlcnJvciIsIm1lc3NhZ2UiLCJsaW5lIiwiY29sdW1uIiwicmVzdWx0Iiwib3JpZ2luIiwiQ3NzU3ludGF4RXJyb3IiLCJzb3VyY2UiLCJwbHVnaW4iLCJpbnB1dCIsIm9yaWdpbmFsUG9zaXRpb25Gb3IiLCJzb3VyY2VDb250ZW50Rm9yIiwic291cmNlUm9vdCJdLCJtYXBwaW5ncyI6Ijs7Ozs7Ozs7QUFBQTs7OztBQUNBOzs7O0FBRUE7Ozs7Ozs7O0FBRUEsSUFBSUEsV0FBVyxDQUFmOztBQUVBOzs7Ozs7OztJQU9NQyxLOztBQUVGOzs7O0FBSUEsbUJBQVlDLEdBQVosRUFBNkI7QUFBQSxZQUFaQyxJQUFZLHVFQUFMLEVBQUs7O0FBQUE7O0FBQ3pCLFlBQUtELFFBQVEsSUFBUixJQUFnQixRQUFPQSxHQUFQLHlDQUFPQSxHQUFQLE9BQWUsUUFBZixJQUEyQixDQUFDQSxJQUFJRSxRQUFyRCxFQUFnRTtBQUM1RCxrQkFBTSxJQUFJQyxLQUFKLHVCQUErQkgsR0FBL0IsNEJBQU47QUFDSDs7QUFFRDs7Ozs7OztBQU9BLGFBQUtBLEdBQUwsR0FBV0EsSUFBSUUsUUFBSixFQUFYOztBQUVBLFlBQUssS0FBS0YsR0FBTCxDQUFTLENBQVQsTUFBZ0IsUUFBaEIsSUFBNEIsS0FBS0EsR0FBTCxDQUFTLENBQVQsTUFBZ0IsUUFBakQsRUFBNEQ7QUFDeEQsaUJBQUtBLEdBQUwsR0FBVyxLQUFLQSxHQUFMLENBQVNJLEtBQVQsQ0FBZSxDQUFmLENBQVg7QUFDSDs7QUFFRCxZQUFLSCxLQUFLSSxJQUFWLEVBQWlCO0FBQ2IsZ0JBQUssWUFBWUMsSUFBWixD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QixtQkFBT0EsSUFBUDtBQUNILFNBRkQsTUFFTztBQUNILG1CQUFPQyxlQUFLQyxPQUFMLENBQWEsS0FBS0MsR0FBTCxDQUFTRyxRQUFULEdBQW9CZSxVQUFwQixJQUFrQyxHQUEvQyxFQUFvRHJCLElBQXBELENBQVA7QUFDSDtBQUNKLEs7O0FBRUQ7Ozs7Ozs7Ozs7Ozs7Ozs7NEJBWVc7QUFDUCxtQkFBTyxLQUFLQSxJQUFMLElBQWEsS0FBS1EsRUFBekI7QUFDSDs7Ozs7O2tCQUlVaEIsSzs7QUFFZiIsImZpbGUiOiJpbnB1dC5qcyIsInNvdXJjZXNDb250ZW50IjpbImltcG9ydCBDc3NTeW50YXhFcnJvciBmcm9tICcuL2Nzcy1zeW50YXgtZXJyb3InO1xuaW1wb3J0IFByZXZpb3VzTWFwICAgIGZyb20gJy4vcHJldmlvdXMtbWFwJztcblxuaW1wb3J0IHBhdGggZnJvbSAncGF0aCc7XG5cbmxldCBzZXF1ZW5jZSA9IDA7XG5cbi8qKlxuICogUmVwcmVzZW50cyB0aGUgc291cmNlIENTUy5cbiAqXG4gKiBAZXhhbXBsZVxuICogY29uc3Qgcm9vdCAgPSBwb3N0Y3NzLnBhcnNlKGNzcywgeyBmcm9tOiBmaWxlIH0pO1xuICogY29uc3QgaW5wdXQgPSByb290LnNvdXJjZS5pbnB1dDtcbiAqL1xuY2xhc3MgSW5wdXQge1xuXG4gICAgLyoqXG4gICAgICogQHBhcmFtIHtzdHJpbmd9IGNzcyAgICAtIGlucHV0IENTUyBzb3VyY2VcbiAgICAgKiBAcGFyYW0ge29iamVjdH0gW29wdHNdIC0ge0BsaW5rIFByb2Nlc3NvciNwcm9jZXNzfSBvcHRpb25zXG4gICAgICovXG4gICAgY29uc3RydWN0b3IoY3NzLCBvcHRzID0geyB9KSB7XG4gICAgICAgIGlmICggY3NzID09PSBudWxsIHx8IHR5cGVvZiBjc3MgPT09ICdvYmplY3QnICYmICFjc3MudG9TdHJpbmcgKSB7XG4gICAgICAgICAgICB0aHJvdyBuZXcgRXJyb3IoYFBvc3RDU1MgcmVjZWl2ZWQgJHsgY3NzIH0gaW5zdGVhZCBvZiBDU1Mgc3RyaW5nYCk7XG4gICAgICAgIH1cblxuICAgICAgICAvKipcbiAgICAgICAgICogQG1lbWJlciB7c3RyaW5nfSAtIGlucHV0IENTUyBzb3VyY2VcbiAgICAgICAgICpcbiAgICAgICAgICogQGV4YW1wbGVcbiAgICAgICAgICogY29uc3QgaW5wdXQgPSBwb3N0Y3NzLnBhcnNlKCdhe30nLCB7IGZyb206IGZpbGUgfSkuaW5wdXQ7XG4gICAgICAgICAqIGlucHV0LmNzcyAvLz0+IFwiYXt9XCI7XG4gICAgICAgICAqL1xuICAgICAgICB0aGlzLmNzcyA9IGNzcy50b1N0cmluZygpO1xuXG4gICAgICAgIGlmICggdGhpcy5jc3NbMF0gPT09ICdcXHVGRUZGJyB8fCB0aGlzLmNzc1swXSA9PT0gJ1xcdUZGRkUnICkge1xuICAgICAgICAgICAgdGhpcy5jc3MgPSB0aGlzLmNzcy5zbGljZSgxKTtcbiAgICAgICAgfVxuXG4gICAgICAgIGlmICggb3B0cy5mcm9tICkge1xuICAgICAgICAgICAgaWYgKCAvXlxcdys6XFwvXFwvLy50ZXN0KG9wdHMuZnJvbSkgKSB7XG4gICAgICAgICAgICAgICAgLyoqXG4gICAgICAgICAgICAgICAgICogQG1lbWJlciB7c3RyaW5nfSAtIFRoZSBhYnNvbHV0ZSBwYXRoIHRvIHRoZSBDU1Mgc291cmNlIGZpbGVcbiAgICAgICAgICAgICAgICAgKiAgICAgICAgICAgICAgICAgICAgZGVmaW5lZCB3aXRoIHRoZSBgZnJvbWAgb3B0aW9uLlxuICAgICAgICAgICAgICAgICAqXG4gICAgICAgICAgICAgICAgICogQGV4YW1wbGVcbiAgICAgICAgICAgICAgICAgKiBjb25zdCByb290ID0gcG9zdGNzcy5wYXJzZShjc3MsIHsgZnJvbTogJ2EuY3NzJyB9KTtcbiAgICAgICAgICAgICAgICAgKiByb290LnNvdXJjZS5pbnB1dC5maWxlIC8vPT4gJy9ob21lL2FpL2EuY3NzJ1xuICAgICAgICAgICAgICAgICAqL1xuICAgICAgICAgICAgICAgIHRoaXMuZmlsZSA9IG9wdHMuZnJvbTtcbiAgICAgICAgICAgIH0gZWxzZSB7XG4gICAgICAgICAgICAgICAgdGhpcy5maWxlID0gcGF0aC5yZXNvbHZlKG9wdHMuZnJvbSk7XG4gICAgICAgICAgICB9XG4gICAgICAgIH1cblxuICAgICAgICBsZXQgbWFwID0gbmV3IFByZXZpb3VzTWFwKHRoaXMuY3NzLCBvcHRzKTtcbiAgICAgICAgaWYgKCBtYXAudGV4dCApIHtcbiAgICAgICAgICAgIC8qKlxuICAgICAgICAgICAgICogQG1lbWJlciB7UHJldmlvdXNNYXB9IC0gVGhlIGlucHV0IHNvdXJjZSBtYXAgcGFzc2VkIGZyb21cbiAgICAgICAgICAgICAqICAgICAgICAgICAgICAgICAgICAgICAgIGEgY29tcGlsYXRpb24gc3RlcCBiZWZvcmUgUG9zdENTU1xuICAgICAgICAgICAgICogICAgICAgICAgICAgICAgICAgICAgICAgKGZvciBleGFtcGxlLCBmcm9tIFNhc3MgY29tcGlsZXIpLlxuICAgICAgICAgICAgICpcbiAgICAgICAgICAgICAqIEBleGFtcGxlXG4gICAgICAgICAgICAgKiByb290LnNvdXJjZS5pbnB1dC5tYXAuY29uc3VtZXIoKS5zb3VyY2VzIC8vPT4gWydhLnNhc3MnXVxuICAgICAgICAgICAgICovXG4gICAgICAgICAgICB0aGlzLm1hcCA9IG1hcDtcbiAgICAgICAgICAgIGxldCBmaWxlID0gbWFwLmNvbnN1bWVyKCkuZmlsZTtcbiAgICAgICAgICAgIGlmICggIXRoaXMuZmlsZSAmJiBmaWxlICkgdGhpcy5maWxlID0gdGhpcy5tYXBSZXNvbHZlKGZpbGUpO1xuICAgICAgICB9XG5cbiAgICAgICAgaWYgKCAhdGhpcy5maWxlICkge1xuICAgICAgICAgICAgc2VxdWVuY2UgKz0gMTtcbiAgICAgICAgICAgIC8qKlxuICAgICAgICAgICAgICogQG1lbWJlciB7c3RyaW5nfSAtIFRoZSB1bmlxdWUgSUQgb2YgdGhlIENTUyBzb3VyY2UuIEl0IHdpbGwgYmVcbiAgICAgICAgICAgICAqICAgICAgICAgICAgICAgICAgICBjcmVhdGVkIGlmIGBmcm9tYCBvcHRpb24gaXMgbm90IHByb3ZpZGVkXG4gICAgICAgICAgICAgKiAgICAgICAgICAgICAgICAgICAgKGJlY2F1c2UgUG9zdENTUyBkb2VzIG5vdCBrbm93IHRoZSBmaWxlIHBhdGgpLlxuICAgICAgICAgICAgICpcbiAgICAgICAgICAgICAqIEBleGFtcGxlXG4gICAgICAgICAgICAgKiBjb25zdCByb290ID0gcG9zdGNzcy5wYXJzZShjc3MpO1xuICAgICAgICAgICAgICogcm9vdC5zb3VyY2UuaW5wdXQuZmlsZSAvLz0+IHVuZGVmaW5lZFxuICAgICAgICAgICAgICogcm9vdC5zb3VyY2UuaW5wdXQuaWQgICAvLz0+IFwiPGlucHV0IGNzcyAxPlwiXG4gICAgICAgICAgICAgKi9cbiAgICAgICAgICAgIHRoaXMuaWQgICA9ICc8aW5wdXQgY3NzICcgKyBzZXF1ZW5jZSArICc+JztcbiAgICAgICAgfVxuICAgICAgICBpZiAoIHRoaXMubWFwICkgdGhpcy5tYXAuZmlsZSA9IHRoaXMuZnJvbTtcbiAgICB9XG5cbiAgICBlcnJvcihtZXNzYWdlLCBsaW5lLCBjb2x1bW4sIG9wdHMgPSB7IH0pIHtcbiAgICAgICAgbGV0IHJlc3VsdDtcbiAgICAgICAgbGV0IG9yaWdpbiA9IHRoaXMub3JpZ2luKGxpbmUsIGNvbHVtbik7XG4gICAgICAgIGlmICggb3JpZ2luICkge1xuICAgICAgICAgICAgcmVzdWx0ID0gbmV3IENzc1N5bnRheEVycm9yKG1lc3NhZ2UsIG9yaWdpbi5saW5lLCBvcmlnaW4uY29sdW1uLFxuICAgICAgICAgICAgICAgIG9yaWdpbi5zb3VyY2UsIG9yaWdpbi5maWxlLCBvcHRzLnBsdWdpbik7XG4gICAgICAgIH0gZWxzZSB7XG4gICAgICAgICAgICByZXN1bHQgPSBuZXcgQ3NzU3ludGF4RXJyb3IobWVzc2FnZSwgbGluZSwgY29sdW1uLFxuICAgICAgICAgICAgICAgIHRoaXMuY3NzLCB0aGlzLmZpbGUsIG9wdHMucGx1Z2luKTtcbiAgICAgICAgfVxuXG4gICAgICAgIHJlc3VsdC5pbnB1dCA9IHsgbGluZSwgY29sdW1uLCBzb3VyY2U6IHRoaXMuY3NzIH07XG4gICAgICAgIGlmICggdGhpcy5maWxlICkgcmVzdWx0LmlucHV0LmZpbGUgPSB0aGlzLmZpbGU7XG5cbiAgICAgICAgcmV0dXJuIHJlc3VsdDtcbiAgICB9XG5cbiAgICAvKipcbiAgICAgKiBSZWFkcyB0aGUgaW5wdXQgc291cmNlIG1hcCBhbmQgcmV0dXJucyBhIHN5bWJvbCBwb3NpdGlvblxuICAgICAqIGluIHRoZSBpbnB1dCBzb3VyY2UgKGUuZy4sIGluIGEgU2FzcyBmaWxlIHRoYXQgd2FzIGNvbXBpbGVkXG4gICAgICogdG8gQ1NTIGJlZm9yZSBiZWluZyBwYXNzZWQgdG8gUG9zdENTUykuXG4gICAgICpcbiAgICAgKiBAcGFyYW0ge251bWJlcn0gbGluZSAgIC0gbGluZSBpbiBpbnB1dCBDU1NcbiAgICAgKiBAcGFyYW0ge251bWJlcn0gY29sdW1uIC0gY29sdW1uIGluIGlucHV0IENTU1xuICAgICAqXG4gICAgICogQHJldHVybiB7ZmlsZVBvc2l0aW9ufSBwb3NpdGlvbiBpbiBpbnB1dCBzb3VyY2VcbiAgICAgKlxuICAgICAqIEBleGFtcGxlXG4gICAgICogcm9vdC5zb3VyY2UuaW5wdXQub3JpZ2luKDEsIDEpIC8vPT4geyBmaWxlOiAnYS5jc3MnLCBsaW5lOiAzLCBjb2x1bW46IDEgfVxuICAgICAqL1xuICAgIG9yaWdpbihsaW5lLCBjb2x1bW4pIHtcbiAgICAgICAgaWYgKCAhdGhpcy5tYXAgKSByZXR1cm4gZmFsc2U7XG4gICAgICAgIGxldCBjb25zdW1lciA9IHRoaXMubWFwLmNvbnN1bWVyKCk7XG5cbiAgICAgICAgbGV0IGZyb20gPSBjb25zdW1lci5vcmlnaW5hbFBvc2l0aW9uRm9yKHsgbGluZSwgY29sdW1uIH0pO1xuICAgICAgICBpZiAoICFmcm9tLnNvdXJjZSApIHJldHVybiBmYWxzZTtcblxuICAgICAgICBsZXQgcmVzdWx0ID0ge1xuICAgICAgICAgICAgZmlsZTogICB0aGlzLm1hcFJlc29sdmUoZnJvbS5zb3VyY2UpLFxuICAgICAgICAgICAgbGluZTogICBmcm9tLmxpbmUsXG4gICAgICAgICAgICBjb2x1bW46IGZyb20uY29sdW1uXG4gICAgICAgIH07XG5cbiAgICAgICAgbGV0IHNvdXJjZSA9IGNvbnN1bWVyLnNvdXJjZUNvbnRlbnRGb3IoZnJvbS5zb3VyY2UpO1xuICAgICAgICBpZiAoIHNvdXJjZSApIHJlc3VsdC5zb3VyY2UgPSBzb3VyY2U7XG5cbiAgICAgICAgcmV0dXJuIHJlc3VsdDtcbiAgICB9XG5cbiAgICBtYXBSZXNvbHZlKGZpbGUpIHtcbiAgICAgICAgaWYgKCAvXlxcdys6XFwvXFwvLy50ZXN0KGZpbGUpICkge1xuICAgICAgICAgICAgcmV0dXJuIGZpbGU7XG4gICAgICAgIH0gZWxzZSB7XG4gICAgICAgICAgICByZXR1cm4gcGF0aC5yZXNvbHZlKHRoaXMubWFwLmNvbnN1bWVyKCkuc291cmNlUm9vdCB8fCAnLicsIGZpbGUpO1xuICAgICAgICB9XG4gICAgfVxuXG4gICAgLyoqXG4gICAgICogVGhlIENTUyBzb3VyY2UgaWRlbnRpZmllci4gQ29udGFpbnMge0BsaW5rIElucHV0I2ZpbGV9IGlmIHRoZSB1c2VyXG4gICAgICogc2V0IHRoZSBgZnJvbWAgb3B0aW9uLCBvciB7QGxpbmsgSW5wdXQjaWR9IGlmIHRoZXkgZGlkIG5vdC5cbiAgICAgKiBAdHlwZSB7c3RyaW5nfVxuICAgICAqXG4gICAgICogQGV4YW1wbGVcbiAgICAgKiBjb25zdCByb290ID0gcG9zdGNzcy5wYXJzZShjc3MsIHsgZnJvbTogJ2EuY3NzJyB9KTtcbiAgICAgKiByb290LnNvdXJjZS5pbnB1dC5mcm9tIC8vPT4gXCIvaG9tZS9haS9hLmNzc1wiXG4gICAgICpcbiAgICAgKiBjb25zdCByb290ID0gcG9zdGNzcy5wYXJzZShjc3MpO1xuICAgICAqIHJvb3Quc291cmNlLmlucHV0LmZyb20gLy89PiBcIjxpbnB1dCBjc3MgMT5cIlxuICAgICAqL1xuICAgIGdldCBmcm9tKCkge1xuICAgICAgICByZXR1cm4gdGhpcy5maWxlIHx8IHRoaXMuaWQ7XG4gICAgfVxuXG59XG5cbmV4cG9ydCBkZWZhdWx0IElucHV0O1xuXG4vKipcbiAqIEB0eXBlZGVmICB7b2JqZWN0fSBmaWxlUG9zaXRpb25cbiAqIEBwcm9wZXJ0eSB7c3RyaW5nfSBmaWxlICAgLSBwYXRoIHRvIGZpbGVcbiAqIEBwcm9wZXJ0eSB7bnVtYmVyfSBsaW5lICAgLSBzb3VyY2UgbGluZSBpbiBmaWxlXG4gKiBAcHJvcGVydHkge251bWJlcn0gY29sdW1uIC0gc291cmNlIGNvbHVtbiBpbiBmaWxlXG4gKi9cbiJdfQ==
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 'use strict';
+
+exports.__esModule = true;
+
+var _supportsColor = require('supports-color');
+
+var _supportsColor2 = _interopRequireDefault(_supportsColor);
+
+var _chalk = require('chalk');
+
+var _chalk2 = _interopRequireDefault(_chalk);
+
+var _terminalHighlight = require('./terminal-highlight');
+
+var _terminalHighlight2 = _interopRequireDefault(_terminalHighlight);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+/**
+ * The CSS parser throws this error for broken CSS.
+ *
+ * Custom parsers can throw this error for broken custom syntax using
+ * the {@link Node#error} method.
+ *
+ * PostCSS will use the input source map to detect the original error location.
+ * If you wrote a Sass file, compiled it to CSS and then parsed it with PostCSS,
+ * PostCSS will show the original position in the Sass file.
+ *
+ * If you need the position in the PostCSS input
+ * (e.g., to debug the previous compiler), use `error.input.file`.
+ *
+ * @example
+ * // Catching and checking syntax error
+ * try {
+ *   postcss.parse('a{')
+ * } catch (error) {
+ *   if ( error.name === 'CssSyntaxError' ) {
+ *     error //=> CssSyntaxError
+ *   }
+ * }
+ *
+ * @example
+ * // Raising error from plugin
+ * throw node.error('Unknown variable', { plugin: 'postcss-vars' });
+ */
+var CssSyntaxError = function () {
+
+    /**
+     * @param {string} message  - error message
+     * @param {number} [line]   - source line of the error
+     * @param {number} [column] - source column of the error
+     * @param {string} [source] - source code of the broken file
+     * @param {string} [file]   - absolute path to the broken file
+     * @param {string} [plugin] - PostCSS plugin name, if error came from plugin
+     */
+    function CssSyntaxError(message, line, column, source, file, plugin) {
+        _classCallCheck(this, CssSyntaxError);
+
+        /**
+         * @member {string} - Always equal to `'CssSyntaxError'`. You should
+         *                    always check error type
+         *                    by `error.name === 'CssSyntaxError'` instead of
+         *                    `error instanceof CssSyntaxError`, because
+         *                    npm could have several PostCSS versions.
+         *
+         * @example
+         * if ( error.name === 'CssSyntaxError' ) {
+         *   error //=> CssSyntaxError
+         * }
+         */
+        this.name = 'CssSyntaxError';
+        /**
+         * @member {string} - Error message.
+         *
+         * @example
+         * error.message //=> 'Unclosed block'
+         */
+        this.reason = message;
+
+        if (file) {
+            /**
+             * @member {string} - Absolute path to the broken file.
+             *
+             * @example
+             * error.file       //=> 'a.sass'
+             * error.input.file //=> 'a.css'
+             */
+            this.file = file;
+        }
+        if (source) {
+            /**
+             * @member {string} - Source code of the broken file.
+             *
+             * @example
+             * error.source       //=> 'a { b {} }'
+             * error.input.column //=> 'a b { }'
+             */
+            this.source = source;
+        }
+        if (plugin) {
+            /**
+             * @member {string} - Plugin name, if error came from plugin.
+             *
+             * @example
+             * error.plugin //=> 'postcss-vars'
+             */
+            this.plugin = plugin;
+        }
+        if (typeof line !== 'undefined' && typeof column !== 'undefined') {
+            /**
+             * @member {number} - Source line of the error.
+             *
+             * @example
+             * error.line       //=> 2
+             * error.input.line //=> 4
+             */
+            this.line = line;
+            /**
+             * @member {number} - Source column of the error.
+             *
+             * @example
+             * error.column       //=> 1
+             * error.input.column //=> 4
+             */
+            this.column = column;
+        }
+
+        this.setMessage();
+
+        if (Error.captureStackTrace) {
+            Error.captureStackTrace(this, CssSyntaxError);
+        }
+    }
+
+    CssSyntaxError.prototype.setMessage = function setMessage() {
+        /**
+         * @member {string} - Full error text in the GNU error format
+         *                    with plugin, file, line and column.
+         *
+         * @example
+         * error.message //=> 'a.css:1:1: Unclosed block'
+         */
+        this.message = this.plugin ? this.plugin + ': ' : '';
+        this.message += this.file ? this.file : '<css input>';
+        if (typeof this.line !== 'undefined') {
+            this.message += ':' + this.line + ':' + this.column;
+        }
+        this.message += ': ' + this.reason;
+    };
+
+    /**
+     * Returns a few lines of CSS source that caused the error.
+     *
+     * If the CSS has an input source map without `sourceContent`,
+     * this method will return an empty string.
+     *
+     * @param {boolean} [color] whether arrow will be colored red by terminal
+     *                          color codes. By default, PostCSS will detect
+     *                          color support by `process.stdout.isTTY`
+     *                          and `process.env.NODE_DISABLE_COLORS`.
+     *
+     * @example
+     * error.showSourceCode() //=> "  4 | }
+     *                        //      5 | a {
+     *                        //    > 6 |   bad
+     *                        //        |   ^
+     *                        //      7 | }
+     *                        //      8 | b {"
+     *
+     * @return {string} few lines of CSS source that caused the error
+     */
+
+
+    CssSyntaxError.prototype.showSourceCode = function showSourceCode(color) {
+        var _this = this;
+
+        if (!this.source) return '';
+
+        var css = this.source;
+        if (typeof color === 'undefined') color = _supportsColor2.default.stdout;
+        if (color) css = (0, _terminalHighlight2.default)(css);
+
+        var lines = css.split(/\r?\n/);
+        var start = Math.max(this.line - 3, 0);
+        var end = Math.min(this.line + 2, lines.length);
+
+        var maxWidth = String(end).length;
+
+        function mark(text) {
+            if (color && _chalk2.default.red) {
+                return _chalk2.default.red.bold(text);
+            } else {
+                return text;
+            }
+        }
+        function aside(text) {
+            if (color && _chalk2.default.gray) {
+                return _chalk2.default.gray(text);
+            } else {
+                return text;
+            }
+        }
+
+        return lines.slice(start, end).map(function (line, index) {
+            var number = start + 1 + index;
+            var gutter = ' ' + (' ' + number).slice(-maxWidth) + ' | ';
+            if (number === _this.line) {
+                var spacing = aside(gutter.replace(/\d/g, ' ')) + line.slice(0, _this.column - 1).replace(/[^\t]/g, ' ');
+                return mark('>') + aside(gutter) + line + '\n ' + spacing + mark('^');
+            } else {
+                return ' ' + aside(gutter) + line;
+            }
+        }).join('\n');
+    };
+
+    /**
+     * Returns error position, message and source code of the broken part.
+     *
+     * @example
+     * error.toString() //=> "CssSyntaxError: app.css:1:1: Unclosed block
+     *                  //    > 1 | a {
+     *                  //        | ^"
+     *
+     * @return {string} error position, message and source code
+     */
+
+
+    CssSyntaxError.prototype.toString = function toString() {
+        var code = this.showSourceCode();
+        if (code) {
+            code = '\n\n' + code + '\n';
+        }
+        return this.name + ': ' + this.message + code;
+    };
+
+    /**
+     * @memberof CssSyntaxError#
+     * @member {Input} input - Input object with PostCSS internal information
+     *                         about input file. If input has source map
+     *                         from previous tool, PostCSS will use origin
+     *                         (for example, Sass) source. You can use this
+     *                         object to get PostCSS input source.
+     *
+     * @example
+     * error.input.file //=> 'a.css'
+     * error.file       //=> 'a.sass'
+     */
+
+    return CssSyntaxError;
+}();
+
+exports.default = CssSyntaxError;
+module.exports = exports['default'];
+//# sourceMappingURL=data:application/json;charset=utf8;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbImNzcy1zeW50YXgtZXJyb3IuZXM2Il0sIm5hbWVzIjpbIkNzc1N5bnRheEVycm9yIiwibWVzc2FnZSIsImxpbmUiLCJjb2x1bW4iLCJzb3VyY2UiLCJmaWxlIiwicGx1Z2luIiwibmFtZSIsInJlYXNvbiIsInNldE1lc3NhZ2UiLCJFcnJvciIsImNhcHR1cmVTdGFja1RyYWNlIiwic2hvd1NvdXJjZUNvZGUiLCJjb2xvciIsImNzcyIsInN1cHBvcnRzQ29sb3IiLCJzdGRvdXQiLCJsaW5lcyIsInNwbGl0Iiwic3RhcnQiLCJNYXRoIiwibWF4IiwiZW5kIiwibWluIiwibGVuZ3RoIiwibWF4V2lkdGgiLCJTdHJpbmciLCJtYXJrIiwidGV4dCIsImNoYWxrIiwicmVkIiwiYm9sZCIsImFzaWRlIiwiZ3JheSIsInNsaWNlIiwibWFwIiwiaW5kZXgiLCJudW1iZXIiLCJndXR0ZXIiLCJzcGFjaW5nIiwicmVwbGFjZSIsImpvaW4iLCJ0b1N0cmluZyIsImNvZGUiXSwibWFwcGluZ3MiOiI7Ozs7QUFBQTs7OztBQUNBOzs7O0FBRUE7Ozs7Ozs7O0FBRUE7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7OztJQTJCTUEsYzs7QUFFRjs7Ozs7Ozs7QUFRQSw0QkFBWUMsT0FBWixFQUFxQkMsSUFBckIsRUFBMkJDLE1BQTNCLEVBQW1DQyxNQUFuQyxFQUEyQ0MsSUFBM0MsRUFBaURDLE1BQWpELEVBQXlEO0FBQUE7O0FBQ3JEOzs7Ozs7Ozs7Ozs7QUFZQSxhQUFLQyxJQUFMLEdBQVksZ0JBQVo7QUFDQTs7Ozs7O0FBTUEsYUFBS0MsTUFBTCxHQUFjUCxPQUFkOztBQUVBLFlBQUtJLElBQUwsRUFBWTtBQUNSOzs7Ozs7O0FBT0EsaUJBQUtBLElBQUwsR0FBWUEsSUFBWjtBQUNIO0FBQ0QsWUFBS0QsTUFBTCxFQUFjO0FBQ1Y7Ozs7Ozs7QUFPQSxpQkFBS0EsTUFBTCxHQUFjQSxNQUFkO0FBQ0g7QUFDRCxZQUFLRSxNQUFMLEVBQWM7QUFDVjs7Ozs7O0FBTUEsaUJBQUtBLE1B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QUF2QyxFQUFpRCxHQUFqRCxDQUZKO0FBR0EsdUJBQU9iLEtBQUssR0FBTCxJQUFZSyxNQUFNTSxNQUFOLENBQVosR0FBNEJwQyxJQUE1QixHQUFtQyxLQUFuQyxHQUNBcUMsT0FEQSxHQUNVWixLQUFLLEdBQUwsQ0FEakI7QUFFSCxhQU5ELE1BTU87QUFDSCx1QkFBTyxNQUFNSyxNQUFNTSxNQUFOLENBQU4sR0FBc0JwQyxJQUE3QjtBQUNIO0FBQ0osU0FaTSxFQVlKdUMsSUFaSSxDQVlDLElBWkQsQ0FBUDtBQWFILEs7O0FBRUQ7Ozs7Ozs7Ozs7Ozs2QkFVQUMsUSx1QkFBVztBQUNQLFlBQUlDLE9BQU8sS0FBSy9CLGNBQUwsRUFBWDtBQUNBLFlBQUsrQixJQUFMLEVBQVk7QUFDUkEsbUJBQU8sU0FBU0EsSUFBVCxHQUFnQixJQUF2QjtBQUNIO0FBQ0QsZUFBTyxLQUFLcEMsSUFBTCxHQUFZLElBQVosR0FBbUIsS0FBS04sT0FBeEIsR0FBa0MwQyxJQUF6QztBQUNILEs7O0FBRUQ7Ozs7Ozs7Ozs7Ozs7Ozs7a0JBZVczQyxjIiwiZmlsZSI6ImNzcy1zeW50YXgtZXJyb3IuanMiLCJzb3VyY2VzQ29udGVudCI6WyJpbXBvcnQgc3VwcG9ydHNDb2xvciBmcm9tICdzdXBwb3J0cy1jb2xvcic7XG5pbXBvcnQgY2hhbGsgICAgICAgICBmcm9tICdjaGFsayc7XG5cbmltcG9ydCB0ZXJtaW5hbEhpZ2hsaWdodCBmcm9tICcuL3Rlcm1pbmFsLWhpZ2hsaWdodCc7XG5cbi8qKlxuICogVGhlIENTUyBwYXJzZXIgdGhyb3dzIHRoaXMgZXJyb3IgZm9yIGJyb2tlbiBDU1MuXG4gKlxuICogQ3VzdG9tIHBhcnNlcnMgY2FuIHRocm93IHRoaXMgZXJyb3IgZm9yIGJyb2tlbiBjdXN0b20gc3ludGF4IHVzaW5nXG4gKiB0aGUge0BsaW5rIE5vZGUjZXJyb3J9IG1ldGhvZC5cbiAqXG4gKiBQb3N0Q1NTIHdpbGwgdXNlIHRoZSBpbnB1dCBzb3VyY2UgbWFwIHRvIGRldGVjdCB0aGUgb3JpZ2luYWwgZXJyb3IgbG9jYXRpb24uXG4gKiBJZiB5b3Ugd3JvdGUgYSBTYXNzIGZpbGUsIGNvbXBpbGVkIGl0IHRvIENTUyBhbmQgdGhlbiBwYXJzZWQgaXQgd2l0aCBQb3N0Q1NTLFxuICogUG9zdENTUyB3aWxsIHNob3cgdGhlIG9yaWdpbmFsIHBvc2l0aW9uIGluIHRoZSBTYXNzIGZpbGUuXG4gKlxuICogSWYgeW91IG5lZWQgdGhlIHBvc2l0aW9uIGluIHRoZSBQb3N0Q1NTIGlucHV0XG4gKiAoZS5nLiwgdG8gZGVidWcgdGhlIHByZXZpb3VzIGNvbXBpbGVyKSwgdXNlIGBlcnJvci5pbnB1dC5maWxlYC5cbiAqXG4gKiBAZXhhbXBsZVxuICogLy8gQ2F0Y2hpbmcgYW5kIGNoZWNraW5nIHN5bnRheCBlcnJvclxuICogdHJ5IHtcbiAqICAgcG9zdGNzcy5wYXJzZSgnYXsnKVxuICogfSBjYXRjaCAoZXJyb3IpIHtcbiAqICAgaWYgKCBlcnJvci5uYW1lID09PSAnQ3NzU3ludGF4RXJyb3InICkge1xuICogICAgIGVycm9yIC8vPT4gQ3NzU3ludGF4RXJyb3JcbiAqICAgfVxuICogfVxuICpcbiAqIEBleGFtcGxlXG4gKiAvLyBSYWlzaW5nIGVycm9yIGZyb20gcGx1Z2luXG4gKiB0aHJvdyBub2RlLmVycm9yKCdVbmtub3duIHZhcmlhYmxlJywgeyBwbHVnaW46ICdwb3N0Y3NzLXZhcnMnIH0pO1xuICovXG5jbGFzcyBDc3NTeW50YXhFcnJvciB7XG5cbiAgICAvKipcbiAgICAgKiBAcGFyYW0ge3N0cmluZ30gbWVzc2FnZSAgLSBlcnJvciBtZXNzYWdlXG4gICAgICogQHBhcmFtIHtudW1iZXJ9IFtsaW5lXSAgIC0gc291cmNlIGxpbmUgb2YgdGhlIGVycm9yXG4gICAgICogQHBhcmFtIHtudW1iZXJ9IFtjb2x1bW5dIC0gc291cmNlIGNvbHVtbiBvZiB0aGUgZXJyb3JcbiAgICAgKiBAcGFyYW0ge3N0cmluZ30gW3NvdXJjZV0gLSBzb3VyY2UgY29kZSBvZiB0aGUgYnJva2VuIGZpbGVcbiAgICAgKiBAcGFyYW0ge3N0cmluZ30gW2ZpbGVdICAgLSBhYnNvbHV0ZSBwYXRoIHRvIHRoZSBicm9rZW4gZmlsZVxuICAgICAqIEBwYXJhbSB7c3RyaW5nfSBbcGx1Z2luXSAtIFBvc3RDU1MgcGx1Z2luIG5hbWUsIGlmIGVycm9yIGNhbWUgZnJvbSBwbHVnaW5cbiAgICAgKi9cbiAgICBjb25zdHJ1Y3RvcihtZXNzYWdlLCBsaW5lLCBjb2x1bW4sIHNvdXJjZSwgZmlsZSwgcGx1Z2luKSB7XG4gICAgICAgIC8qKlxuICAgICAgICAgKiBAbWVtYmVyIHtzdHJpbmd9IC0gQWx3YXlzIGVxdWFsIHRvIGAnQ3NzU3ludGF4RXJyb3InYC4gWW91IHNob3VsZFxuICAgICAgICAgKiAgICAgICAgICAgICAgICAgICAgYWx3YXlzIGNoZWNrIGVycm9yIHR5cGVcbiAgICAgICAgICogICAgICAgICAgICAgICAgICAgIGJ5IGBlcnJvci5uYW1lID09PSAnQ3NzU3ludGF4RXJyb3InYCBpbnN0ZWFkIG9mXG4gICAgICAgICAqICAgICAgICAgICAgICAgICAgICBgZXJyb3IgaW5zdGFuY2VvZiBDc3NTeW50YXhFcnJvcmAsIGJlY2F1c2VcbiAgICAgICAgICogICAgICAgICAgICAgICAgICAgIG5wbSBjb3VsZCBoYXZlIHNldmVyYWwgUG9zdENTUyB2ZXJzaW9ucy5cbiAgICAgICAgICpcbiAgICAgICAgICogQGV4YW1wbGVcbiAgICAgICAgICogaWYgKCBlcnJvci5uYW1lID09PSAnQ3NzU3ludGF4RXJyb3InICkge1xuICAgICAgICAgKiAgIGVycm9yIC8vPT4gQ3NzU3ludGF4RXJyb3JcbiAgICAgICAgICogfVxuICAgICAgICAgKi9cbiAgICAgICAgdGhpcy5uYW1lID0gJ0Nzc1N5bnRheEVycm9yJztcbiAgICAgICAgLyoqXG4gICAgICAgICAqIEBtZW1iZXIge3N0cmluZ30gLSBFcnJvciBtZXNzYWdlLlxuICAgICAgICAgKlxuICAgICAgICAgKiBAZXhhbXBsZVxuICAgICAgICAgKiBlcnJvci5tZXNzYWdlIC8vPT4gJ1VuY2xvc2VkIGJsb2NrJ1xuICAgICAgICAgKi9cbiAgICAgICAgdGhpcy5yZWFzb24gPSBtZXNzYWdlO1xuXG4gICAgICAgIGlmICggZmlsZSApIHtcbiAgICAgICAgICAgIC8qKlxuICAgICAgICAgICAgICogQG1lbWJlciB7c3RyaW5nfSAtIEFic29sdXRlIHBhdGggdG8gdGhlIGJyb2tlbiBmaWxlLlxuICAgICAgICAgICAgICpcbiAgICAgICAgICAgICAqIEBleGFtcGxlXG4gICAgICAgICAgICAgKiBlcnJvci5maWxlICAgICAgIC8vPT4gJ2Euc2FzcydcbiAgICAgICAgICAgICAqIGVycm9yLmlucHV0LmZpbGUgLy89PiAnYS5jc3MnXG4gICAgICAgICAgICAgKi9cbiAgICAgICAgICAgIHRoaXMuZmlsZSA9IGZpbGU7XG4gICAgICAgIH1cbiAgICAgICAgaWYgKCBzb3VyY2UgKSB7XG4gICAgICAgICAgICAvKipcbiAgICAgICAgICAgICAqIEBtZW1iZXIge3N0cmluZ30gLSBTb3VyY2UgY29kZSBvZiB0aGUgYnJva2VuIGZpbGUuXG4gICAgICAgICAgICAgKlxuICAgICAgICAgICAgICogQGV4YW1wbGVcbiAgICAgICAgICAgICAqIGVycm9yLnNvdXJjZSAgICAgICAvLz0+ICdhIHsgYiB7fSB9J1xuICAgICAgICAgICAgICogZXJyb3IuaW5wdXQuY29sdW1uIC8vPT4gJ2EgYiB7IH0nXG4gICAgICAgICAgICAgKi9cbiAgICAgICAgICAgIHRoaXMuc291cmNlID0gc291cmNlO1xuICAgICAgICB9XG4gICAgICAgIGlmICggcGx1Z2luICkge1xuICAgICAgICAgICAgLyoqXG4gICAgICAgICAgICAgKiBAbWVtYmVyIHtzdHJpbmd9IC0gUGx1Z2luIG5hbWUsIGlmIGVycm9yIGNhbWUgZnJvbSBwbHVnaW4uXG4gICAgICAgICAgICAgKlxuICAgICAgICAgICAgICogQGV4YW1wbGVcbiAgICAgICAgICAgICAqIGVycm9yLnBsdWdpbiAvLz0+ICdwb3N0Y3NzLXZhcnMnXG4gICAgICAgICAgICAgKi9cbiAgICAgICAgICAgIHRoaXMucGx1Z2luID0gcGx1Z2luO1xuICAgICAgICB9XG4gICAgICAgIGlmICggdHlwZW9mIGxpbmUgIT09ICd1bmRlZmluZWQnICYmIHR5cGVvZiBjb2x1bW4gIT09ICd1bmRlZmluZWQnICkge1xuICAgICAgICAgICAgLyoqXG4gICAgICAgICAgICAgKiBAbWVtYmVyIHtudW1iZXJ9IC0gU291cmNlIGxpbmUgb2YgdGhlIGVycm9yLlxuICAgICAgICAgICAgICpcbiAgICAgICAgICAgICAqIEBleGFtcGxlXG4gICAgICAgICAgICAgKiBlcnJvci5saW5lICAgICAgIC8vPT4gMlxuICAgICAgICAgICAgICogZXJyb3IuaW5wdXQubGluZSAvLz0+IDRcbiAgICAgICAgICAgICAqL1xuICAgICAgICAgICAgdGhpcy5saW5lICAgPSBsaW5lO1xuICAgICAgICAgICAgLyoqXG4gICAgICAgICAgICAgKiBAbWVtYmVyIHtudW1iZXJ9IC0gU291cmNlIGNvbHVtbiBvZiB0aGUgZXJyb3IuXG4gICAgICAgICAgICAgKlxuICAgICAgICAgICAgICogQGV4YW1wbGVcbiAgICAgICAgICAgICAqIGVycm9yLmNvbHVtbiAgICAgICAvLz0+IDFcbiAgICAgICAgICAgICAqIGVycm9yLmlucHV0LmNvbHVtbiAvLz0+IDRcbiAgICAgICAgICAgICAqL1xuICAgICAgICAgICAgdGhpcy5jb2x1bW4gPSBjb2x1bW47XG4gICAgICAgIH1cblxuICAgICAgICB0aGlzLnNldE1lc3NhZ2UoKTtcblxuICAgICAgICBpZiAoIEVycm9yLmNhcHR1cmVTdGFja1RyYWNlICkge1xuICAgICAgICAgICAgRXJyb3IuY2FwdHVyZVN0YWNrVHJhY2UodGhpcywgQ3NzU3ludGF4RXJyb3IpO1xuICAgICAgICB9XG4gICAgfVxuXG4gICAgc2V0TWVzc2FnZSgpIHtcbiAgICAgICAgLyoqXG4gICAgICAgICAqIEBtZW1iZXIge3N0cmluZ30gLSBGdWxsIGVycm9yIHRleHQgaW4gdGhlIEdOVSBlcnJvciBmb3JtYXRcbiAgICAgICAgICogICAgICAgICAgICAgICAgICAgIHdpdGggcGx1Z2luLCBmaWxlLCBsaW5lIGFuZCBjb2x1bW4uXG4gICAgICAgICAqXG4gICAgICAgICAqIEBleGFtcGxlXG4gICAgICAgICAqIGVycm9yLm1lc3NhZ2UgLy89PiAnYS5jc3M6MToxOiBVbmNsb3NlZCBibG9jaydcbiAgICAgICAgICovXG4gICAgICAgIHRoaXMubWVzc2FnZSAgPSB0aGlzLnBsdWdpbiA/IHRoaXMucGx1Z2luICsgJzogJyA6ICcnO1xuICAgICAgICB0aGlzLm1lc3NhZ2UgKz0gdGhpcy5maWxlID8gdGhpcy5maWxlIDogJzxjc3MgaW5wdXQ+JztcbiAgICAgICAgaWYgKCB0eXBlb2YgdGhpcy5saW5lICE9PSAndW5kZWZpbmVkJyApIHtcbiAgICAgICAgICAgIHRoaXMubWVzc2FnZSArPSAnOicgKyB0aGlzLmxpbmUgKyAnOicgKyB0aGlzLmNvbHVtbjtcbiAgICAgICAgfVxuICAgICAgICB0aGlzLm1lc3NhZ2UgKz0gJzogJyArIHRoaXMucmVhc29uO1xuICAgIH1cblxuICAgIC8qKlxuICAgICAqIFJldHVybnMgYSBmZXcgbGluZXMgb2YgQ1NTIHNvdXJjZSB0aGF0IGNhdXNlZCB0aGUgZXJyb3IuXG4gICAgICpcbiAgICAgKiBJZiB0aGUgQ1NTIGhhcyBhbiBpbnB1dCBzb3VyY2UgbWFwIHdpdGhvdXQgYHNvdXJjZUNvbnRlbnRgLFxuICAgICAqIHRoaXMgbWV0aG9kIHdpbGwgcmV0dXJuIGFuIGVtcHR5IHN0cmluZy5cbiAgICAgKlxuICAgICAqIEBwYXJhbSB7Ym9vbGVhbn0gW2NvbG9yXSB3aGV0aGVyIGFycm93IHdpbGwgYmUgY29sb3JlZCByZWQgYnkgdGVybWluYWxcbiAgICAgKiAgICAgICAgICAgICAgICAgICAgICAgICAgY29sb3IgY29kZXMuIEJ5IGRlZmF1bHQsIFBvc3RDU1Mgd2lsbCBkZXRlY3RcbiAgICAgKiAgICAgICAgICAgICAgICAgICAgICAgICAgY29sb3Igc3VwcG9ydCBieSBgcHJvY2Vzcy5zdGRvdXQuaXNUVFlgXG4gICAgICogICAgICAgICAgICAgICAgICAgICAgICAgIGFuZCBgcHJvY2Vzcy5lbnYuTk9ERV9ESVNBQkxFX0NPTE9SU2AuXG4gICAgICpcbiAgICAgKiBAZXhhbXBsZVxuICAgICAqIGVycm9yLnNob3dTb3VyY2VDb2RlKCkgLy89PiBcIiAgNCB8IH1cbiAgICAgKiAgICAgICAgICAgICAgICAgICAgICAgIC8vICAgICAgNSB8IGEge1xuICAgICAqICAgICAgICAgICAgICAgICAgICAgICAgLy8gICAgPiA2IHwgICBiYWRcbiAgICAgKiAgICAgICAgICAgICAgICAgICAgICAgIC8vICAgICAgICB8ICAgXlxuICAgICAqICAgICAgICAgICAgICAgICAgICAgICAgLy8gICAgICA3IHwgfVxuICAgICAqICAgICAgICAgICAgICAgICAgICAgICAgLy8gICAgICA4IHwgYiB7XCJcbiAgICAgKlxuICAgICAqIEByZXR1cm4ge3N0cmluZ30gZmV3IGxpbmVzIG9mIENTUyBzb3VyY2UgdGhhdCBjYXVzZWQgdGhlIGVycm9yXG4gICAgICovXG4gICAgc2hvd1NvdXJjZUNvZGUoY29sb3IpIHtcbiAgICAgICAgaWYgKCAhdGhpcy5zb3VyY2UgKSByZXR1cm4gJyc7XG5cbiAgICAgICAgbGV0IGNzcyA9IHRoaXMuc291cmNlO1xuICAgICAgICBpZiAoIHR5cGVvZiBjb2xvciA9PT0gJ3VuZGVmaW5lZCcgKSBjb2xvciA9IHN1cHBvcnRzQ29sb3Iuc3Rkb3V0O1xuICAgICAgICBpZiAoIGNvbG9yICkgY3NzID0gdGVybWluYWxIaWdobGlnaHQoY3NzKTtcblxuICAgICAgICBsZXQgbGluZXMgPSBjc3Muc3BsaXQoL1xccj9cXG4vKTtcbiAgICAgICAgbGV0IHN0YXJ0ID0gTWF0aC5tYXgodGhpcy5saW5lIC0gMywgMCk7XG4gICAgICAgIGxldCBlbmQgICA9IE1hdGgubWluKHRoaXMubGluZSArIDIsIGxpbmVzLmxlbmd0aCk7XG5cbiAgICAgICAgbGV0IG1heFdpZHRoID0gU3RyaW5nKGVuZCkubGVuZ3RoO1xuXG4gICAgICAgIGZ1bmN0aW9uIG1hcmsodGV4dCkge1xuICAgICAgICAgICAgaWYgKCBjb2xvciAmJiBjaGFsay5yZWQgKSB7XG4gICAgICAgICAgICAgICAgcmV0dXJuIGNoYWxrLnJlZC5ib2xkKHRleHQpO1xuICAgICAgICAgICAgfSBlbHNlIHtcbiAgICAgICAgICAgICAgICByZXR1cm4gdGV4dDtcbiAgICAgICAgICAgIH1cbiAgICAgICAgfVxuICAgICAgICBmdW5jdGlvbiBhc2lkZSh0ZXh0KSB7XG4gICAgICAgICAgICBpZiAoIGNvbG9yICYmIGNoYWxrLmdyYXkgKSB7XG4gICAgICAgICAgICAgICAgcmV0dXJuIGNoYWxrLmdyYXkodGV4dCk7XG4gICAgICAgICAgICB9IGVsc2Uge1xuICAgICAgICAgICAgICAgIHJldHVybiB0ZXh0O1xuICAgICAgICAgICAgfVxuICAgICAgICB9XG5cbiAgICAgICAgcmV0dXJuIGxpbmVzLnNsaWNlKHN0YXJ0LCBlbmQpLm1hcCggKGxpbmUsIGluZGV4KSA9PiB7XG4gICAgICAgICAgICBsZXQgbnVtYmVyID0gc3RhcnQgKyAxICsgaW5kZXg7XG4gICAgICAgICAgICBsZXQgZ3V0dGVyID0gJyAnICsgKCcgJyArIG51bWJlcikuc2xpY2UoLW1heFdpZHRoKSArICcgfCAnO1xuICAgICAgICAgICAgaWYgKCBudW1iZXIgPT09IHRoaXMubGluZSApIHtcbiAgICAgICAgICAgICAgICBsZXQgc3BhY2luZyA9XG4gICAgICAgICAgICAgICAgICAgIGFzaWRlKGd1dHRlci5yZXBsYWNlKC9cXGQvZywgJyAnKSkgK1xuICAgICAgICAgICAgICAgICAgICBsaW5lLnNsaWNlKDAsIHRoaXMuY29sdW1uIC0gMSkucmVwbGFjZSgvW15cXHRdL2csICcgJyk7XG4gICAgICAgICAgICAgICAgcmV0dXJuIG1hcmsoJz4nKSArIGFzaWRlKGd1dHRlcikgKyBsaW5lICsgJ1xcbiAnICtcbiAgICAgICAgICAgICAgICAgICAgICAgc3BhY2luZyArIG1hcmsoJ14nKTtcbiAgICAgICAgICAgIH0gZWxzZSB7XG4gICAgICAgICAgICAgICAgcmV0dXJuICcgJyArIGFzaWRlKGd1dHRlcikgKyBsaW5lO1xuICAgICAgICAgICAgfVxuICAgICAgICB9KS5qb2luKCdcXG4nKTtcbiAgICB9XG5cbiAgICAvKipcbiAgICAgKiBSZXR1cm5zIGVycm9yIHBvc2l0aW9uLCBtZXNzYWdlIGFuZCBzb3VyY2UgY29kZSBvZiB0aGUgYnJva2VuIHBhcnQuXG4gICAgICpcbiAgICAgKiBAZXhhbXBsZVxuICAgICAqIGVycm9yLnRvU3RyaW5nKCkgLy89PiBcIkNzc1N5bnRheEVycm9yOiBhcHAuY3NzOjE6MTogVW5jbG9zZWQgYmxvY2tcbiAgICAgKiAgICAgICAgICAgICAgICAgIC8vICAgID4gMSB8IGEge1xuICAgICAqICAgICAgICAgICAgICAgICAgLy8gICAgICAgIHwgXlwiXG4gICAgICpcbiAgICAgKiBAcmV0dXJuIHtzdHJpbmd9IGVycm9yIHBvc2l0aW9uLCBtZXNzYWdlIGFuZCBzb3VyY2UgY29kZVxuICAgICAqL1xuICAgIHRvU3RyaW5nKCkge1xuICAgICAgICBsZXQgY29kZSA9IHRoaXMuc2hvd1NvdXJjZUNvZGUoKTtcbiAgICAgICAgaWYgKCBjb2RlICkge1xuICAgICAgICAgICAgY29kZSA9ICdcXG5cXG4nICsgY29kZSArICdcXG4nO1xuICAgICAgICB9XG4gICAgICAgIHJldHVybiB0aGlzLm5hbWUgKyAnOiAnICsgdGhpcy5tZXNzYWdlICsgY29kZTtcbiAgICB9XG5cbiAgICAvKipcbiAgICAgKiBAbWVtYmVyb2YgQ3NzU3ludGF4RXJyb3IjXG4gICAgICogQG1lbWJlciB7SW5wdXR9IGlucHV0IC0gSW5wdXQgb2JqZWN0IHdpdGggUG9zdENTUyBpbnRlcm5hbCBpbmZvcm1hdGlvblxuICAgICAqICAgICAgICAgICAgICAgICAgICAgICAgIGFib3V0IGlucHV0IGZpbGUuIElmIGlucHV0IGhhcyBzb3VyY2UgbWFwXG4gICAgICogICAgICAgICAgICAgICAgICAgICAgICAgZnJvbSBwcmV2aW91cyB0b29sLCBQb3N0Q1NTIHdpbGwgdXNlIG9yaWdpblxuICAgICAqICAgICAgICAgICAgICAgICAgICAgICAgIChmb3IgZXhhbXBsZSwgU2Fzcykgc291cmNlLiBZb3UgY2FuIHVzZSB0aGlzXG4gICAgICogICAgICAgICAgICAgICAgICAgICAgICAgb2JqZWN0IHRvIGdldCBQb3N0Q1NTIGlucHV0IHNvdXJjZS5cbiAgICAgKlxuICAgICAqIEBleGFtcGxlXG4gICAgICogZXJyb3IuaW5wdXQuZmlsZSAvLz0+ICdhLmNzcydcbiAgICAgKiBlcnJvci5maWxlICAgICAgIC8vPT4gJ2Euc2FzcydcbiAgICAgKi9cblxufVxuXG5leHBvcnQgZGVmYXVsdCBDc3NTeW50YXhFcnJvcjtcbiJdfQ==
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 "use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = cloneNode;
+
+var _definitions = require("../definitions");
+
+const has = Function.call.bind(Object.prototype.hasOwnProperty);
+
+function cloneIfNode(obj, deep, withoutLoc) {
+  if (obj && typeof obj.type === "string") {
+    return cloneNode(obj, deep, withoutLoc);
+  }
+
+  return obj;
+}
+
+function cloneIfNodeOrArray(obj, deep, withoutLoc) {
+  if (Array.isArray(obj)) {
+    return obj.map(node => cloneIfNode(node, deep, withoutLoc));
+  }
+
+  return cloneIfNode(obj, deep, withoutLoc);
+}
+
+function cloneNode(node, deep = true, withoutLoc = false) {
+  if (!node) return node;
+  const {
+    type
+  } = node;
+  const newNode = {
+    type
+  };
+
+  if (type === "Identifier") {
+    newNode.name = node.name;
+
+    if (has(node, "optional") && typeof node.optional === "boolean") {
+      newNode.optional = node.optional;
+    }
+
+    if (has(node, "typeAnnotation")) {
+      newNode.typeAnnotation = deep ? cloneIfNodeOrArray(node.typeAnnotation, true, withoutLoc) : node.typeAnnotation;
+    }
+  } else if (!has(_definitions.NODE_FIELDS, type)) {
+    throw new Error(`Unknown node type: "${type}"`);
+  } else {
+    for (const field of Object.keys(_definitions.NODE_FIELDS[type])) {
+      if (has(node, field)) {
+        if (deep) {
+          newNode[field] = type === "File" && field === "comments" ? maybeCloneComments(node.comments, deep, withoutLoc) : cloneIfNodeOrArray(node[field], true, withoutLoc);
+        } else {
+          newNode[field] = node[field];
+        }
+      }
+    }
+  }
+
+  if (has(node, "loc")) {
+    if (withoutLoc) {
+      newNode.loc = null;
+    } else {
+      newNode.loc = node.loc;
+    }
+  }
+
+  if (has(node, "leadingComments")) {
+    newNode.leadingComments = maybeCloneComments(node.leadingComments, deep, withoutLoc);
+  }
+
+  if (has(node, "innerComments")) {
+    newNode.innerComments = maybeCloneComments(node.innerComments, deep, withoutLoc);
+  }
+
+  if (has(node, "trailingComments")) {
+    newNode.trailingComments = maybeCloneComments(node.trailingComments, deep, withoutLoc);
+  }
+
+  if (has(node, "extra")) {
+    newNode.extra = Object.assign({}, node.extra);
+  }
+
+  return newNode;
+}
+
+function cloneCommentsWithoutLoc(comments) {
+  return comments.map(({
+    type,
+    value
+  }) => ({
+    type,
+    value,
+    loc: null
+  }));
+}
+
+function maybeCloneComments(comments, deep, withoutLoc) {
+  return deep && withoutLoc ? cloneCommentsWithoutLoc(comments) : comments;
+}                                                                                                                                                                                                                                                                                                                    

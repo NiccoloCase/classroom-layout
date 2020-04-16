@@ -173,9 +173,9 @@ export const ClassroomPage: React.FC<RouteComponentProps<IParams>> = props => {
             </div>
             <div className="right-menu">
                 <div className="classroom-info">
-                    <h2>CLASSE</h2>
-                    <h3 className="classroom-name">{name}</h3>
-                    <h4 className="classroom-id">{`#${id}`}</h4>
+                    <h2 className="classroom-info__title">Classe</h2>
+                    <h3 className="classroom-info__name">{name}</h3>
+                    <h4 className="classroom-info__id">{`#${id}`}</h4>
                 </div>
                 {renderStudents(students)}
             </div>

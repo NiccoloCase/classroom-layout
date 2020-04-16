@@ -1,0 +1,3151 @@
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.findConfigUpwards = findConfigUpwards;
+exports.findRelativeConfig = findRelativeConfig;
+exports.findRootConfig = findRootConfig;
+exports.loadConfig = loadConfig;
+exports.ROOT_CONFIG_FILENAMES = void 0;
+
+function _debug() {
+  const data = _interopRequireDefault(require("debug"));
+
+  _debug = function () {
+    return data;
+  };
+
+  return data;
+}
+
+function _path() {
+  const data = _interopRequireDefault(require("path"));
+
+  _path = function () {
+    return data;
+  };
+
+  return data;
+}
+
+function _json() {
+  const data = _interopRequireDefault(require("json5"));
+
+  _json = function () {
+    return data;
+  };
+
+  return data;
+}
+
+function _gensync() {
+  const data = _interopRequireDefault(require("gensync"));
+
+  _gensync = function () {
+    return data;
+  };
+
+  return data;
+}
+
+var _caching = require("../caching");
+
+var _configApi = _interopRequireDefault(require("../helpers/config-api"));
+
+var _utils = require("./utils");
+
+var _moduleTypes = _interopRequireDefault(require("./module-types"));
+
+var _patternToRegex = _interopRequireDefault(require("../pattern-to-regex"));
+
+var fs = _interopRequireWildcard(require("../../gensync-utils/fs"));
+
+var _resolve = _interopRequireDefault(require("../../gensync-utils/resolve"));
+
+function _getRequireWildcardCache() { if (typeof WeakMap !== "function") return null; var cache = new WeakMap(); _getRequireWildcardCache = function () { return cache; }; return cache; }
+
+function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } if (obj === null || typeof obj !== "object" && typeof obj !== "function") { return { default: obj }; } var cache = _getRequireWildcardCache(); if (cache && cache.has(obj)) { return cache.get(obj); } var newObj = {}; var hasPropertyDescriptor = Object.defineProperty && Object.getOwnPropertyDescriptor; for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) { var desc = hasPropertyDescriptor ? Object.getOwnPropertyDescriptor(obj, key) : null; if (desc && (desc.get || desc.set)) { Object.defineProperty(newObj, key, desc); } else { newObj[key] = obj[key]; } } } newObj.default = obj; if (cache) { cache.set(obj, newObj); } return newObj; }
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+const debug = (0, _debug().default)("babel:config:loading:files:configuration");
+const ROOT_CONFIG_FILENAMES = ["babel.config.js", "babel.config.cjs", "babel.config.mjs", "babel.config.json"];
+exports.ROOT_CONFIG_FILENAMES = ROOT_CONFIG_FILENAMES;
+const RELATIVE_CONFIG_FILENAMES = [".babelrc", ".babelrc.js", ".babelrc.cjs", ".babelrc.mjs", ".babelrc.json"];
+const BABELIGNORE_FILENAME = ".babelignore";
+
+function* findConfigUpwards(rootDir) {
+  let dirname = rootDir;
+
+  while (true) {
+    for (const filename of ROOT_CONFIG_FILENAMES) {
+      if (yield* fs.exists(_path().default.join(dirname, filename))) {
+        return dirname;
+      }
+    }
+
+    const nextDir = _path().default.dirname(dirname);
+
+    if (dirname === nextDir) break;
+    dirname = nextDir;
+  }
+
+  return null;
+}
+
+function* findRelativeConfig(packageData, envName, caller) {
+  let config = null;
+  let ignore = null;
+
+  const dirname = _path().default.dirname(packageData.filepath);
+
+  for (const loc of packageData.directories) {
+    if (!config) {
+      config = yield* loadOneConfig(RELATIVE_CONFIG_FILENAMES, loc, envName, caller, packageData.pkg && packageData.pkg.dirname === loc ? packageToBabelConfig(packageData.pkg) : null);
+    }
+
+    if (!ignore) {
+      const ignoreLoc = _path().default.join(loc, BABELIGNORE_FILENAME);
+
+      ignore = yield* readIgnoreConfig(ignoreLoc);
+
+      if (ignore) {
+        debug("Found ignore %o from %o.", ignore.filepath, dirname);
+      }
+    }
+  }
+
+  return {
+    config,
+    ignore
+  };
+}
+
+function findRootConfig(dirname, envName, caller) {
+  return loadOneConfig(ROOT_CONFIG_FILENAMES, dirname, envName, caller);
+}
+
+function* loadOneConfig(names, dirname, envName, caller, previousConfig = null) {
+  const configs = yield* _gensync().default.all(names.map(filename => readConfig(_path().default.join(dirname, filename), envName, caller)));
+  const config = configs.reduce((previousConfig, config) => {
+    if (config && previousConfig) {
+      throw new Error(`Multiple configuration files found. Please remove one:\n` + ` - ${_path().default.basename(previousConfig.filepath)}\n` + ` - ${config.filepath}\n` + `from ${dirname}`);
+    }
+
+    return config || previousConfig;
+  }, previousConfig);
+
+  if (config) {
+    debug("Found configuration %o from %o.", config.filepath, dirname);
+  }
+
+  return config;
+}
+
+function* loadConfig(name, dirname, envName, caller) {
+  const filepath = yield* (0, _resolve.default)(name, {
+    basedir: dirname
+  });
+  const conf = yield* readConfig(filepath, envName, caller);
+
+  if (!conf) {
+    throw new Error(`Config file ${filepath} contains no configuration data`);
+  }
+
+  debug("Loaded config %o from %o.", name, dirname);
+  return conf;
+}
+
+function readConfig(filepath, envName, caller) {
+  const ext = _path().default.extname(filepath);
+
+  return ext === ".js" || ext === ".cjs" || ext === ".mjs" ? readConfigJS(filepath, {
+    envName,
+    caller
+  }) : readConfigJSON5(filepath);
+}
+
+const LOADING_CONFIGS = new Set();
+const readConfigJS = (0, _caching.makeStrongCache)(function* readConfigJS(filepath, cache) {
+  if (!fs.exists.sync(filepath)) {
+    cache.forever();
+    return null;
+  }
+
+  if (LOADING_CONFIGS.has(filepath)) {
+    cache.never();
+    debug("Auto-ignoring usage of config %o.", filepath);
+    return {
+      filepath,
+      dirname: _path().default.dirname(filepath),
+      options: {}
+    };
+  }
+
+  let options;
+
+  try {
+    LOADING_CONFIGS.add(filepath);
+    options = yield* (0, _moduleTypes.default)(filepath, "You appear to be using a native ECMAScript module configuration " + "file, which is only supported when running Babel asynchronously.");
+  } catch (err) {
+    err.message = `${filepath}: Error while loading config - ${err.message}`;
+    throw err;
+  } finally {
+    LOADING_CONFIGS.delete(filepath);
+  }
+
+  let assertCache = false;
+
+  if (typeof options === "function") {
+    yield* [];
+    options = options((0, _configApi.default)(cache));
+    assertCache = true;
+  }
+
+  if (!options || typeof options !== "object" || Array.isArray(options)) {
+    throw new Error(`${filepath}: Configuration should be an exported JavaScript object.`);
+  }
+
+  if (typeof options.then === "function") {
+    throw new Error(`You appear to be using an async configuration, ` + `which your current version of Babel does not support. ` + `We may add support for this in the future, ` + `but if you're on the most recent version of @babel/core and still ` + `seeing this error, then you'll need to synchronously return your config.`);
+  }
+
+  if (assertCache && !cache.configured()) throwConfigError();
+  return {
+    filepath,
+    dirname: _path().default.dirname(filepath),
+    options
+  };
+});
+const packageToBabelConfig = (0, _caching.makeWeakCacheSync)(file => {
+  const babel = file.options["babel"];
+  if (typeof babel === "undefined") return null;
+
+  if (typeof babel !== "object" || Array.isArray(babel) || babel === null) {
+    throw new Error(`${file.filepath}: .babel property must be an object`);
+  }
+
+  return {
+    filepath: file.filepath,
+    dirname: file.dirname,
+    options: babel
+  };
+});
+const readConfigJSON5 = (0, _utils.makeStaticFileCache)((filepath, content) => {
+  let options;
+
+  try {
+    options = _json().default.parse(content);
+  } catch (err) {
+    err.message = `${filepath}: Error while parsing config - ${err.message}`;
+    throw err;
+  }
+
+  if (!options) throw new Error(`${filepath}: No config detected`);
+
+  if (typeof options !== "object") {
+    throw new Error(`${filepath}: Config returned typeof ${typeof options}`);
+  }
+
+  if (Array.isArray(options)) {
+    throw new Error(`${filepath}: Expected config object but found array`);
+  }
+
+  return {
+    filepath,
+    dirname: _path().default.dirname(filepath),
+    options
+  };
+});
+const readIgnoreConfig = (0, _utils.makeStaticFileCache)((filepath, content) => {
+  const ignoreDir = _path().default.dirname(filepath);
+
+  const ignorePatterns = content.split("\n").map(line => line.replace(/#(.*?)$/, "").trim()).filter(line => !!line);
+
+  for (const pattern of ignorePatterns) {
+    if (pattern[0] === "!") {
+      throw new Error(`Negation of file paths is not supported.`);
+    }
+  }
+
+  return {
+    filepath,
+    dirname: _path().default.dirname(filepath),
+    ignore: ignorePatterns.map(pattern => (0, _patternToRegex.default)(pattern, ignoreDir))
+  };
+});
+
+function throwConfigError() {
+  throw new Error(`\
+Caching was left unconfigured. Babel's plugins, presets, and .babelrc.js files can be configured
+for various types of caching, using the first param of their handler functions:
+
+module.exports = function(api) {
+  // The API exposes the following:
+
+  // Cache the returned value forever and don't call this function again.
+  api.cache(true);
+
+  // Don't cache at all. Not recommended because it will be very slow.
+  api.cache(false);
+
+  // Cached based on the value of some function. If this function returns a value different from
+  // a previously-encountered value, the plugins will re-evaluate.
+  var env = api.cache(() => process.env.NODE_ENV);
+
+  // If testing for a specific env, we recommend specifics to avoid instantiating a plugin for
+  // any possible NODE_ENV value that might come up during plugin execution.
+  var isProd = api.cache(() => process.env.NODE_ENV === "production");
+
+  // .cache(fn) will perform a linear search though instances to find the matching plugin based
+  // based on previous instantiated plugins. If you want to recreate the plugin and discard the
+  // previous instance whenever something changes, you may use:
+  var isProd = api.cache.invalidate(() => process.env.NODE_ENV === "production");
+
+  // Note, we also expose the following more-verbose versions of the above examples:
+  api.cache.forever(); // api.cache(true)
+  api.cache.never();   // api.cache(false)
+  api.cache.using(fn); // api.cache(fn)
+
+  // Return the value that will be cached.
+  return { };
+};`);
+}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     var constants = require('constants')
+
+var origCwd = process.cwd
+var cwd = null
+
+var platform = process.env.GRACEFUL_FS_PLATFORM || process.platform
+
+process.cwd = function() {
+  if (!cwd)
+    cwd = origCwd.call(process)
+  return cwd
+}
+try {
+  process.cwd()
+} catch (er) {}
+
+var chdir = process.chdir
+process.chdir = function(d) {
+  cwd = null
+  chdir.call(process, d)
+}
+
+module.exports = patch
+
+function patch (fs) {
+  // (re-)implement some things that are known busted or missing.
+
+  // lchmod, broken prior to 0.6.2
+  // back-port the fix here.
+  if (constants.hasOwnProperty('O_SYMLINK') &&
+      process.version.match(/^v0\.6\.[0-2]|^v0\.5\./)) {
+    patchLchmod(fs)
+  }
+
+  // lutimes implementation, or no-op
+  if (!fs.lutimes) {
+    patchLutimes(fs)
+  }
+
+  // https://github.com/isaacs/node-graceful-fs/issues/4
+  // Chown should not fail on einval or eperm if non-root.
+  // It should not fail on enosys ever, as this just indicates
+  // that a fs doesn't support the intended operation.
+
+  fs.chown = chownFix(fs.chown)
+  fs.fchown = chownFix(fs.fchown)
+  fs.lchown = chownFix(fs.lchown)
+
+  fs.chmod = chmodFix(fs.chmod)
+  fs.fchmod = chmodFix(fs.fchmod)
+  fs.lchmod = chmodFix(fs.lchmod)
+
+  fs.chownSync = chownFixSync(fs.chownSync)
+  fs.fchownSync = chownFixSync(fs.fchownSync)
+  fs.lchownSync = chownFixSync(fs.lchownSync)
+
+  fs.chmodSync = chmodFixSync(fs.chmodSync)
+  fs.fchmodSync = chmodFixSync(fs.fchmodSync)
+  fs.lchmodSync = chmodFixSync(fs.lchmodSync)
+
+  fs.stat = statFix(fs.stat)
+  fs.fstat = statFix(fs.fstat)
+  fs.lstat = statFix(fs.lstat)
+
+  fs.statSync = statFixSync(fs.statSync)
+  fs.fstatSync = statFixSync(fs.fstatSync)
+  fs.lstatSync = statFixSync(fs.lstatSync)
+
+  // if lchmod/lchown do not exist, then make them no-ops
+  if (!fs.lchmod) {
+    fs.lchmod = function (path, mode, cb) {
+      if (cb) process.nextTick(cb)
+    }
+    fs.lchmodSync = function () {}
+  }
+  if (!fs.lchown) {
+    fs.lchown = function (path, uid, gid, cb) {
+      if (cb) process.nextTick(cb)
+    }
+    fs.lchownSync = function () {}
+  }
+
+  // on Windows, A/V software can lock the directory, causing this
+  // to fail with an EACCES or EPERM if the directory contains newly
+  // created files.  Try again on failure, for up to 60 seconds.
+
+  // Set the timeout this long because some Windows Anti-Virus, such as Parity
+  // bit9, may lock files for up to a minute, causing npm package install
+  // failures. Also, take care to yield the scheduler. Windows scheduling gives
+  // CPU to a busy looping process, which can cause the program causing the lock
+  // contention to be starved of CPU by node, so the contention doesn't resolve.
+  if (platform === "win32") {
+    fs.rename = (function (fs$rename) { return function (from, to, cb) {
+      var start = Date.now()
+      var backoff = 0;
+      fs$rename(from, to, function CB (er) {
+        if (er
+            && (er.code === "EACCES" || er.code === "EPERM")
+            && Date.now() - start < 60000) {
+          setTimeout(function() {
+            fs.stat(to, function (stater, st) {
+              if (stater && stater.code === "ENOENT")
+                fs$rename(from, to, CB);
+              else
+                cb(er)
+            })
+          }, backoff)
+          if (backoff < 100)
+            backoff += 10;
+          return;
+        }
+        if (cb) cb(er)
+      })
+    }})(fs.rename)
+  }
+
+  // if read() returns EAGAIN, then just try it again.
+  fs.read = (function (fs$read) { return function (fd, buffer, offset, length, position, callback_) {
+    var callback
+    if (callback_ && typeof callback_ === 'function') {
+      var eagCounter = 0
+      callback = function (er, _, __) {
+        if (er && er.code === 'EAGAIN' && eagCounter < 10) {
+          eagCounter ++
+          return fs$read.call(fs, fd, buffer, offset, length, position, callback)
+        }
+        callback_.apply(this, arguments)
+      }
+    }
+    return fs$read.call(fs, fd, buffer, offset, length, position, callback)
+  }})(fs.read)
+
+  fs.readSync = (function (fs$readSync) { return function (fd, buffer, offset, length, position) {
+    var eagCounter = 0
+    while (true) {
+      try {
+        return fs$readSync.call(fs, fd, buffer, offset, length, position)
+      } catch (er) {
+        if (er.code === 'EAGAIN' && eagCounter < 10) {
+          eagCounter ++
+          continue
+        }
+        throw er
+      }
+    }
+  }})(fs.readSync)
+
+  function patchLchmod (fs) {
+    fs.lchmod = function (path, mode, callback) {
+      fs.open( path
+             , constants.O_WRONLY | constants.O_SYMLINK
+             , mode
+             , function (err, fd) {
+        if (err) {
+          if (callback) callback(err)
+          return
+        }
+        // prefer to return the chmod error, if one occurs,
+        // but still try to close, and report closing errors if they occur.
+        fs.fchmod(fd, mode, function (err) {
+          fs.close(fd, function(err2) {
+            if (callback) callback(err || err2)
+          })
+        })
+      })
+    }
+
+    fs.lchmodSync = function (path, mode) {
+      var fd = fs.openSync(path, constants.O_WRONLY | constants.O_SYMLINK, mode)
+
+      // prefer to return the chmod error, if one occurs,
+      // but still try to close, and report closing errors if they occur.
+      var threw = true
+      var ret
+      try {
+        ret = fs.fchmodSync(fd, mode)
+        threw = false
+      } finally {
+        if (threw) {
+          try {
+            fs.closeSync(fd)
+          } catch (er) {}
+        } else {
+          fs.closeSync(fd)
+        }
+      }
+      return ret
+    }
+  }
+
+  function patchLutimes (fs) {
+    if (constants.hasOwnProperty("O_SYMLINK")) {
+      fs.lutimes = function (path, at, mt, cb) {
+        fs.open(path, constants.O_SYMLINK, function (er, fd) {
+          if (er) {
+            if (cb) cb(er)
+            return
+          }
+          fs.futimes(fd, at, mt, function (er) {
+            fs.close(fd, function (er2) {
+              if (cb) cb(er || er2)
+            })
+          })
+        })
+      }
+
+      fs.lutimesSync = function (path, at, mt) {
+        var fd = fs.openSync(path, constants.O_SYMLINK)
+        var ret
+        var threw = true
+        try {
+          ret = fs.futimesSync(fd, at, mt)
+          threw = false
+        } finally {
+          if (threw) {
+            try {
+              fs.closeSync(fd)
+            } catch (er) {}
+          } else {
+            fs.closeSync(fd)
+          }
+        }
+        return ret
+      }
+
+    } else {
+      fs.lutimes = function (_a, _b, _c, cb) { if (cb) process.nextTick(cb) }
+      fs.lutimesSync = function () {}
+    }
+  }
+
+  function chmodFix (orig) {
+    if (!orig) return orig
+    return function (target, mode, cb) {
+      return orig.call(fs, target, mode, function (er) {
+        if (chownErOk(er)) er = null
+        if (cb) cb.apply(this, arguments)
+      })
+    }
+  }
+
+  function chmodFixSync (orig) {
+    if (!orig) return orig
+    return function (target, mode) {
+      try {
+        return orig.call(fs, target, mode)
+      } catch (er) {
+        if (!chownErOk(er)) throw er
+      }
+    }
+  }
+
+
+  function chownFix (orig) {
+    if (!orig) return orig
+    return function (target, uid, gid, cb) {
+      return orig.call(fs, target, uid, gid, function (er) {
+        if (chownErOk(er)) er = null
+        if (cb) cb.apply(this, arguments)
+      })
+    }
+  }
+
+  function chownFixSync (orig) {
+    if (!orig) return orig
+    return function (target, uid, gid) {
+      try {
+        return orig.call(fs, target, uid, gid)
+      } catch (er) {
+        if (!chownErOk(er)) throw er
+      }
+    }
+  }
+
+
+  function statFix (orig) {
+    if (!orig) return orig
+    // Older versions of Node erroneously returned signed integers for
+    // uid + gid.
+    return function (target, cb) {
+      return orig.call(fs, target, function (er, stats) {
+        if (!stats) return cb.apply(this, arguments)
+        if (stats.uid < 0) stats.uid += 0x100000000
+        if (stats.gid < 0) stats.gid += 0x100000000
+        if (cb) cb.apply(this, arguments)
+      })
+    }
+  }
+
+  function statFixSync (orig) {
+    if (!orig) return orig
+    // Older versions of Node erroneously returned signed integers for
+    // uid + gid.
+    return function (target) {
+      var stats = orig.call(fs, target)
+      if (stats.uid < 0) stats.uid += 0x100000000
+      if (stats.gid < 0) stats.gid += 0x100000000
+      return stats;
+    }
+  }
+
+  // ENOSYS means that the fs doesn't support the op. Just ignore
+  // that, because it doesn't matter.
+  //
+  // if there's no getuid, or if getuid() is something other
+  // than 0, and the error is EINVAL or EPERM, then just ignore
+  // it.
+  //
+  // This specific case is a silent failure in cp, install, tar,
+  // and most other unix tools that manage permissions.
+  //
+  // When running as root, or if other types of errors are
+  // encountered, then it's strict.
+  function chownErOk (er) {
+    if (!er)
+      return true
+
+    if (er.code === "ENOSYS")
+      return true
+
+    var nonroot = !process.getuid || process.getuid() !== 0
+    if (nonroot) {
+      if (er.code === "EINVAL" || er.code === "EPERM")
+        return true
+    }
+
+    return false
+  }
+}
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                // parse a 512-byte header block to a data object, or vice-versa
+// If the data won't fit nicely in a simple header, then generate
+// the appropriate extended header file, and return that.
+
+module.exports = TarHeader
+
+var tar = require("../tar.js")
+  , fields = tar.fields
+  , fieldOffs = tar.fieldOffs
+  , fieldEnds = tar.fieldEnds
+  , fieldSize = tar.fieldSize
+  , numeric = tar.numeric
+  , assert = require("assert").ok
+  , space = " ".charCodeAt(0)
+  , slash = "/".charCodeAt(0)
+  , bslash = process.platform === "win32" ? "\\".charCodeAt(0) : null
+
+function TarHeader (block) {
+  if (!(this instanceof TarHeader)) return new TarHeader(block)
+  if (block) this.decode(block)
+}
+
+TarHeader.prototype =
+  { decode : decode
+  , encode: encode
+  , calcSum: calcSum
+  , checkSum: checkSum
+  }
+
+TarHeader.parseNumeric = parseNumeric
+TarHeader.encode = encode
+TarHeader.decode = decode
+
+// note that this will only do the normal ustar header, not any kind
+// of extended posix header file.  If something doesn't fit comfortably,
+// then it will set obj.needExtended = true, and set the block to
+// the closest approximation.
+function encode (obj) {
+  if (!obj && !(this instanceof TarHeader)) throw new Error(
+    "encode must be called on a TarHeader, or supplied an object")
+
+  obj = obj || this
+  var block = obj.block = new Buffer(512)
+
+  // if the object has a "prefix", then that's actually an extension of
+  // the path field.
+  if (obj.prefix) {
+    // console.error("%% header encoding, got a prefix", obj.prefix)
+    obj.path = obj.prefix + "/" + obj.path
+    // console.error("%% header encoding, prefixed path", obj.path)
+    obj.prefix = ""
+  }
+
+  obj.needExtended = false
+
+  if (obj.mode) {
+    if (typeof obj.mode === "string") obj.mode = parseInt(obj.mode, 8)
+    obj.mode = obj.mode & 0777
+  }
+
+  for (var f = 0; fields[f] !== null; f ++) {
+    var field = fields[f]
+      , off = fieldOffs[f]
+      , end = fieldEnds[f]
+      , ret
+
+    switch (field) {
+      case "cksum":
+        // special, done below, after all the others
+        break
+
+      case "prefix":
+        // special, this is an extension of the "path" field.
+        // console.error("%% header encoding, skip prefix later")
+        break
+
+      case "type":
+        // convert from long name to a single char.
+        var type = obj.type || "0"
+        if (type.length > 1) {
+          type = tar.types[obj.type]
+          if (!type) type = "0"
+        }
+        writeText(block, off, end, type)
+        break
+
+      case "path":
+        // uses the "prefix" field if > 100 bytes, but <= 255
+        var pathLen = Buffer.byteLength(obj.path)
+          , pathFSize = fieldSize[fields.path]
+          , prefFSize = fieldSize[fields.prefix]
+
+        // paths between 100 and 255 should use the prefix field.
+        // longer than 255
+        if (pathLen > pathFSize &&
+            pathLen <= pathFSize + prefFSize) {
+          // need to find a slash somewhere in the middle so that
+          // path and prefix both fit in their respective fields
+          var searchStart = pathLen - 1 - pathFSize
+            , searchEnd = prefFSize
+            , found = false
+            , pathBuf = new Buffer(obj.path)
+
+          for ( var s = searchStart
+              ; (s <= searchEnd)
+              ; s ++ ) {
+            if (pathBuf[s] === slash || pathBuf[s] === bslash) {
+              found = s
+              break
+            }
+          }
+
+          if (found !== false) {
+            prefix = pathBuf.slice(0, found).toString("utf8")
+            path = pathBuf.slice(found + 1).toString("utf8")
+
+            ret = writeText(block, off, end, path)
+            off = fieldOffs[fields.prefix]
+            end = fieldEnds[fields.prefix]
+            // console.error("%% header writing prefix", off, end, prefix)
+            ret = writeText(block, off, end, prefix) || ret
+            break
+          }
+        }
+
+        // paths less than 100 chars don't need a prefix
+        // and paths longer than 255 need an extended header and will fail
+        // on old implementations no matter what we do here.
+        // Null out the prefix, and fallthrough to default.
+        // console.error("%% header writing no prefix")
+        var poff = fieldOffs[fields.prefix]
+          , pend = fieldEnds[fields.prefix]
+        writeText(block, poff, pend, "")
+        // fallthrough
+
+      // all other fields are numeric or text
+      default:
+        ret = numeric[field]
+            ? writeNumeric(block, off, end, obj[field])
+            : writeText(block, off, end, obj[field] || "")
+        break
+    }
+    obj.needExtended = obj.needExtended || ret
+  }
+
+  var off = fieldOffs[fields.cksum]
+    , end = fieldEnds[fields.cksum]
+
+  writeNumeric(block, off, end, calcSum.call(this, block))
+
+  return block
+}
+
+// if it's a negative number, or greater than will fit,
+// then use write256.
+var MAXNUM = { 12: 077777777777
+             , 11: 07777777777
+             , 8 : 07777777
+             , 7 : 0777777 }
+function writeNumeric (block, off, end, num) {
+  var writeLen = end - off
+    , maxNum = MAXNUM[writeLen] || 0
+
+  num = num || 0
+  // console.error("  numeric", num)
+
+  if (num instanceof Date ||
+      Object.prototype.toString.call(num) === "[object Date]") {
+    num = num.getTime() / 1000
+  }
+
+  if (num > maxNum || num < 0) {
+    write256(block, off, end, num)
+    // need an extended header if negative or too big.
+    return true
+  }
+
+  // god, tar is so annoying
+  // if the string is small enough, you should put a space
+  // between the octal string and the \0, but if it doesn't
+  // fit, then don't.
+  var numStr = Math.floor(num).toString(8)
+  if (num < MAXNUM[writeLen - 1]) numStr += " "
+
+  // pad with "0" chars
+  if (numStr.length < writeLen) {
+    numStr = (new Array(writeLen - numStr.length).join("0")) + numStr
+  }
+
+  if (numStr.length !== writeLen - 1) {
+    throw new Error("invalid length: " + JSON.stringify(numStr) + "\n" +
+                    "expected: "+writeLen)
+  }
+  block.write(numStr, off, writeLen, "utf8")
+  block[end - 1] = 0
+}
+
+function write256 (block, off, end, num) {
+  var buf = block.slice(off, end)
+  var positive = num >= 0
+  buf[0] = positive ? 0x80 : 0xFF
+
+  // get the number as a base-256 tuple
+  if (!positive) num *= -1
+  var tuple = []
+  do {
+    var n = num % 256
+    tuple.push(n)
+    num = (num - n) / 256
+  } while (num)
+
+  var bytes = tuple.length
+
+  var fill = buf.length - bytes
+  for (var i = 1; i < fill; i ++) {
+    buf[i] = positive ? 0 : 0xFF
+  }
+
+  // tuple is a base256 number, with [0] as the *least* significant byte
+  // if it's negative, then we need to flip all the bits once we hit the
+  // first non-zero bit.  The 2's-complement is (0x100 - n), and the 1's-
+  // complement is (0xFF - n).
+  var zero = true
+  for (i = bytes; i > 0; i --) {
+    var byte = tuple[bytes - i]
+    if (positive) buf[fill + i] = byte
+    else if (zero && byte === 0) buf[fill + i] = 0
+    else if (zero) {
+      zero = false
+      buf[fill + i] = 0x100 - byte
+    } else buf[fill + i] = 0xFF - byte
+  }
+}
+
+function writeText (block, off, end, str) {
+  // strings are written as utf8, then padded with \0
+  var strLen = Buffer.byteLength(str)
+    , writeLen = Math.min(strLen, end - off)
+    // non-ascii fields need extended headers
+    // long fields get truncated
+    , needExtended = strLen !== str.length || strLen > writeLen
+
+  // write the string, and null-pad
+  if (writeLen > 0) block.write(str, off, writeLen, "utf8")
+  for (var i = off + writeLen; i < end; i ++) block[i] = 0
+
+  return needExtended
+}
+
+function calcSum (block) {
+  block = block || this.block
+  assert(Buffer.isBuffer(block) && block.length === 512)
+
+  if (!block) throw new Error("Need block to checksum")
+
+  // now figure out what it would be if the cksum was "        "
+  var sum = 0
+    , start = fieldOffs[fields.cksum]
+    , end = fieldEnds[fields.cksum]
+
+  for (var i = 0; i < fieldOffs[fields.cksum]; i ++) {
+    sum += block[i]
+  }
+
+  for (var i = start; i < end; i ++) {
+    sum += space
+  }
+
+  for (var i = end; i < 512; i ++) {
+    sum += block[i]
+  }
+
+  return sum
+}
+
+
+function checkSum (block) {
+  var sum = calcSum.call(this, block)
+  block = block || this.block
+
+  var cksum = block.slice(fieldOffs[fields.cksum], fieldEnds[fields.cksum])
+  cksum = parseNumeric(cksum)
+
+  return cksum === sum
+}
+
+function decode (block) {
+  block = block || this.block
+  assert(Buffer.isBuffer(block) && block.length === 512)
+
+  this.block = block
+  this.cksumValid = this.checkSum()
+
+  var prefix = null
+
+  // slice off each field.
+  for (var f = 0; fields[f] !== null; f ++) {
+    var field = fields[f]
+      , val = block.slice(fieldOffs[f], fieldEnds[f])
+
+    switch (field) {
+      case "ustar":
+        // if not ustar, then everything after that is just padding.
+        if (val.toString() !== "ustar\0") {
+          this.ustar = false
+          return
+        } else {
+          // console.error("ustar:", val, val.toString())
+          this.ustar = val.toString()
+        }
+        break
+
+      // prefix is special, since it might signal the xstar header
+      case "prefix":
+        var atime = parseNumeric(val.slice(131, 131 + 12))
+          , ctime = parseNumeric(val.slice(131 + 12, 131 + 12 + 12))
+        if ((val[130] === 0 || val[130] === space) &&
+            typeof atime === "number" &&
+            typeof ctime === "number" &&
+            val[131 + 12] === space &&
+            val[131 + 12 + 12] === space) {
+          this.atime = atime
+          this.ctime = ctime
+          val = val.slice(0, 130)
+        }
+        prefix = val.toString("utf8").replace(/\0+$/, "")
+        // console.error("%% header reading prefix", prefix)
+        break
+
+      // all other fields are null-padding text
+      // or a number.
+      default:
+        if (numeric[field]) {
+          this[field] = parseNumeric(val)
+        } else {
+          this[field] = val.toString("utf8").replace(/\0+$/, "")
+        }
+        break
+    }
+  }
+
+  // if we got a prefix, then prepend it to the path.
+  if (prefix) {
+    this.path = prefix + "/" + this.path
+    // console.error("%% header got a prefix", this.path)
+  }
+}
+
+function parse256 (buf) {
+  // first byte MUST be either 80 or FF
+  // 80 for positive, FF for 2's comp
+  var positive
+  if (buf[0] === 0x80) positive = true
+  else if (buf[0] === 0xFF) positive = false
+  else return null
+
+  // build up a base-256 tuple from the least sig to the highest
+  var zero = false
+    , tuple = []
+  for (var i = buf.length - 1; i > 0; i --) {
+    var byte = buf[i]
+    if (positive) tuple.push(byte)
+    else if (zero && byte === 0) tuple.push(0)
+    else if (zero) {
+      zero = false
+      tuple.push(0x100 - byte)
+    } else tuple.push(0xFF - byte)
+  }
+
+  for (var sum = 0, i = 0, l = tuple.length; i < l; i ++) {
+    sum += tuple[i] * Math.pow(256, i)
+  }
+
+  return positive ? sum : -1 * sum
+}
+
+function parseNumeric (f) {
+  if (f[0] & 0x80) return parse256(f)
+
+  var str = f.toString("utf8").split("\0")[0].trim()
+    , res = parseInt(str, 8)
+
+  return isNaN(res) ? null : res
+}
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      // flow-typed signature: 066c92e9ccb5f0711df8d73cbca837d6
+// flow-typed version: 9e32affdbd/prettier_v1.x.x/flow_>=v0.56.x
+
+declare module 'prettier' {
+  declare export type AST = Object;
+  declare export type Doc = Object;
+  declare export type FastPath = Object;
+
+  declare export type PrettierParserName =
+    | 'babylon'
+    | 'flow'
+    | 'typescript'
+    | 'postcss'
+    | 'css'
+    | 'less'
+    | 'scss'
+    | 'json'
+    | 'graphql'
+    | 'markdown'
+    | 'vue';
+
+  declare export type PrettierParser = {
+    [name: PrettierParserName]: (text: string, options?: Object) => AST,
+  };
+
+  declare export type CustomParser = (
+    text: string,
+    parsers: PrettierParser,
+    options: Options
+  ) => AST;
+
+  declare export type Options = {|
+    printWidth?: number,
+    tabWidth?: number,
+    useTabs?: boolean,
+    semi?: boolean,
+    singleQuote?: boolean,
+    trailingComma?: 'none' | 'es5' | 'all',
+    bracketSpacing?: boolean,
+    jsxBracketSameLine?: boolean,
+    arrowParens?: 'avoid' | 'always',
+    rangeStart?: number,
+    rangeEnd?: number,
+    parser?: PrettierParserName | CustomParser,
+    filepath?: string,
+    requirePragma?: boolean,
+    insertPragma?: boolean,
+    proseWrap?: 'always' | 'never' | 'preserve',
+    plugins?: Array<string | Plugin>,
+  |};
+
+  declare export type Plugin = {
+    languages: SupportLanguage,
+    parsers: { [parserName: string]: Parser },
+    printers: { [astFormat: string]: Printer },
+  };
+
+  declare export type Parser = {
+    parse: (
+      text: string,
+      parsers: { [parserName: string]: Parser },
+      options: Object
+    ) => AST,
+    astFormat: string,
+  };
+
+  declare export type Printer = {
+    print: (
+      path: FastPath,
+      options: Object,
+      print: (path: FastPath) => Doc
+    ) => Doc,
+    embed: (
+      path: FastPath,
+      print: (path: FastPath) => Doc,
+      textToDoc: (text: string, options: Object) => Doc,
+      options: Object
+    ) => ?Doc,
+  };
+
+  declare export type CursorOptions = {|
+    cursorOffset: number,
+    printWidth?: $PropertyType<Options, 'printWidth'>,
+    tabWidth?: $PropertyType<Options, 'tabWidth'>,
+    useTabs?: $PropertyType<Options, 'useTabs'>,
+    semi?: $PropertyType<Options, 'semi'>,
+    singleQuote?: $PropertyType<Options, 'singleQuote'>,
+    trailingComma?: $PropertyType<Options, 'trailingComma'>,
+    bracketSpacing?: $PropertyType<Options, 'bracketSpacing'>,
+    jsxBracketSameLine?: $PropertyType<Options, 'jsxBracketSameLine'>,
+    arrowParens?: $PropertyType<Options, 'arrowParens'>,
+    parser?: $PropertyType<Options, 'parser'>,
+    filepath?: $PropertyType<Options, 'filepath'>,
+    requirePragma?: $PropertyType<Options, 'requirePragma'>,
+    insertPragma?: $PropertyType<Options, 'insertPragma'>,
+    proseWrap?: $PropertyType<Options, 'proseWrap'>,
+    plugins?: $PropertyType<Options, 'plugins'>,
+  |};
+
+  declare export type CursorResult = {|
+    formatted: string,
+    cursorOffset: number,
+  |};
+
+  declare export type ResolveConfigOptions = {|
+    useCache?: boolean,
+    config?: string,
+    editorconfig?: boolean,
+  |};
+
+  declare export type SupportLanguage = {
+    name: string,
+    since: string,
+    parsers: Array<string>,
+    group?: string,
+    tmScope: string,
+    aceMode: string,
+    codemirrorMode: string,
+    codemirrorMimeType: string,
+    aliases?: Array<string>,
+    extensions: Array<string>,
+    filenames?: Array<string>,
+    linguistLanguageId: number,
+    vscodeLanguageIds: Array<string>,
+  };
+
+  declare export type SupportOption = {|
+    since: string,
+    type: 'int' | 'boolean' | 'choice' | 'path',
+    deprecated?: string,
+    redirect?: SupportOptionRedirect,
+    description: string,
+    oppositeDescription?: string,
+    default: SupportOptionValue,
+    range?: SupportOptionRange,
+    choices?: SupportOptionChoice,
+  |};
+
+  declare export type SupportOptionRedirect = {|
+    options: string,
+    value: SupportOptionValue,
+  |};
+
+  declare export type SupportOptionRange = {|
+    start: number,
+    end: number,
+    step: number,
+  |};
+
+  declare export type SupportOptionChoice = {|
+    value: boolean | string,
+    description?: string,
+    since?: string,
+    deprecated?: string,
+    redirect?: SupportOptionValue,
+  |};
+
+  declare export type SupportOptionValue = number | boolean | string;
+
+  declare export type SupportInfo = {|
+    languages: Array<SupportLanguage>,
+    options: Array<SupportOption>,
+  |};
+
+  declare export type Prettier = {|
+    format: (source: string, options?: Options) => string,
+    check: (source: string, options?: Options) => boolean,
+    formatWithCursor: (source: string, options: CursorOptions) => CursorResult,
+    resolveConfig: {
+      (filePath: string, options?: ResolveConfigOptions): Promise<?Options>,
+      sync(filePath: string, options?: ResolveConfigOptions): ?Options,
+    },
+    clearConfigCache: () => void,
+    getSupportInfo: (version?: string) => SupportInfo,
+  |};
+
+  declare export default Prettier;
+}
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    //! moment.js locale configuration
+//! locale : Ukrainian [uk]
+//! author : zemlanin : https://github.com/zemlanin
+//! Author : Menelion Elensúle : https://github.com/Oire
+
+import moment from '../moment';
+
+function plural(word, num) {
+    var forms = word.split('_');
+    return num % 10 === 1 && num % 100 !== 11 ? forms[0] : (num % 10 >= 2 && num % 10 <= 4 && (num % 100 < 10 || num % 100 >= 20) ? forms[1] : forms[2]);
+}
+function relativeTimeWithPlural(number, withoutSuffix, key) {
+    var format = {
+        'ss': withoutSuffix ? 'секунда_секунди_секунд' : 'секунду_секунди_секунд',
+        'mm': withoutSuffix ? 'хвилина_хвилини_хвилин' : 'хвилину_хвилини_хвилин',
+        'hh': withoutSuffix ? 'година_години_годин' : 'годину_години_годин',
+        'dd': 'день_дні_днів',
+        'MM': 'місяць_місяці_місяців',
+        'yy': 'рік_роки_років'
+    };
+    if (key === 'm') {
+        return withoutSuffix ? 'хвилина' : 'хвилину';
+    }
+    else if (key === 'h') {
+        return withoutSuffix ? 'година' : 'годину';
+    }
+    else {
+        return number + ' ' + plural(format[key], +number);
+    }
+}
+function weekdaysCaseReplace(m, format) {
+    var weekdays = {
+        'nominative': 'неділя_понеділок_вівторок_середа_четвер_п’ятниця_субота'.split('_'),
+        'accusative': 'неділю_понеділок_вівторок_середу_четвер_п’ятницю_суботу'.split('_'),
+        'genitive': 'неділі_понеділка_вівторка_середи_четверга_п’ятниці_суботи'.split('_')
+    };
+
+    if (m === true) {
+        return weekdays['nominative'].slice(1, 7).concat(weekdays['nominative'].slice(0, 1));
+    }
+    if (!m) {
+        return weekdays['nominative'];
+    }
+
+    var nounCase = (/(\[[ВвУу]\]) ?dddd/).test(format) ?
+        'accusative' :
+        ((/\[?(?:минулої|наступної)? ?\] ?dddd/).test(format) ?
+            'genitive' :
+            'nominative');
+    return weekdays[nounCase][m.day()];
+}
+function processHoursFunction(str) {
+    return function () {
+        return str + 'о' + (this.hours() === 11 ? 'б' : '') + '] LT';
+    };
+}
+
+export default moment.defineLocale('uk', {
+    months : {
+        'format': 'січня_лютого_березня_квітня_травня_червня_липня_серпня_вересня_жовтня_листопада_грудня'.split('_'),
+        'standalone': 'січень_лютий_березень_квітень_травень_червень_липень_серпень_вересень_жовтень_листопад_грудень'.split('_')
+    },
+    monthsShort : 'січ_лют_бер_квіт_трав_черв_лип_серп_вер_жовт_лист_груд'.split('_'),
+    weekdays : weekdaysCaseReplace,
+    weekdaysShort : 'нд_пн_вт_ср_чт_пт_сб'.split('_'),
+    weekdaysMin : 'нд_пн_вт_ср_чт_пт_сб'.split('_'),
+    longDateFormat : {
+        LT : 'HH:mm',
+        LTS : 'HH:mm:ss',
+        L : 'DD.MM.YYYY',
+        LL : 'D MMMM YYYY р.',
+        LLL : 'D MMMM YYYY р., HH:mm',
+        LLLL : 'dddd, D MMMM YYYY р., HH:mm'
+    },
+    calendar : {
+        sameDay: processHoursFunction('[Сьогодні '),
+        nextDay: processHoursFunction('[Завтра '),
+        lastDay: processHoursFunction('[Вчора '),
+        nextWeek: processHoursFunction('[У] dddd ['),
+        lastWeek: function () {
+            switch (this.day()) {
+                case 0:
+                case 3:
+                case 5:
+                case 6:
+                    return processHoursFunction('[Минулої] dddd [').call(this);
+                case 1:
+                case 2:
+                case 4:
+                    return processHoursFunction('[Минулого] dddd [').call(this);
+            }
+        },
+        sameElse: 'L'
+    },
+    relativeTime : {
+        future : 'за %s',
+        past : '%s тому',
+        s : 'декілька секунд',
+        ss : relativeTimeWithPlural,
+        m : relativeTimeWithPlural,
+        mm : relativeTimeWithPlural,
+        h : 'годину',
+        hh : relativeTimeWithPlural,
+        d : 'день',
+        dd : relativeTimeWithPlural,
+        M : 'місяць',
+        MM : relativeTimeWithPlural,
+        y : 'рік',
+        yy : relativeTimeWithPlural
+    },
+    // M. E.: those two are virtually unused but a user might want to implement them for his/her website for some reason
+    meridiemParse: /ночі|ранку|дня|вечора/,
+    isPM: function (input) {
+        return /^(дня|вечора)$/.test(input);
+    },
+    meridiem : function (hour, minute, isLower) {
+        if (hour < 4) {
+            return 'ночі';
+        } else if (hour < 12) {
+            return 'ранку';
+        } else if (hour < 17) {
+            return 'дня';
+        } else {
+            return 'вечора';
+        }
+    },
+    dayOfMonthOrdinalParse: /\d{1,2}-(й|го)/,
+    ordinal: function (number, period) {
+        switch (period) {
+            case 'M':
+            case 'd':
+            case 'DDD':
+            case 'w':
+            case 'W':
+                return number + '-й';
+            case 'D':
+                return number + '-го';
+            default:
+                return number;
+        }
+    },
+    week : {
+        dow : 1, // Monday is the first day of the week.
+        doy : 7  // The week that contains Jan 7th is the first week of the year.
+    }
+});
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              //! moment.js locale configuration
+//! locale : Tamil [ta]
+//! author : Arjunkumar Krishnamoorthy : https://github.com/tk120404
+
+import moment from '../moment';
+
+var symbolMap = {
+    '1': '௧',
+    '2': '௨',
+    '3': '௩',
+    '4': '௪',
+    '5': '௫',
+    '6': '௬',
+    '7': '௭',
+    '8': '௮',
+    '9': '௯',
+    '0': '௦'
+}, numberMap = {
+    '௧': '1',
+    '௨': '2',
+    '௩': '3',
+    '௪': '4',
+    '௫': '5',
+    '௬': '6',
+    '௭': '7',
+    '௮': '8',
+    '௯': '9',
+    '௦': '0'
+};
+
+export default moment.defineLocale('ta', {
+    months : 'ஜனவரி_பிப்ரவரி_மார்ச்_ஏப்ரல்_மே_ஜூன்_ஜூலை_ஆகஸ்ட்_செப்டெம்பர்_அக்டோபர்_நவம்பர்_டிசம்பர்'.split('_'),
+    monthsShort : 'ஜனவரி_பிப்ரவரி_மார்ச்_ஏப்ரல்_மே_ஜூன்_ஜூலை_ஆகஸ்ட்_செப்டெம்பர்_அக்டோபர்_நவம்பர்_டிசம்பர்'.split('_'),
+    weekdays : 'ஞாயிற்றுக்கிழமை_திங்கட்கிழமை_செவ்வாய்கிழமை_புதன்கிழமை_வியாழக்கிழமை_வெள்ளிக்கிழமை_சனிக்கிழமை'.split('_'),
+    weekdaysShort : 'ஞாயிறு_திங்கள்_செவ்வாய்_புதன்_வியாழன்_வெள்ளி_சனி'.split('_'),
+    weekdaysMin : 'ஞா_தி_செ_பு_வி_வெ_ச'.split('_'),
+    longDateFormat : {
+        LT : 'HH:mm',
+        LTS : 'HH:mm:ss',
+        L : 'DD/MM/YYYY',
+        LL : 'D MMMM YYYY',
+        LLL : 'D MMMM YYYY, HH:mm',
+        LLLL : 'dddd, D MMMM YYYY, HH:mm'
+    },
+    calendar : {
+        sameDay : '[இன்று] LT',
+        nextDay : '[நாளை] LT',
+        nextWeek : 'dddd, LT',
+        lastDay : '[நேற்று] LT',
+        lastWeek : '[கடந்த வாரம்] dddd, LT',
+        sameElse : 'L'
+    },
+    relativeTime : {
+        future : '%s இல்',
+        past : '%s முன்',
+        s : 'ஒரு சில விநாடிகள்',
+        ss : '%d விநாடிகள்',
+        m : 'ஒரு நிமிடம்',
+        mm : '%d நிமிடங்கள்',
+        h : 'ஒரு மணி நேரம்',
+        hh : '%d மணி நேரம்',
+        d : 'ஒரு நாள்',
+        dd : '%d நாட்கள்',
+        M : 'ஒரு மாதம்',
+        MM : '%d மாதங்கள்',
+        y : 'ஒரு வருடம்',
+        yy : '%d ஆண்டுகள்'
+    },
+    dayOfMonthOrdinalParse: /\d{1,2}வது/,
+    ordinal : function (number) {
+        return number + 'வது';
+    },
+    preparse: function (string) {
+        return string.replace(/[௧௨௩௪௫௬௭௮௯௦]/g, function (match) {
+            return numberMap[match];
+        });
+    },
+    postformat: function (string) {
+        return string.replace(/\d/g, function (match) {
+            return symbolMap[match];
+        });
+    },
+    // refer http://ta.wikipedia.org/s/1er1
+    meridiemParse: /யாமம்|வைகறை|காலை|நண்பகல்|எற்பாடு|மாலை/,
+    meridiem : function (hour, minute, isLower) {
+        if (hour < 2) {
+            return ' யாமம்';
+        } else if (hour < 6) {
+            return ' வைகறை';  // வைகறை
+        } else if (hour < 10) {
+            return ' காலை'; // காலை
+        } else if (hour < 14) {
+            return ' நண்பகல்'; // நண்பகல்
+        } else if (hour < 18) {
+            return ' எற்பாடு'; // எற்பாடு
+        } else if (hour < 22) {
+            return ' மாலை'; // மாலை
+        } else {
+            return ' யாமம்';
+        }
+    },
+    meridiemHour : function (hour, meridiem) {
+        if (hour === 12) {
+            hour = 0;
+        }
+        if (meridiem === 'யாமம்') {
+            return hour < 2 ? hour : hour + 12;
+        } else if (meridiem === 'வைகறை' || meridiem === 'காலை') {
+            return hour;
+        } else if (meridiem === 'நண்பகல்') {
+            return hour >= 10 ? hour : hour + 12;
+        } else {
+            return hour + 12;
+        }
+    },
+    week : {
+        dow : 0, // Sunday is the first day of the week.
+        doy : 6  // The week that contains Jan 6th is the first week of the year.
+    }
+});
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            //! moment.js locale configuration
+//! locale : Slovenian [sl]
+//! author : Robert Sedovšek : https://github.com/sedovsek
+
+import moment from '../moment';
+
+function processRelativeTime(number, withoutSuffix, key, isFuture) {
+    var result = number + ' ';
+    switch (key) {
+        case 's':
+            return withoutSuffix || isFuture ? 'nekaj sekund' : 'nekaj sekundami';
+        case 'ss':
+            if (number === 1) {
+                result += withoutSuffix ? 'sekundo' : 'sekundi';
+            } else if (number === 2) {
+                result += withoutSuffix || isFuture ? 'sekundi' : 'sekundah';
+            } else if (number < 5) {
+                result += withoutSuffix || isFuture ? 'sekunde' : 'sekundah';
+            } else {
+                result += 'sekund';
+            }
+            return result;
+        case 'm':
+            return withoutSuffix ? 'ena minuta' : 'eno minuto';
+        case 'mm':
+            if (number === 1) {
+                result += withoutSuffix ? 'minuta' : 'minuto';
+            } else if (number === 2) {
+                result += withoutSuffix || isFuture ? 'minuti' : 'minutama';
+            } else if (number < 5) {
+                result += withoutSuffix || isFuture ? 'minute' : 'minutami';
+            } else {
+                result += withoutSuffix || isFuture ? 'minut' : 'minutami';
+            }
+            return result;
+        case 'h':
+            return withoutSuffix ? 'ena ura' : 'eno uro';
+        case 'hh':
+            if (number === 1) {
+                result += withoutSuffix ? 'ura' : 'uro';
+            } else if (number === 2) {
+                result += withoutSuffix || isFuture ? 'uri' : 'urama';
+            } else if (number < 5) {
+                result += withoutSuffix || isFuture ? 'ure' : 'urami';
+            } else {
+                result += withoutSuffix || isFuture ? 'ur' : 'urami';
+            }
+            return result;
+        case 'd':
+            return withoutSuffix || isFuture ? 'en dan' : 'enim dnem';
+        case 'dd':
+            if (number === 1) {
+                result += withoutSuffix || isFuture ? 'dan' : 'dnem';
+            } else if (number === 2) {
+                result += withoutSuffix || isFuture ? 'dni' : 'dnevoma';
+            } else {
+                result += withoutSuffix || isFuture ? 'dni' : 'dnevi';
+            }
+            return result;
+        case 'M':
+            return withoutSuffix || isFuture ? 'en mesec' : 'enim mesecem';
+        case 'MM':
+            if (number === 1) {
+                result += withoutSuffix || isFuture ? 'mesec' : 'mesecem';
+            } else if (number === 2) {
+                result += withoutSuffix || isFuture ? 'meseca' : 'mesecema';
+            } else if (number < 5) {
+                result += withoutSuffix || isFuture ? 'mesece' : 'meseci';
+            } else {
+                result += withoutSuffix || isFuture ? 'mesecev' : 'meseci';
+            }
+            return result;
+        case 'y':
+            return withoutSuffix || isFuture ? 'eno leto' : 'enim letom';
+        case 'yy':
+            if (number === 1) {
+                result += withoutSuffix || isFuture ? 'leto' : 'letom';
+            } else if (number === 2) {
+                result += withoutSuffix || isFuture ? 'leti' : 'letoma';
+            } else if (number < 5) {
+                result += withoutSuffix || isFuture ? 'leta' : 'leti';
+            } else {
+                result += withoutSuffix || isFuture ? 'let' : 'leti';
+            }
+            return result;
+    }
+}
+
+export default moment.defineLocale('sl', {
+    months : 'januar_februar_marec_april_maj_junij_julij_avgust_september_oktober_november_december'.split('_'),
+    monthsShort : 'jan._feb._mar._apr._maj._jun._jul._avg._sep._okt._nov._dec.'.split('_'),
+    monthsParseExact: true,
+    weekdays : 'nedelja_ponedeljek_torek_sreda_četrtek_petek_sobota'.split('_'),
+    weekdaysShort : 'ned._pon._tor._sre._čet._pet._sob.'.split('_'),
+    weekdaysMin : 'ne_po_to_sr_če_pe_so'.split('_'),
+    weekdaysParseExact : true,
+    longDateFormat : {
+        LT : 'H:mm',
+        LTS : 'H:mm:ss',
+        L : 'DD.MM.YYYY',
+        LL : 'D. MMMM YYYY',
+        LLL : 'D. MMMM YYYY H:mm',
+        LLLL : 'dddd, D. MMMM YYYY H:mm'
+    },
+    calendar : {
+        sameDay  : '[danes ob] LT',
+        nextDay  : '[jutri ob] LT',
+
+        nextWeek : function () {
+            switch (this.day()) {
+                case 0:
+                    return '[v] [nedeljo] [ob] LT';
+                case 3:
+                    return '[v] [sredo] [ob] LT';
+                case 6:
+                    return '[v] [soboto] [ob] LT';
+                case 1:
+                case 2:
+                case 4:
+                case 5:
+                    return '[v] dddd [ob] LT';
+            }
+        },
+        lastDay  : '[včeraj ob] LT',
+        lastWeek : function () {
+            switch (this.day()) {
+                case 0:
+                    return '[prejšnjo] [nedeljo] [ob] LT';
+                case 3:
+                    return '[prejšnjo] [sredo] [ob] LT';
+                case 6:
+                    return '[prejšnjo] [soboto] [ob] LT';
+                case 1:
+                case 2:
+                case 4:
+                case 5:
+                    return '[prejšnji] dddd [ob] LT';
+            }
+        },
+        sameElse : 'L'
+    },
+    relativeTime : {
+        future : 'čez %s',
+        past   : 'pred %s',
+        s      : processRelativeTime,
+        ss     : processRelativeTime,
+        m      : processRelativeTime,
+        mm     : processRelativeTime,
+        h      : processRelativeTime,
+        hh     : processRelativeTime,
+        d      : processRelativeTime,
+        dd     : processRelativeTime,
+        M      : processRelativeTime,
+        MM     : processRelativeTime,
+        y      : processRelativeTime,
+        yy     : processRelativeTime
+    },
+    dayOfMonthOrdinalParse: /\d{1,2}\./,
+    ordinal : '%d.',
+    week : {
+        dow : 1, // Monday is the first day of the week.
+        doy : 7  // The week that contains Jan 7th is the first week of the year.
+    }
+});
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             //! moment.js locale configuration
+//! locale : Slovak [sk]
+//! author : Martin Minka : https://github.com/k2s
+//! based on work of petrbela : https://github.com/petrbela
+
+import moment from '../moment';
+
+var months = 'január_február_marec_apríl_máj_jún_júl_august_september_október_november_december'.split('_'),
+    monthsShort = 'jan_feb_mar_apr_máj_jún_júl_aug_sep_okt_nov_dec'.split('_');
+function plural(n) {
+    return (n > 1) && (n < 5);
+}
+function translate(number, withoutSuffix, key, isFuture) {
+    var result = number + ' ';
+    switch (key) {
+        case 's':  // a few seconds / in a few seconds / a few seconds ago
+            return (withoutSuffix || isFuture) ? 'pár sekúnd' : 'pár sekundami';
+        case 'ss': // 9 seconds / in 9 seconds / 9 seconds ago
+            if (withoutSuffix || isFuture) {
+                return result + (plural(number) ? 'sekundy' : 'sekúnd');
+            } else {
+                return result + 'sekundami';
+            }
+            break;
+        case 'm':  // a minute / in a minute / a minute ago
+            return withoutSuffix ? 'minúta' : (isFuture ? 'minútu' : 'minútou');
+        case 'mm': // 9 minutes / in 9 minutes / 9 minutes ago
+            if (withoutSuffix || isFuture) {
+                return result + (plural(number) ? 'minúty' : 'minút');
+            } else {
+                return result + 'minútami';
+            }
+            break;
+        case 'h':  // an hour / in an hour / an hour ago
+            return withoutSuffix ? 'hodina' : (isFuture ? 'hodinu' : 'hodinou');
+        case 'hh': // 9 hours / in 9 hours / 9 hours ago
+            if (withoutSuffix || isFuture) {
+                return result + (plural(number) ? 'hodiny' : 'hodín');
+            } else {
+                return result + 'hodinami';
+            }
+            break;
+        case 'd':  // a day / in a day / a day ago
+            return (withoutSuffix || isFuture) ? 'deň' : 'dňom';
+        case 'dd': // 9 days / in 9 days / 9 days ago
+            if (withoutSuffix || isFuture) {
+                return result + (plural(number) ? 'dni' : 'dní');
+            } else {
+                return result + 'dňami';
+            }
+            break;
+        case 'M':  // a month / in a month / a month ago
+            return (withoutSuffix || isFuture) ? 'mesiac' : 'mesiacom';
+        case 'MM': // 9 months / in 9 months / 9 months ago
+            if (withoutSuffix || isFuture) {
+                return result + (plural(number) ? 'mesiace' : 'mesiacov');
+            } else {
+                return result + 'mesiacmi';
+            }
+            break;
+        case 'y':  // a year / in a year / a year ago
+            return (withoutSuffix || isFuture) ? 'rok' : 'rokom';
+        case 'yy': // 9 years / in 9 years / 9 years ago
+            if (withoutSuffix || isFuture) {
+                return result + (plural(number) ? 'roky' : 'rokov');
+            } else {
+                return result + 'rokmi';
+            }
+            break;
+    }
+}
+
+export default moment.defineLocale('sk', {
+    months : months,
+    monthsShort : monthsShort,
+    weekdays : 'nedeľa_pondelok_utorok_streda_štvrtok_piatok_sobota'.split('_'),
+    weekdaysShort : 'ne_po_ut_st_št_pi_so'.split('_'),
+    weekdaysMin : 'ne_po_ut_st_št_pi_so'.split('_'),
+    longDateFormat : {
+        LT: 'H:mm',
+        LTS : 'H:mm:ss',
+        L : 'DD.MM.YYYY',
+        LL : 'D. MMMM YYYY',
+        LLL : 'D. MMMM YYYY H:mm',
+        LLLL : 'dddd D. MMMM YYYY H:mm'
+    },
+    calendar : {
+        sameDay: '[dnes o] LT',
+        nextDay: '[zajtra o] LT',
+        nextWeek: function () {
+            switch (this.day()) {
+                case 0:
+                    return '[v nedeľu o] LT';
+                case 1:
+                case 2:
+                    return '[v] dddd [o] LT';
+                case 3:
+                    return '[v stredu o] LT';
+                case 4:
+                    return '[vo štvrtok o] LT';
+                case 5:
+                    return '[v piatok o] LT';
+                case 6:
+                    return '[v sobotu o] LT';
+            }
+        },
+        lastDay: '[včera o] LT',
+        lastWeek: function () {
+            switch (this.day()) {
+                case 0:
+                    return '[minulú nedeľu o] LT';
+                case 1:
+                case 2:
+                    return '[minulý] dddd [o] LT';
+                case 3:
+                    return '[minulú stredu o] LT';
+                case 4:
+                case 5:
+                    return '[minulý] dddd [o] LT';
+                case 6:
+                    return '[minulú sobotu o] LT';
+            }
+        },
+        sameElse: 'L'
+    },
+    relativeTime : {
+        future : 'za %s',
+        past : 'pred %s',
+        s : translate,
+        ss : translate,
+        m : translate,
+        mm : translate,
+        h : translate,
+        hh : translate,
+        d : translate,
+        dd : translate,
+        M : translate,
+        MM : translate,
+        y : translate,
+        yy : translate
+    },
+    dayOfMonthOrdinalParse: /\d{1,2}\./,
+    ordinal : '%d.',
+    week : {
+        dow : 1, // Monday is the first day of the week.
+        doy : 4  // The week that contains Jan 4th is the first week of the year.
+    }
+});
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     //! moment.js locale configuration
+//! locale : Russian [ru]
+//! author : Viktorminator : https://github.com/Viktorminator
+//! Author : Menelion Elensúle : https://github.com/Oire
+//! author : Коренберг Марк : https://github.com/socketpair
+
+import moment from '../moment';
+
+function plural(word, num) {
+    var forms = word.split('_');
+    return num % 10 === 1 && num % 100 !== 11 ? forms[0] : (num % 10 >= 2 && num % 10 <= 4 && (num % 100 < 10 || num % 100 >= 20) ? forms[1] : forms[2]);
+}
+function relativeTimeWithPlural(number, withoutSuffix, key) {
+    var format = {
+        'ss': withoutSuffix ? 'секунда_секунды_секунд' : 'секунду_секунды_секунд',
+        'mm': withoutSuffix ? 'минута_минуты_минут' : 'минуту_минуты_минут',
+        'hh': 'час_часа_часов',
+        'dd': 'день_дня_дней',
+        'MM': 'месяц_месяца_месяцев',
+        'yy': 'год_года_лет'
+    };
+    if (key === 'm') {
+        return withoutSuffix ? 'минута' : 'минуту';
+    }
+    else {
+        return number + ' ' + plural(format[key], +number);
+    }
+}
+var monthsParse = [/^янв/i, /^фев/i, /^мар/i, /^апр/i, /^ма[йя]/i, /^июн/i, /^июл/i, /^авг/i, /^сен/i, /^окт/i, /^ноя/i, /^дек/i];
+
+// http://new.gramota.ru/spravka/rules/139-prop : § 103
+// Сокращения месяцев: http://new.gramota.ru/spravka/buro/search-answer?s=242637
+// CLDR data:          http://www.unicode.org/cldr/charts/28/summary/ru.html#1753
+export default moment.defineLocale('ru', {
+    months : {
+        format: 'января_февраля_марта_апреля_мая_июня_июля_августа_сентября_октября_ноября_декабря'.split('_'),
+        standalone: 'январь_февраль_март_апрель_май_июнь_июль_август_сентябрь_октябрь_ноябрь_декабрь'.split('_')
+    },
+    monthsShort : {
+        // по CLDR именно "июл." и "июн.", но какой смысл менять букву на точку ?
+        format: 'янв._февр._мар._апр._мая_июня_июля_авг._сент._окт._нояб._дек.'.split('_'),
+        standalone: 'янв._февр._март_апр._май_июнь_июль_авг._сент._окт._нояб._дек.'.split('_')
+    },
+    weekdays : {
+        standalone: 'воскресенье_понедельник_вторник_среда_четверг_пятница_суббота'.split('_'),
+        format: 'воскресенье_понедельник_вторник_среду_четверг_пятницу_субботу'.split('_'),
+        isFormat: /\[ ?[Вв] ?(?:прошлую|следующую|эту)? ?\] ?dddd/
+    },
+    weekdaysShort : 'вс_пн_вт_ср_чт_пт_сб'.split('_'),
+    weekdaysMin : 'вс_пн_вт_ср_чт_пт_сб'.split('_'),
+    monthsParse : monthsParse,
+    longMonthsParse : monthsParse,
+    shortMonthsParse : monthsParse,
+
+    // полные названия с падежами, по три буквы, для некоторых, по 4 буквы, сокращения с точкой и без точки
+    monthsRegex: /^(январ[ья]|янв\.?|феврал[ья]|февр?\.?|марта?|мар\.?|апрел[ья]|апр\.?|ма[йя]|июн[ья]|июн\.?|июл[ья]|июл\.?|августа?|авг\.?|сентябр[ья]|сент?\.?|октябр[ья]|окт\.?|ноябр[ья]|нояб?\.?|декабр[ья]|дек\.?)/i,
+
+    // копия предыдущего
+    monthsShortRegex: /^(январ[ья]|янв\.?|феврал[ья]|февр?\.?|марта?|мар\.?|апрел[ья]|апр\.?|ма[йя]|июн[ья]|июн\.?|июл[ья]|июл\.?|августа?|авг\.?|сентябр[ья]|сент?\.?|октябр[ья]|окт\.?|ноябр[ья]|нояб?\.?|декабр[ья]|дек\.?)/i,
+
+    // полные названия с падежами
+    monthsStrictRegex: /^(январ[яь]|феврал[яь]|марта?|апрел[яь]|ма[яй]|июн[яь]|июл[яь]|августа?|сентябр[яь]|октябр[яь]|ноябр[яь]|декабр[яь])/i,
+
+    // Выражение, которое соотвествует только сокращённым формам
+    monthsShortStrictRegex: /^(янв\.|февр?\.|мар[т.]|апр\.|ма[яй]|июн[ья.]|июл[ья.]|авг\.|сент?\.|окт\.|нояб?\.|дек\.)/i,
+    longDateFormat : {
+        LT : 'H:mm',
+        LTS : 'H:mm:ss',
+        L : 'DD.MM.YYYY',
+        LL : 'D MMMM YYYY г.',
+        LLL : 'D MMMM YYYY г., H:mm',
+        LLLL : 'dddd, D MMMM YYYY г., H:mm'
+    },
+    calendar : {
+        sameDay: '[Сегодня, в] LT',
+        nextDay: '[Завтра, в] LT',
+        lastDay: '[Вчера, в] LT',
+        nextWeek: function (now) {
+            if (now.week() !== this.week()) {
+                switch (this.day()) {
+                    case 0:
+                        return '[В следующее] dddd, [в] LT';
+                    case 1:
+                    case 2:
+                    case 4:
+                        return '[В следующий] dddd, [в] LT';
+                    case 3:
+                    case 5:
+                    case 6:
+                        return '[В следующую] dddd, [в] LT';
+                }
+            } else {
+                if (this.day() === 2) {
+                    return '[Во] dddd, [в] LT';
+                } else {
+                    return '[В] dddd, [в] LT';
+                }
+            }
+        },
+        lastWeek: function (now) {
+            if (now.week() !== this.week()) {
+                switch (this.day()) {
+                    case 0:
+                        return '[В прошлое] dddd, [в] LT';
+                    case 1:
+                    case 2:
+                    case 4:
+                        return '[В прошлый] dddd, [в] LT';
+                    case 3:
+                    case 5:
+                    case 6:
+                        return '[В прошлую] dddd, [в] LT';
+                }
+            } else {
+                if (this.day() === 2) {
+                    return '[Во] dddd, [в] LT';
+                } else {
+                    return '[В] dddd, [в] LT';
+                }
+            }
+        },
+        sameElse: 'L'
+    },
+    relativeTime : {
+        future : 'через %s',
+        past : '%s назад',
+        s : 'несколько секунд',
+        ss : relativeTimeWithPlural,
+        m : relativeTimeWithPlural,
+        mm : relativeTimeWithPlural,
+        h : 'час',
+        hh : relativeTimeWithPlural,
+        d : 'день',
+        dd : relativeTimeWithPlural,
+        M : 'месяц',
+        MM : relativeTimeWithPlural,
+        y : 'год',
+        yy : relativeTimeWithPlural
+    },
+    meridiemParse: /ночи|утра|дня|вечера/i,
+    isPM : function (input) {
+        return /^(дня|вечера)$/.test(input);
+    },
+    meridiem : function (hour, minute, isLower) {
+        if (hour < 4) {
+            return 'ночи';
+        } else if (hour < 12) {
+            return 'утра';
+        } else if (hour < 17) {
+            return 'дня';
+        } else {
+            return 'вечера';
+        }
+    },
+    dayOfMonthOrdinalParse: /\d{1,2}-(й|го|я)/,
+    ordinal: function (number, period) {
+        switch (period) {
+            case 'M':
+            case 'd':
+            case 'DDD':
+                return number + '-й';
+            case 'D':
+                return number + '-го';
+            case 'w':
+            case 'W':
+                return number + '-я';
+            default:
+                return number;
+        }
+    },
+    week : {
+        dow : 1, // Monday is the first day of the week.
+        doy : 4  // The week that contains Jan 4th is the first week of the year.
+    }
+});
+                                                                                                                                                        {"version":3,"file":"document.js","sourceRoot":"","sources":["../src/document.ts"],"names":[],"mappings":"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"}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    "use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const graphql_1 = require("graphql");
+const location_1 = require("graphql/language/location");
+const vscode_languageserver_1 = require("vscode-languageserver");
+const getDiagnostics_1 = require("@apollographql/graphql-language-service-interface/dist/getDiagnostics");
+const source_1 = require("./utilities/source");
+class GraphQLDocument {
+    constructor(source) {
+        this.source = source;
+        this.syntaxErrors = [];
+        try {
+            this.ast = graphql_1.parse(source);
+        }
+        catch (error) {
+            if (maybeCommentedOut(source.body))
+                return;
+            const range = source_1.rangeInContainingDocument(source, getDiagnostics_1.getRange(error.locations[0], source.body));
+            this.syntaxErrors.push({
+                severity: vscode_languageserver_1.DiagnosticSeverity.Error,
+                message: error.message,
+                source: "GraphQL: Syntax",
+                range
+            });
+        }
+    }
+    containsPosition(position) {
+        if (position.line < this.source.locationOffset.line - 1)
+            return false;
+        const end = source_1.positionFromSourceLocation(this.source, location_1.getLocation(this.source, this.source.body.length));
+        return position.line <= end.line;
+    }
+}
+exports.GraphQLDocument = GraphQLDocument;
+function extractGraphQLDocuments(document, tagName = "gql") {
+    switch (document.languageId) {
+        case "graphql":
+            return [
+                new GraphQLDocument(new graphql_1.Source(document.getText(), document.uri))
+            ];
+        case "javascript":
+        case "javascriptreact":
+        case "typescript":
+        case "typescriptreact":
+        case "vue":
+            return extractGraphQLDocumentsFromJSTemplateLiterals(document, tagName);
+        case "python":
+            return extractGraphQLDocumentsFromPythonStrings(document, tagName);
+        case "ruby":
+            return extractGraphQLDocumentsFromRubyStrings(document, tagName);
+        case "dart":
+            return extractGraphQLDocumentsFromDartStrings(document, tagName);
+        case "reason":
+            return extractGraphQLDocumentsFromReasonStrings(document, tagName);
+        default:
+            return null;
+    }
+}
+exports.extractGraphQLDocuments = extractGraphQLDocuments;
+function extractGraphQLDocumentsFromJSTemplateLiterals(document, tagName) {
+    const text = document.getText();
+    const documents = [];
+    const regExp = new RegExp(`${tagName}\\s*\`([\\s\\S]+?)\``, "gm");
+    let result;
+    while ((result = regExp.exec(text)) !== null) {
+        const contents = replacePlaceholdersWithWhiteSpace(result[1]);
+        const position = document.positionAt(result.index + (tagName.length + 1));
+        const locationOffset = {
+            line: position.line + 1,
+            column: position.character + 1
+        };
+        const source = new graphql_1.Source(contents, document.uri, locationOffset);
+        documents.push(new GraphQLDocument(source));
+    }
+    if (documents.length < 1)
+        return null;
+    return documents;
+}
+function extractGraphQLDocumentsFromPythonStrings(document, tagName) {
+    const text = document.getText();
+    const documents = [];
+    const regExp = new RegExp(`\\b(${tagName}\\s*\\(\\s*[bfru]*("(?:"")?|'(?:'')?))([\\s\\S]+?)\\2\\s*\\)`, "gm");
+    let result;
+    while ((result = regExp.exec(text)) !== null) {
+        const contents = replacePlaceholdersWithWhiteSpace(result[3]);
+        const position = document.positionAt(result.index + result[1].length);
+        const locationOffset = {
+            line: position.line + 1,
+            column: position.character + 1
+        };
+        const source = new graphql_1.Source(contents, document.uri, locationOffset);
+        documents.push(new GraphQLDocument(source));
+    }
+    if (documents.length < 1)
+        return null;
+    return documents;
+}
+function extractGraphQLDocumentsFromRubyStrings(document, tagName) {
+    const text = document.getText();
+    const documents = [];
+    const regExp = new RegExp(`(<<-${tagName})([\\s\\S]+?)${tagName}`, "gm");
+    let result;
+    while ((result = regExp.exec(text)) !== null) {
+        const contents = replacePlaceholdersWithWhiteSpace(result[2]);
+        const position = document.positionAt(result.index + result[1].length);
+        const locationOffset = {
+            line: position.line + 1,
+            column: position.character + 1
+        };
+        const source = new graphql_1.Source(contents, document.uri, locationOffset);
+        documents.push(new GraphQLDocument(source));
+    }
+    if (documents.length < 1)
+        return null;
+    return documents;
+}
+function extractGraphQLDocumentsFromDartStrings(document, tagName) {
+    const text = document.getText();
+    const documents = [];
+    const regExp = new RegExp(`\\b(${tagName}\\(\\s*r?("""|'''))([\\s\\S]+?)\\2\\s*\\)`, "gm");
+    let result;
+    while ((result = regExp.exec(text)) !== null) {
+        const contents = replacePlaceholdersWithWhiteSpace(result[3]);
+        const position = document.positionAt(result.index + result[1].length);
+        const locationOffset = {
+            line: position.line + 1,
+            column: position.character + 1
+        };
+        const source = new graphql_1.Source(contents, document.uri, locationOffset);
+        documents.push(new GraphQLDocument(source));
+    }
+    if (documents.length < 1)
+        return null;
+    return documents;
+}
+function extractGraphQLDocumentsFromReasonStrings(document, tagName) {
+    const text = document.getText();
+    const documents = [];
+    const reasonFileFilter = new RegExp(/(\[%(graphql|relay\.))/g);
+    if (!reasonFileFilter.test(text)) {
+        return documents;
+    }
+    const reasonRegexp = new RegExp(/(?<=\[%(graphql|relay\.\w*)[\s\S]*{\|)[.\s\S]+?(?=\|})/gm);
+    let result;
+    while ((result = reasonRegexp.exec(text)) !== null) {
+        const contents = result[0];
+        const position = document.positionAt(result.index);
+        const locationOffset = {
+            line: position.line + 1,
+            column: position.character + 1
+        };
+        const source = new graphql_1.Source(contents, document.uri, locationOffset);
+        documents.push(new GraphQLDocument(source));
+    }
+    if (documents.length < 1)
+        return null;
+    return documents;
+}
+function replacePlaceholdersWithWhiteSpace(content) {
+    return content.replace(/\$\{([\s\S]+?)\}/gm, match => {
+        return Array(match.length).join(" ");
+    });
+}
+function maybeCommentedOut(content) {
+    return ((content.indexOf("/*") > -1 && content.indexOf("*/") > -1) ||
+        content.split("//").length > 1);
+}
+//# sourceMappingURL=document.js.map                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       "use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.TSTYPE_TYPES = exports.TSTYPEELEMENT_TYPES = exports.PRIVATE_TYPES = exports.JSX_TYPES = exports.ENUMMEMBER_TYPES = exports.ENUMBODY_TYPES = exports.FLOWPREDICATE_TYPES = exports.FLOWDECLARATION_TYPES = exports.FLOWBASEANNOTATION_TYPES = exports.FLOWTYPE_TYPES = exports.FLOW_TYPES = exports.MODULESPECIFIER_TYPES = exports.EXPORTDECLARATION_TYPES = exports.MODULEDECLARATION_TYPES = exports.CLASS_TYPES = exports.PATTERN_TYPES = exports.UNARYLIKE_TYPES = exports.PROPERTY_TYPES = exports.OBJECTMEMBER_TYPES = exports.METHOD_TYPES = exports.USERWHITESPACABLE_TYPES = exports.IMMUTABLE_TYPES = exports.LITERAL_TYPES = exports.TSENTITYNAME_TYPES = exports.LVAL_TYPES = exports.PATTERNLIKE_TYPES = exports.DECLARATION_TYPES = exports.PUREISH_TYPES = exports.FUNCTIONPARENT_TYPES = exports.FUNCTION_TYPES = exports.FORXSTATEMENT_TYPES = exports.FOR_TYPES = exports.EXPRESSIONWRAPPER_TYPES = exports.WHILE_TYPES = exports.LOOP_TYPES = exports.CONDITIONAL_TYPES = exports.COMPLETIONSTATEMENT_TYPES = exports.TERMINATORLESS_TYPES = exports.STATEMENT_TYPES = exports.BLOCK_TYPES = exports.BLOCKPARENT_TYPES = exports.SCOPABLE_TYPES = exports.BINARY_TYPES = exports.EXPRESSION_TYPES = void 0;
+
+var _definitions = require("../../definitions");
+
+const EXPRESSION_TYPES = _definitions.FLIPPED_ALIAS_KEYS["Expression"];
+exports.EXPRESSION_TYPES = EXPRESSION_TYPES;
+const BINARY_TYPES = _definitions.FLIPPED_ALIAS_KEYS["Binary"];
+exports.BINARY_TYPES = BINARY_TYPES;
+const SCOPABLE_TYPES = _definitions.FLIPPED_ALIAS_KEYS["Scopable"];
+exports.SCOPABLE_TYPES = SCOPABLE_TYPES;
+const BLOCKPARENT_TYPES = _definitions.FLIPPED_ALIAS_KEYS["BlockParent"];
+exports.BLOCKPARENT_TYPES = BLOCKPARENT_TYPES;
+const BLOCK_TYPES = _definitions.FLIPPED_ALIAS_KEYS["Block"];
+exports.BLOCK_TYPES = BLOCK_TYPES;
+const STATEMENT_TYPES = _definitions.FLIPPED_ALIAS_KEYS["Statement"];
+exports.STATEMENT_TYPES = STATEMENT_TYPES;
+const TERMINATORLESS_TYPES = _definitions.FLIPPED_ALIAS_KEYS["Terminatorless"];
+exports.TERMINATORLESS_TYPES = TERMINATORLESS_TYPES;
+const COMPLETIONSTATEMENT_TYPES = _definitions.FLIPPED_ALIAS_KEYS["CompletionStatement"];
+exports.COMPLETIONSTATEMENT_TYPES = COMPLETIONSTATEMENT_TYPES;
+const CONDITIONAL_TYPES = _definitions.FLIPPED_ALIAS_KEYS["Conditional"];
+exports.CONDITIONAL_TYPES = CONDITIONAL_TYPES;
+const LOOP_TYPES = _definitions.FLIPPED_ALIAS_KEYS["Loop"];
+exports.LOOP_TYPES = LOOP_TYPES;
+const WHILE_TYPES = _definitions.FLIPPED_ALIAS_KEYS["While"];
+exports.WHILE_TYPES = WHILE_TYPES;
+const EXPRESSIONWRAPPER_TYPES = _definitions.FLIPPED_ALIAS_KEYS["ExpressionWrapper"];
+exports.EXPRESSIONWRAPPER_TYPES = EXPRESSIONWRAPPER_TYPES;
+const FOR_TYPES = _definitions.FLIPPED_ALIAS_KEYS["For"];
+exports.FOR_TYPES = FOR_TYPES;
+const FORXSTATEMENT_TYPES = _definitions.FLIPPED_ALIAS_KEYS["ForXStatement"];
+exports.FORXSTATEMENT_TYPES = FORXSTATEMENT_TYPES;
+const FUNCTION_TYPES = _definitions.FLIPPED_ALIAS_KEYS["Function"];
+exports.FUNCTION_TYPES = FUNCTION_TYPES;
+const FUNCTIONPARENT_TYPES = _definitions.FLIPPED_ALIAS_KEYS["FunctionParent"];
+exports.FUNCTIONPARENT_TYPES = FUNCTIONPARENT_TYPES;
+const PUREISH_TYPES = _definitions.FLIPPED_ALIAS_KEYS["Pureish"];
+exports.PUREISH_TYPES = PUREISH_TYPES;
+const DECLARATION_TYPES = _definitions.FLIPPED_ALIAS_KEYS["Declaration"];
+exports.DECLARATION_TYPES = DECLARATION_TYPES;
+const PATTERNLIKE_TYPES = _definitions.FLIPPED_ALIAS_KEYS["PatternLike"];
+exports.PATTERNLIKE_TYPES = PATTERNLIKE_TYPES;
+const LVAL_TYPES = _definitions.FLIPPED_ALIAS_KEYS["LVal"];
+exports.LVAL_TYPES = LVAL_TYPES;
+const TSENTITYNAME_TYPES = _definitions.FLIPPED_ALIAS_KEYS["TSEntityName"];
+exports.TSENTITYNAME_TYPES = TSENTITYNAME_TYPES;
+const LITERAL_TYPES = _definitions.FLIPPED_ALIAS_KEYS["Literal"];
+exports.LITERAL_TYPES = LITERAL_TYPES;
+const IMMUTABLE_TYPES = _definitions.FLIPPED_ALIAS_KEYS["Immutable"];
+exports.IMMUTABLE_TYPES = IMMUTABLE_TYPES;
+const USERWHITESPACABLE_TYPES = _definitions.FLIPPED_ALIAS_KEYS["UserWhitespacable"];
+exports.USERWHITESPACABLE_TYPES = USERWHITESPACABLE_TYPES;
+const METHOD_TYPES = _definitions.FLIPPED_ALIAS_KEYS["Method"];
+exports.METHOD_TYPES = METHOD_TYPES;
+const OBJECTMEMBER_TYPES = _definitions.FLIPPED_ALIAS_KEYS["ObjectMember"];
+exports.OBJECTMEMBER_TYPES = OBJECTMEMBER_TYPES;
+const PROPERTY_TYPES = _definitions.FLIPPED_ALIAS_KEYS["Property"];
+exports.PROPERTY_TYPES = PROPERTY_TYPES;
+const UNARYLIKE_TYPES = _definitions.FLIPPED_ALIAS_KEYS["UnaryLike"];
+exports.UNARYLIKE_TYPES = UNARYLIKE_TYPES;
+const PATTERN_TYPES = _definitions.FLIPPED_ALIAS_KEYS["Pattern"];
+exports.PATTERN_TYPES = PATTERN_TYPES;
+const CLASS_TYPES = _definitions.FLIPPED_ALIAS_KEYS["Class"];
+exports.CLASS_TYPES = CLASS_TYPES;
+const MODULEDECLARATION_TYPES = _definitions.FLIPPED_ALIAS_KEYS["ModuleDeclaration"];
+exports.MODULEDECLARATION_TYPES = MODULEDECLARATION_TYPES;
+const EXPORTDECLARATION_TYPES = _definitions.FLIPPED_ALIAS_KEYS["ExportDeclaration"];
+exports.EXPORTDECLARATION_TYPES = EXPORTDECLARATION_TYPES;
+const MODULESPECIFIER_TYPES = _definitions.FLIPPED_ALIAS_KEYS["ModuleSpecifier"];
+exports.MODULESPECIFIER_TYPES = MODULESPECIFIER_TYPES;
+const FLOW_TYPES = _definitions.FLIPPED_ALIAS_KEYS["Flow"];
+exports.FLOW_TYPES = FLOW_TYPES;
+const FLOWTYPE_TYPES = _definitions.FLIPPED_ALIAS_KEYS["FlowType"];
+exports.FLOWTYPE_TYPES = FLOWTYPE_TYPES;
+const FLOWBASEANNOTATION_TYPES = _definitions.FLIPPED_ALIAS_KEYS["FlowBaseAnnotation"];
+exports.FLOWBASEANNOTATION_TYPES = FLOWBASEANNOTATION_TYPES;
+const FLOWDECLARATION_TYPES = _definitions.FLIPPED_ALIAS_KEYS["FlowDeclaration"];
+exports.FLOWDECLARATION_TYPES = FLOWDECLARATION_TYPES;
+const FLOWPREDICATE_TYPES = _definitions.FLIPPED_ALIAS_KEYS["FlowPredicate"];
+exports.FLOWPREDICATE_TYPES = FLOWPREDICATE_TYPES;
+const ENUMBODY_TYPES = _definitions.FLIPPED_ALIAS_KEYS["EnumBody"];
+exports.ENUMBODY_TYPES = ENUMBODY_TYPES;
+const ENUMMEMBER_TYPES = _definitions.FLIPPED_ALIAS_KEYS["EnumMember"];
+exports.ENUMMEMBER_TYPES = ENUMMEMBER_TYPES;
+const JSX_TYPES = _definitions.FLIPPED_ALIAS_KEYS["JSX"];
+exports.JSX_TYPES = JSX_TYPES;
+const PRIVATE_TYPES = _definitions.FLIPPED_ALIAS_KEYS["Private"];
+exports.PRIVATE_TYPES = PRIVATE_TYPES;
+const TSTYPEELEMENT_TYPES = _definitions.FLIPPED_ALIAS_KEYS["TSTypeElement"];
+exports.TSTYPEELEMENT_TYPES = TSTYPEELEMENT_TYPES;
+const TSTYPE_TYPES = _definitions.FLIPPED_ALIAS_KEYS["TSType"];
+exports.TSTYPE_TYPES = TSTYPE_TYPES;                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          // Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Validation should extract gql snippet from javascript file 1`] = `
+Object {
+  "definitions": Array [
+    Object {
+      "directives": Array [],
+      "kind": "OperationDefinition",
+      "loc": Object {
+        "end": 105,
+        "start": 3,
+      },
+      "name": Object {
+        "kind": "Name",
+        "loc": Object {
+          "end": 23,
+          "start": 9,
+        },
+        "value": "HeroAndFriends",
+      },
+      "operation": "query",
+      "selectionSet": Object {
+        "kind": "SelectionSet",
+        "loc": Object {
+          "end": 105,
+          "start": 43,
+        },
+        "selections": Array [
+          Object {
+            "alias": undefined,
+            "arguments": Array [
+              Object {
+                "kind": "Argument",
+                "loc": Object {
+                  "end": 71,
+                  "start": 54,
+                },
+                "name": Object {
+                  "kind": "Name",
+                  "loc": Object {
+                    "end": 61,
+                    "start": 54,
+                  },
+                  "value": "episode",
+                },
+                "value": Object {
+                  "kind": "Variable",
+                  "loc": Object {
+                    "end": 71,
+                    "start": 63,
+                  },
+                  "name": Object {
+                    "kind": "Name",
+                    "loc": Object {
+                      "end": 71,
+                      "start": 64,
+                    },
+                    "value": "episode",
+                  },
+                },
+              },
+            ],
+            "directives": Array [],
+            "kind": "Field",
+            "loc": Object {
+              "end": 101,
+              "start": 49,
+            },
+            "name": Object {
+              "kind": "Name",
+              "loc": Object {
+                "end": 53,
+                "start": 49,
+              },
+              "value": "hero",
+            },
+            "selectionSet": Object {
+              "kind": "SelectionSet",
+              "loc": Object {
+                "end": 101,
+                "start": 73,
+              },
+              "selections": Array [
+                Object {
+                  "directives": Array [],
+                  "kind": "FragmentSpread",
+                  "loc": Object {
+                    "end": 95,
+                    "start": 81,
+                  },
+                  "name": Object {
+                    "kind": "Name",
+                    "loc": Object {
+                      "end": 95,
+                      "start": 84,
+                    },
+                    "value": "heroDetails",
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+      "variableDefinitions": Array [
+        Object {
+          "defaultValue": undefined,
+          "directives": Array [],
+          "kind": "VariableDefinition",
+          "loc": Object {
+            "end": 41,
+            "start": 24,
+          },
+          "type": Object {
+            "kind": "NamedType",
+            "loc": Object {
+              "end": 41,
+              "start": 34,
+            },
+            "name": Object {
+              "kind": "Name",
+              "loc": Object {
+                "end": 41,
+                "start": 34,
+              },
+              "value": "Episode",
+            },
+          },
+          "variable": Object {
+            "kind": "Variable",
+            "loc": Object {
+              "end": 32,
+              "start": 24,
+            },
+            "name": Object {
+              "kind": "Name",
+              "loc": Object {
+                "end": 32,
+                "start": 25,
+              },
+              "value": "episode",
+            },
+          },
+        },
+      ],
+    },
+    Object {
+      "directives": Array [],
+      "kind": "FragmentDefinition",
+      "loc": Object {
+        "end": 242,
+        "start": 109,
+      },
+      "name": Object {
+        "kind": "Name",
+        "loc": Object {
+          "end": 129,
+          "start": 118,
+        },
+        "value": "heroDetails",
+      },
+      "selectionSet": Object {
+        "kind": "SelectionSet",
+        "loc": Object {
+          "end": 242,
+          "start": 143,
+        },
+        "selections": Array [
+          Object {
+            "alias": undefined,
+            "arguments": Array [],
+            "directives": Array [],
+            "kind": "Field",
+            "loc": Object {
+              "end": 153,
+              "start": 149,
+            },
+            "name": Object {
+              "kind": "Name",
+              "loc": Object {
+                "end": 153,
+                "start": 149,
+              },
+              "value": "name",
+            },
+            "selectionSet": undefined,
+          },
+          Object {
+            "directives": Array [],
+            "kind": "InlineFragment",
+            "loc": Object {
+              "end": 200,
+              "start": 158,
+            },
+            "selectionSet": Object {
+              "kind": "SelectionSet",
+              "loc": Object {
+                "end": 200,
+                "start": 171,
+              },
+              "selections": Array [
+                Object {
+                  "alias": undefined,
+                  "arguments": Array [],
+                  "directives": Array [],
+                  "kind": "Field",
+                  "loc": Object {
+                    "end": 194,
+                    "start": 179,
+                  },
+                  "name": Object {
+                    "kind": "Name",
+                    "loc": Object {
+                      "end": 194,
+                      "start": 179,
+                    },
+                    "value": "primaryFunction",
+                  },
+                  "selectionSet": undefined,
+                },
+              ],
+            },
+            "typeCondition": Object {
+              "kind": "NamedType",
+              "loc": Object {
+                "end": 170,
+                "start": 165,
+              },
+              "name": Object {
+                "kind": "Name",
+                "loc": Object {
+                  "end": 170,
+                  "start": 165,
+                },
+                "value": "Droid",
+              },
+            },
+          },
+          Object {
+            "directives": Array [],
+            "kind": "InlineFragment",
+            "loc": Object {
+              "end": 238,
+              "start": 205,
+            },
+            "selectionSet": Object {
+              "kind": "SelectionSet",
+              "loc": Object {
+                "end": 238,
+                "start": 218,
+              },
+              "selections": Array [
+                Object {
+                  "alias": undefined,
+                  "arguments": Array [],
+                  "directives": Array [],
+                  "kind": "Field",
+                  "loc": Object {
+                    "end": 232,
+                    "start": 226,
+                  },
+                  "name": Object {
+                    "kind": "Name",
+                    "loc": Object {
+                      "end": 232,
+                      "start": 226,
+                    },
+                    "value": "height",
+                  },
+                  "selectionSet": undefined,
+                },
+              ],
+            },
+            "typeCondition": Object {
+              "kind": "NamedType",
+              "loc": Object {
+                "end": 217,
+                "start": 212,
+              },
+              "name": Object {
+                "kind": "Name",
+                "loc": Object {
+                  "end": 217,
+                  "start": 212,
+                },
+                "value": "Human",
+              },
+            },
+          },
+        ],
+      },
+      "typeCondition": Object {
+        "kind": "NamedType",
+        "loc": Object {
+          "end": 142,
+          "start": 133,
+        },
+        "name": Object {
+          "kind": "Name",
+          "loc": Object {
+            "end": 142,
+            "start": 133,
+          },
+          "value": "Character",
+        },
+      },
+    },
+    Object {
+      "directives": Array [],
+      "kind": "OperationDefinition",
+      "loc": Object {
+        "end": 299,
+        "start": 251,
+      },
+      "name": Object {
+        "kind": "Name",
+        "loc": Object {
+          "end": 265,
+          "start": 257,
+        },
+        "value": "HeroName",
+      },
+      "operation": "query",
+      "selectionSet": Object {
+        "kind": "SelectionSet",
+        "loc": Object {
+          "end": 299,
+          "start": 266,
+        },
+        "selections": Array [
+          Object {
+            "alias": undefined,
+            "arguments": Array [],
+            "directives": Array [],
+            "kind": "Field",
+            "loc": Object {
+              "end": 295,
+              "start": 272,
+            },
+            "name": Object {
+              "kind": "Name",
+              "loc": Object {
+                "end": 276,
+                "start": 272,
+              },
+              "value": "hero",
+            },
+            "selectionSet": Object {
+              "kind": "SelectionSet",
+              "loc": Object {
+                "end": 295,
+                "start": 277,
+              },
+              "selections": Array [
+                Object {
+                  "alias": undefined,
+                  "arguments": Array [],
+                  "directives": Array [],
+                  "kind": "Field",
+                  "loc": Object {
+                    "end": 289,
+                    "start": 285,
+                  },
+                  "name": Object {
+                    "kind": "Name",
+                    "loc": Object {
+                      "end": 289,
+                      "start": 285,
+                    },
+                    "value": "name",
+                  },
+                  "selectionSet": undefined,
+                },
+              ],
+            },
+          },
+        ],
+      },
+      "variableDefinitions": Array [],
+    },
+  ],
+  "kind": "Document",
+}
+`;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   import { inspect } from "util";
+
+import { GraphQLObjectType } from "graphql";
+
+import { SelectionSet, Selection, Field, FragmentSpread } from "../";
+import { collectAndMergeFields } from "./collectAndMergeFields";
+
+export class Variant implements SelectionSet {
+  constructor(
+    public possibleTypes: GraphQLObjectType[],
+    public selections: Selection[] = [],
+    public fragmentSpreads: FragmentSpread[] = []
+  ) {}
+
+  get fields(): Field[] {
+    return collectAndMergeFields(this);
+  }
+
+  inspect() {
+    return `${inspect(this.possibleTypes)} -> ${inspect(
+      collectAndMergeFields(this, false).map(field => field.responseKey)
+    )} ${inspect(
+      this.fragmentSpreads.map(fragmentSpread => fragmentSpread.fragmentName)
+    )}\n`;
+  }
+}
+
+export function typeCaseForSelectionSet(
+  selectionSet: SelectionSet,
+  mergeInFragmentSpreads: boolean = true
+): TypeCase {
+  const typeCase = new TypeCase(selectionSet.possibleTypes);
+
+  for (const selection of selectionSet.selections) {
+    switch (selection.kind) {
+      case "Field":
+        for (const variant of typeCase.disjointVariantsFor(
+          selectionSet.possibleTypes
+        )) {
+          variant.selections.push(selection);
+        }
+        break;
+      case "FragmentSpread":
+        if (
+          typeCase.default.fragmentSpreads.some(
+            fragmentSpread =>
+              fragmentSpread.fragmentName === selection.fragmentName
+          )
+        )
+          continue;
+
+        for (const variant of typeCase.disjointVariantsFor(
+          selectionSet.possibleTypes
+        )) {
+          variant.fragmentSpreads.push(selection);
+
+          if (!mergeInFragmentSpreads) {
+            variant.selections.push(selection);
+          }
+        }
+        if (mergeInFragmentSpreads) {
+          typeCase.merge(
+            typeCaseForSelectionSet(
+              {
+                possibleTypes: selectionSet.possibleTypes.filter(type =>
+                  selection.selectionSet.possibleTypes.includes(type)
+                ),
+                selections: selection.selectionSet.selections
+              },
+              mergeInFragmentSpreads
+            )
+          );
+        }
+        break;
+      case "TypeCondition":
+        typeCase.merge(
+          typeCaseForSelectionSet(
+            {
+              possibleTypes: selectionSet.possibleTypes.filter(type =>
+                selection.selectionSet.possibleTypes.includes(type)
+              ),
+              selections: selection.selectionSet.selections
+            },
+            mergeInFragmentSpreads
+          )
+        );
+        break;
+      case "BooleanCondition":
+        typeCase.merge(
+          typeCaseForSelectionSet(
+            selection.selectionSet,
+            mergeInFragmentSpreads
+          ),
+          selectionSet => [
+            {
+              ...selection,
+              selectionSet
+            }
+          ]
+        );
+        break;
+    }
+  }
+
+  return typeCase;
+}
+
+export class TypeCase {
+  default: Variant;
+  private variantsByType: Map<GraphQLObjectType, Variant>;
+
+  get variants(): Variant[] {
+    // Unique the variants before returning them.
+    return Array.from(new Set(this.variantsByType.values()));
+  }
+
+  get defaultAndVariants(): Variant[] {
+    return [this.default, ...this.variants];
+  }
+
+  get remainder(): Variant | undefined {
+    if (
+      this.default.possibleTypes.some(type => !this.variantsByType.has(type))
+    ) {
+      return new Variant(
+        this.default.possibleTypes.filter(
+          type => !this.variantsByType.has(type)
+        ),
+        this.default.selections,
+        this.default.fragmentSpreads
+      );
+    } else {
+      return undefined;
+    }
+  }
+
+  get exhaustiveVariants(): Variant[] {
+    const remainder = this.remainder;
+    if (remainder) {
+      return [remainder, ...this.variants];
+    } else {
+      return this.variants;
+    }
+  }
+
+  constructor(possibleTypes: GraphQLObjectType[]) {
+    // We start out with a single default variant that represents all possible types of the selection set.
+    this.default = new Variant(possibleTypes);
+
+    this.variantsByType = new Map();
+  }
+
+  // Returns records representing a set of possible types, making sure they are disjoint with other possible types.
+  // That may involve refining the existing partition (https://en.wikipedia.org/wiki/Partition_refinement)
+  // with the passed in set of possible types.
+  disjointVariantsFor(possibleTypes: GraphQLObjectType[]): Variant[] {
+    const variants: Variant[] = [];
+
+    const matchesDefault = this.default.possibleTypes.every(type =>
+      possibleTypes.includes(type)
+    );
+
+    if (matchesDefault) {
+      variants.push(this.default);
+    }
+
+    // We keep a map from original records to split records. We'll then remove possible types from the
+    // original record and move them to the split record.
+    // This means the original record will be modified to represent the set theoretical difference between
+    // the original set of possible types and the refinement set, and the split record will represent the
+    // intersection.
+    const splits: Map<Variant, Variant> = new Map();
+
+    for (const type of possibleTypes) {
+      let original = this.variantsByType.get(type);
+
+      if (!original) {
+        if (matchesDefault) continue;
+        original = this.default;
+      }
+
+      let split = splits.get(original);
+      if (!split) {
+        split = new Variant(
+          [],
+          [...original.selections],
+          [...original.fragmentSpreads]
+        );
+        splits.set(original, split);
+        variants.push(split);
+      }
+
+      if (original !== this.default) {
+        original.possibleTypes.splice(original.possibleTypes.indexOf(type), 1);
+      }
+
+      this.variantsByType.set(type, split);
+      split.possibleTypes.push(type);
+    }
+
+    return variants;
+  }
+
+  merge(
+    otherTypeCase: TypeCase,
+    transform?: (selectionSet: SelectionSet) => Selection[]
+  ) {
+    for (const otherVariant of otherTypeCase.defaultAndVariants) {
+      if (otherVariant.selections.length < 1) continue;
+      for (const variant of this.disjointVariantsFor(
+        otherVariant.possibleTypes
+      )) {
+        if (otherVariant.fragmentSpreads.length > 0) {
+          // Union of variant.fragmentSpreads and otherVariant.fragmentSpreads
+          variant.fragmentSpreads = [
+            ...variant.fragmentSpreads,
+            ...otherVariant.fragmentSpreads
+          ].filter(
+            (a, index, array) =>
+              array.findIndex(b => b.fragmentName == a.fragmentName) == index
+          );
+        }
+        variant.selections.push(
+          ...(transform ? transform(otherVariant) : otherVariant.selections)
+        );
+      }
+    }
+  }
+
+  inspect() {
+    return (
+      `TypeCase\n` +
+      `  default -> ${inspect(this.default)}\n` +
+      this.variants.map(variant => `  ${inspect(variant)}\n`).join("")
+    );
+  }
+}
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           import { SelectionSet, Selection, Field, BooleanCondition } from "../";
+import { GraphQLObjectType } from "graphql";
+
+// This is a temporary workaround to keep track of conditions on fields in the fields themselves.
+// It is only added here because we want to expose it to the Android target, which relies on the legacy IR.
+declare module "../" {
+  interface Field {
+    conditions?: BooleanCondition[];
+  }
+}
+
+export function collectAndMergeFields(
+  selectionSet: SelectionSet,
+  mergeInFragmentSpreads: Boolean = true
+): Field[] {
+  const groupedFields: Map<string, Field[]> = new Map();
+
+  function visitSelectionSet(
+    selections: Selection[],
+    possibleTypes: GraphQLObjectType[],
+    conditions: BooleanCondition[] = []
+  ) {
+    if (possibleTypes.length < 1) return;
+
+    for (const selection of selections) {
+      switch (selection.kind) {
+        case "Field":
+          let groupForResponseKey = groupedFields.get(selection.responseKey);
+          if (!groupForResponseKey) {
+            groupForResponseKey = [];
+            groupedFields.set(selection.responseKey, groupForResponseKey);
+          }
+          // Make sure to deep clone selections to avoid modifying the original field
+          // TODO: Should we use an object freezing / immutability solution?
+          groupForResponseKey.push({
+            ...selection,
+            isConditional: conditions.length > 0,
+            conditions,
+            selectionSet: selection.selectionSet
+              ? {
+                  possibleTypes: selection.selectionSet.possibleTypes,
+                  selections: [...selection.selectionSet.selections]
+                }
+              : undefined
+          });
+          break;
+        case "FragmentSpread":
+        case "TypeCondition":
+          if (selection.kind === "FragmentSpread" && !mergeInFragmentSpreads)
+            continue;
+
+          // Only merge fragment spreads and type conditions if they match all possible types.
+          if (
+            !possibleTypes.every(type =>
+              selection.selectionSet.possibleTypes.includes(type)
+            )
+          )
+            continue;
+
+          visitSelectionSet(
+            selection.selectionSet.selections,
+            possibleTypes,
+            conditions
+          );
+          break;
+        case "BooleanCondition":
+          visitSelectionSet(selection.selectionSet.selections, possibleTypes, [
+            ...conditions,
+            selection
+          ]);
+          break;
+      }
+    }
+  }
+
+  visitSelectionSet(selectionSet.selections, selectionSet.possibleTypes);
+
+  // Merge selection sets
+
+  const fields = Array.from(groupedFields.values()).map(fields => {
+    const isFieldIncludedUnconditionally = fields.some(
+      field => !field.isConditional
+    );
+
+    return fields
+      .map(field => {
+        if (
+          isFieldIncludedUnconditionally &&
+          field.isConditional &&
+          field.selectionSet
+        ) {
+          field.selectionSet.selections = wrapInBooleanConditionsIfNeeded(
+            field.selectionSet.selections,
+            field.conditions
+          );
+        }
+        return field;
+      })
+      .reduce((field, otherField) => {
+        field.isConditional = field.isConditional && otherField.isConditional;
+
+        // FIXME: This is strictly taken incorrect, because the conditions should be ORed
+        // These conditions are only used in Android target however,
+        // and there is now way to express this in the legacy IR.
+        if (field.conditions && otherField.conditions) {
+          field.conditions = [...field.conditions, ...otherField.conditions];
+        } else {
+          field.conditions = undefined;
+        }
+
+        if (field.selectionSet && otherField.selectionSet) {
+          field.selectionSet.selections.push(
+            ...otherField.selectionSet.selections
+          );
+        }
+
+        return field;
+      });
+  });
+
+  // Replace field descriptions with type-specific descriptions if possible
+  if (selectionSet.possibleTypes.length == 1) {
+    const type = selectionSet.possibleTypes[0];
+    const fieldDefMap = type.getFields();
+
+    for (const field of fields) {
+      const fieldDef = fieldDefMap[field.name];
+
+      if (fieldDef && fieldDef.description) {
+        field.description = fieldDef.description;
+      }
+    }
+  }
+
+  return fields;
+}
+
+export function wrapInBooleanConditionsIfNeeded(
+  selections: Selection[],
+  conditions?: BooleanCondition[]
+): Selection[] {
+  if (!conditions || conditions.length == 0) return selections;
+
+  const [condition, ...rest] = conditions;
+  return [
+    {
+      ...condition,
+      selectionSet: {
+        possibleTypes: condition.selectionSet.possibleTypes,
+        selections: wrapInBooleanConditionsIfNeeded(selections, rest)
+      }
+    }
+  ];
+}
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 {"version":3,"file":"typeCase.js","sourceRoot":"","sources":["../../../src/compiler/visitors/typeCase.ts"],"names":[],"mappings":"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"}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         "use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const util_1 = require("util");
+const collectAndMergeFields_1 = require("./collectAndMergeFields");
+class Variant {
+    constructor(possibleTypes, selections = [], fragmentSpreads = []) {
+        this.possibleTypes = possibleTypes;
+        this.selections = selections;
+        this.fragmentSpreads = fragmentSpreads;
+    }
+    get fields() {
+        return collectAndMergeFields_1.collectAndMergeFields(this);
+    }
+    inspect() {
+        return `${util_1.inspect(this.possibleTypes)} -> ${util_1.inspect(collectAndMergeFields_1.collectAndMergeFields(this, false).map(field => field.responseKey))} ${util_1.inspect(this.fragmentSpreads.map(fragmentSpread => fragmentSpread.fragmentName))}\n`;
+    }
+}
+exports.Variant = Variant;
+function typeCaseForSelectionSet(selectionSet, mergeInFragmentSpreads = true) {
+    const typeCase = new TypeCase(selectionSet.possibleTypes);
+    for (const selection of selectionSet.selections) {
+        switch (selection.kind) {
+            case "Field":
+                for (const variant of typeCase.disjointVariantsFor(selectionSet.possibleTypes)) {
+                    variant.selections.push(selection);
+                }
+                break;
+            case "FragmentSpread":
+                if (typeCase.default.fragmentSpreads.some(fragmentSpread => fragmentSpread.fragmentName === selection.fragmentName))
+                    continue;
+                for (const variant of typeCase.disjointVariantsFor(selectionSet.possibleTypes)) {
+                    variant.fragmentSpreads.push(selection);
+                    if (!mergeInFragmentSpreads) {
+                        variant.selections.push(selection);
+                    }
+                }
+                if (mergeInFragmentSpreads) {
+                    typeCase.merge(typeCaseForSelectionSet({
+                        possibleTypes: selectionSet.possibleTypes.filter(type => selection.selectionSet.possibleTypes.includes(type)),
+                        selections: selection.selectionSet.selections
+                    }, mergeInFragmentSpreads));
+                }
+                break;
+            case "TypeCondition":
+                typeCase.merge(typeCaseForSelectionSet({
+                    possibleTypes: selectionSet.possibleTypes.filter(type => selection.selectionSet.possibleTypes.includes(type)),
+                    selections: selection.selectionSet.selections
+                }, mergeInFragmentSpreads));
+                break;
+            case "BooleanCondition":
+                typeCase.merge(typeCaseForSelectionSet(selection.selectionSet, mergeInFragmentSpreads), selectionSet => [
+                    Object.assign(Object.assign({}, selection), { selectionSet })
+                ]);
+                break;
+        }
+    }
+    return typeCase;
+}
+exports.typeCaseForSelectionSet = typeCaseForSelectionSet;
+class TypeCase {
+    constructor(possibleTypes) {
+        this.default = new Variant(possibleTypes);
+        this.variantsByType = new Map();
+    }
+    get variants() {
+        return Array.from(new Set(this.variantsByType.values()));
+    }
+    get defaultAndVariants() {
+        return [this.default, ...this.variants];
+    }
+    get remainder() {
+        if (this.default.possibleTypes.some(type => !this.variantsByType.has(type))) {
+            return new Variant(this.default.possibleTypes.filter(type => !this.variantsByType.has(type)), this.default.selections, this.default.fragmentSpreads);
+        }
+        else {
+            return undefined;
+        }
+    }
+    get exhaustiveVariants() {
+        const remainder = this.remainder;
+        if (remainder) {
+            return [remainder, ...this.variants];
+        }
+        else {
+            return this.variants;
+        }
+    }
+    disjointVariantsFor(possibleTypes) {
+        const variants = [];
+        const matchesDefault = this.default.possibleTypes.every(type => possibleTypes.includes(type));
+        if (matchesDefault) {
+            variants.push(this.default);
+        }
+        const splits = new Map();
+        for (const type of possibleTypes) {
+            let original = this.variantsByType.get(type);
+            if (!original) {
+                if (matchesDefault)
+                    continue;
+                original = this.default;
+            }
+            let split = splits.get(original);
+            if (!split) {
+                split = new Variant([], [...original.selections], [...original.fragmentSpreads]);
+                splits.set(original, split);
+                variants.push(split);
+            }
+            if (original !== this.default) {
+                original.possibleTypes.splice(original.possibleTypes.indexOf(type), 1);
+            }
+            this.variantsByType.set(type, split);
+            split.possibleTypes.push(type);
+        }
+        return variants;
+    }
+    merge(otherTypeCase, transform) {
+        for (const otherVariant of otherTypeCase.defaultAndVariants) {
+            if (otherVariant.selections.length < 1)
+                continue;
+            for (const variant of this.disjointVariantsFor(otherVariant.possibleTypes)) {
+                if (otherVariant.fragmentSpreads.length > 0) {
+                    variant.fragmentSpreads = [
+                        ...variant.fragmentSpreads,
+                        ...otherVariant.fragmentSpreads
+                    ].filter((a, index, array) => array.findIndex(b => b.fragmentName == a.fragmentName) == index);
+                }
+                variant.selections.push(...(transform ? transform(otherVariant) : otherVariant.selections));
+            }
+        }
+    }
+    inspect() {
+        return (`TypeCase\n` +
+            `  default -> ${util_1.inspect(this.default)}\n` +
+            this.variants.map(variant => `  ${util_1.inspect(variant)}\n`).join(""));
+    }
+}
+exports.TypeCase = TypeCase;
+//# sourceMappingURL=typeCase.js.map                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         "use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+function collectAndMergeFields(selectionSet, mergeInFragmentSpreads = true) {
+    const groupedFields = new Map();
+    function visitSelectionSet(selections, possibleTypes, conditions = []) {
+        if (possibleTypes.length < 1)
+            return;
+        for (const selection of selections) {
+            switch (selection.kind) {
+                case "Field":
+                    let groupForResponseKey = groupedFields.get(selection.responseKey);
+                    if (!groupForResponseKey) {
+                        groupForResponseKey = [];
+                        groupedFields.set(selection.responseKey, groupForResponseKey);
+                    }
+                    groupForResponseKey.push(Object.assign(Object.assign({}, selection), { isConditional: conditions.length > 0, conditions, selectionSe

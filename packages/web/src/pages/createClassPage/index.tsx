@@ -6,6 +6,7 @@ import "./createClassPage.scss";
 import { StundentsForm } from './forms/StundentsForm';
 import { ArrangeDesks } from './forms/ArrangeDesks';
 import { LastStep } from "./forms/LastStep";
+import { TitleComponent } from '../../components/TitleComponent';
 
 /** Numero di schermate */
 const STEPS_NUMBER = 4;
@@ -14,7 +15,7 @@ export class CreateClassPage extends React.Component {
 
     state = {
         /** Schermata corrente */
-        step: 2,
+        step: 0,
         /** Valori del form */
         form: [
             { classroomName: undefined, email: undefined },
@@ -41,6 +42,7 @@ export class CreateClassPage extends React.Component {
 
         return (
             <div className="CreateClassPage">
+                <TitleComponent title="Registra una nuova classe" />
                 <div className="container">
                     <h1 className="title">Registra una nuova classe</h1>
                     <div className="form">
