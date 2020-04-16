@@ -1,18 +1,24 @@
 @import "./variables";
-@font-face {
+// FONT
+@import url('https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,300;0,400;0,500;1,300;1,400;1,500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100;0,300;0,400;0,600;0,700;0,800;1,100;1,300;1,400;1,500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700;900&display=swap');
+
+
+/* @font-face {
   font-family: 'Rawson';
-  src: url("../assets/fonts/RawsonPro-Medium.otf") format('woff');
+  src: url("../assets/fonts/RawsonPro-Medium.otf") format('opentype');
   font-weight: 500;
 }
 @font-face {
   font-family: 'Rawson';
-  src: url("../assets/fonts/Rawson-Bold.otf") format('woff');
+  src: url("../assets/fonts/Rawson-Bold.otf") format('opentype');
   font-weight: bold;
 }
 @font-face {
   font-family: 'Rawson';
-  src:  url("../assets/fonts/Rawson-Regular.otf") format('woff');
-}
+  src:  url("../assets/fonts/Rawson-Regular.otf") format('opentype');
+} */
 
 * {
   margin: 0;

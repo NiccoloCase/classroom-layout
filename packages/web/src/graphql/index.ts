@@ -5,7 +5,7 @@ import { ApolloLink } from "apollo-link";
 import config from "config";
 
 const cache = new InMemoryCache();
-const httpLink = new HttpLink({ uri: `/graphql` });
+const httpLink = new HttpLink({ uri: `/api/graphql` });
 
 export const client = new ApolloClient({
     connectToDevTools: !config.isProduction,

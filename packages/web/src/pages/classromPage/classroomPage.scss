@@ -1,12 +1,11 @@
 @import "../../styles/variables";
 
-
 .ClassroomPage {
     height: calc(100% - #{$top-menu-navigation-height});
     display: flex;
 
     .left-menu {
-        background:$dark-grey;
+        background: $dark-grey;
         width: $left-menu-width;
         @include side-shadow(right);
 
@@ -43,13 +42,12 @@
         .classroom-info {
             margin-top: 2rem;
             padding: 1rem;
-            font-family: "Rawson";
+            font-family: "Lato";
             text-align: right;
             color: $dark-grey;
-            .classroom-name {
-                font-weight:500;
-            }
-            .classroom-id {
+            &__title { text-transform: uppercase; }
+            &__name {font-weight:500; }
+            &__id {
                 font-weight:300;
                 color:$medium-grey;
             }
@@ -62,6 +60,8 @@
             overflow: hidden;
 
             .section-title {
+                font-family: "Lato";
+                font-weight: 800;
                 border-top: solid 1px $light-grey;
                 text-align: center;
                 padding: 1rem;
@@ -128,7 +128,7 @@
         margin-top: 2rem;
 
         .title {
-            font-family: "Rawson";
+            font-family: "Montserrat";
             font-size: 27px;
             font-weight: 500;
             color:#4A4A4A;

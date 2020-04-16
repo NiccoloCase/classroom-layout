@@ -1,0 +1,1123 @@
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.findConfigUpwards = findConfigUpwards;
+exports.findRelativeConfig = findRelativeConfig;
+exports.findRootConfig = findRootConfig;
+exports.loadConfig = loadConfig;
+
+function _debug() {
+  const data = _interopRequireDefault(require("debug"));
+
+  _debug = function () {
+    return data;
+  };
+
+  return data;
+}
+
+function _path() {
+  const data = _interopRequireDefault(require("path"));
+
+  _path = function () {
+    return data;
+  };
+
+  return data;
+}
+
+function _fs() {
+  const data = _interopRequireDefault(require("fs"));
+
+  _fs = function () {
+    return data;
+  };
+
+  return data;
+}
+
+function _json() {
+  const data = _interopRequireDefault(require("json5"));
+
+  _json = function () {
+    return data;
+  };
+
+  return data;
+}
+
+function _resolve() {
+  const data = _interopRequireDefault(require("resolve"));
+
+  _resolve = function () {
+    return data;
+  };
+
+  return data;
+}
+
+var _caching = require("../caching");
+
+var _configApi = _interopRequireDefault(require("../helpers/config-api"));
+
+var _utils = require("./utils");
+
+var _patternToRegex = _interopRequireDefault(require("../pattern-to-regex"));
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+const debug = (0, _debug().default)("babel:config:loading:files:configuration");
+const BABEL_CONFIG_JS_FILENAME = "babel.config.js";
+const BABELRC_FILENAME = ".babelrc";
+const BABELRC_JS_FILENAME = ".babelrc.js";
+const BABELIGNORE_FILENAME = ".babelignore";
+
+function findConfigUpwards(rootDir) {
+  let dirname = rootDir;
+
+  while (true) {
+    if (_fs().default.existsSync(_path().default.join(dirname, BABEL_CONFIG_JS_FILENAME))) {
+      return dirname;
+    }
+
+    const nextDir = _path().default.dirname(dirname);
+
+    if (dirname === nextDir) break;
+    dirname = nextDir;
+  }
+
+  return null;
+}
+
+function findRelativeConfig(packageData, envName, caller) {
+  let config = null;
+  let ignore = null;
+
+  const dirname = _path().default.dirname(packageData.filepath);
+
+  for (const loc of packageData.directories) {
+    if (!config) {
+      config = [BABELRC_FILENAME, BABELRC_JS_FILENAME].reduce((previousConfig, name) => {
+        const filepath = _path().default.join(loc, name);
+
+        const config = readConfig(filepath, envName, caller);
+
+        if (config && previousConfig) {
+          throw new Error(`Multiple configuration files found. Please remove one:\n` + ` - ${_path().default.basename(previousConfig.filepath)}\n` + ` - ${name}\n` + `from ${loc}`);
+        }
+
+        return config || previousConfig;
+      }, null);
+      const pkgConfig = packageData.pkg && packageData.pkg.dirname === loc ? packageToBabelConfig(packageData.pkg) : null;
+
+      if (pkgConfig) {
+        if (config) {
+          throw new Error(`Multiple configuration files found. Please remove one:\n` + ` - ${_path().default.basename(pkgConfig.filepath)}#babel\n` + ` - ${_path().default.basename(config.filepath)}\n` + `from ${loc}`);
+        }
+
+        config = pkgConfig;
+      }
+
+      if (config) {
+        debug("Found configuration %o from %o.", config.filepath, dirname);
+      }
+    }
+
+    if (!ignore) {
+      const ignoreLoc = _path().default.join(loc, BABELIGNORE_FILENAME);
+
+      ignore = readIgnoreConfig(ignoreLoc);
+
+      if (ignore) {
+        debug("Found ignore %o from %o.", ignore.filepath, dirname);
+      }
+    }
+  }
+
+  return {
+    config,
+    ignore
+  };
+}
+
+function findRootConfig(dirname, envName, caller) {
+  const filepath = _path().default.resolve(dirname, BABEL_CONFIG_JS_FILENAME);
+
+  const conf = readConfig(filepath, envName, caller);
+
+  if (conf) {
+    debug("Found root config %o in $o.", BABEL_CONFIG_JS_FILENAME, dirname);
+  }
+
+  return conf;
+}
+
+function loadConfig(name, dirname, envName, caller) {
+  const filepath = _resolve().default.sync(name, {
+    basedir: dirname
+  });
+
+  const conf = readConfig(filepath, envName, caller);
+
+  if (!conf) {
+    throw new Error(`Config file ${filepath} contains no configuration data`);
+  }
+
+  debug("Loaded config %o from $o.", name, dirname);
+  return conf;
+}
+
+function readConfig(filepath, envName, caller) {
+  return _path().default.extname(filepath) === ".js" ? readConfigJS(filepath, {
+    envName,
+    caller
+  }) : readConfigJSON5(filepath);
+}
+
+const LOADING_CONFIGS = new Set();
+const readConfigJS = (0, _caching.makeStrongCache)((filepath, cache) => {
+  if (!_fs().default.existsSync(filepath)) {
+    cache.forever();
+    return null;
+  }
+
+  if (LOADING_CONFIGS.has(filepath)) {
+    cache.never();
+    debug("Auto-ignoring usage of config %o.", filepath);
+    return {
+      filepath,
+      dirname: _path().default.dirname(filepath),
+      options: {}
+    };
+  }
+
+  let options;
+
+  try {
+    LOADING_CONFIGS.add(filepath);
+
+    const configModule = require(filepath);
+
+    options = configModule && configModule.__esModule ? configModule.default || undefined : configModule;
+  } catch (err) {
+    err.message = `${filepath}: Error while loading config - ${err.message}`;
+    throw err;
+  } finally {
+    LOADING_CONFIGS.delete(filepath);
+  }
+
+  if (typeof options === "function") {
+    options = options((0, _configApi.default)(cache));
+    if (!cache.configured()) throwConfigError();
+  }
+
+  if (!options || typeof options !== "object" || Array.isArray(options)) {
+    throw new Error(`${filepath}: Configuration should be an exported JavaScript object.`);
+  }
+
+  if (typeof options.then === "function") {
+    throw new Error(`You appear to be using an async configuration, ` + `which your current version of Babel does not support. ` + `We may add support for this in the future, ` + `but if you're on the most recent version of @babel/core and still ` + `seeing this error, then you'll need to synchronously return your config.`);
+  }
+
+  return {
+    filepath,
+    dirname: _path().default.dirname(filepath),
+    options
+  };
+});
+const packageToBabelConfig = (0, _caching.makeWeakCache)(file => {
+  const babel = file.options["babel"];
+  if (typeof babel === "undefined") return null;
+
+  if (typeof babel !== "object" || Array.isArray(babel) || babel === null) {
+    throw new Error(`${file.filepath}: .babel property must be an object`);
+  }
+
+  return {
+    filepath: file.filepath,
+    dirname: file.dirname,
+    options: babel
+  };
+});
+const readConfigJSON5 = (0, _utils.makeStaticFileCache)((filepath, content) => {
+  let options;
+
+  try {
+    options = _json().default.parse(content);
+  } catch (err) {
+    err.message = `${filepath}: Error while parsing config - ${err.message}`;
+    throw err;
+  }
+
+  if (!options) throw new Error(`${filepath}: No config detected`);
+
+  if (typeof options !== "object") {
+    throw new Error(`${filepath}: Config returned typeof ${typeof options}`);
+  }
+
+  if (Array.isArray(options)) {
+    throw new Error(`${filepath}: Expected config object but found array`);
+  }
+
+  return {
+    filepath,
+    dirname: _path().default.dirname(filepath),
+    options
+  };
+});
+const readIgnoreConfig = (0, _utils.makeStaticFileCache)((filepath, content) => {
+  const ignoreDir = _path().default.dirname(filepath);
+
+  const ignorePatterns = content.split("\n").map(line => line.replace(/#(.*?)$/, "").trim()).filter(line => !!line);
+
+  for (const pattern of ignorePatterns) {
+    if (pattern[0] === "!") {
+      throw new Error(`Negation of file paths is not supported.`);
+    }
+  }
+
+  return {
+    filepath,
+    dirname: _path().default.dirname(filepath),
+    ignore: ignorePatterns.map(pattern => (0, _patternToRegex.default)(pattern, ignoreDir))
+  };
+});
+
+function throwConfigError() {
+  throw new Error(`\
+Caching was left unconfigured. Babel's plugins, presets, and .babelrc.js files can be configured
+for various types of caching, using the first param of their handler functions:
+
+module.exports = function(api) {
+  // The API exposes the following:
+
+  // Cache the returned value forever and don't call this function again.
+  api.cache(true);
+
+  // Don't cache at all. Not recommended because it will be very slow.
+  api.cache(false);
+
+  // Cached based on the value of some function. If this function returns a value different from
+  // a previously-encountered value, the plugins will re-evaluate.
+  var env = api.cache(() => process.env.NODE_ENV);
+
+  // If testing for a specific env, we recommend specifics to avoid instantiating a plugin for
+  // any possible NODE_ENV value that might come up during plugin execution.
+  var isProd = api.cache(() => process.env.NODE_ENV === "production");
+
+  // .cache(fn) will perform a linear search though instances to find the matching plugin based
+  // based on previous instantiated plugins. If you want to recreate the plugin and discard the
+  // previous instance whenever something changes, you may use:
+  var isProd = api.cache.invalidate(() => process.env.NODE_ENV === "production");
+
+  // Note, we also expose the following more-verbose versions of the above examples:
+  api.cache.forever(); // api.cache(true)
+  api.cache.never();   // api.cache(false)
+  api.cache.using(fn); // api.cache(fn)
+
+  // Return the value that will be cached.
+  return { };
+};`);
+}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        'use strict';
+
+Object.defineProperty(exports, '__esModule', {
+  value: true
+});
+exports.install = install;
+
+var _isGeneratorFn = require('is-generator-fn');
+
+var _isGeneratorFn2 = _interopRequireDefault(_isGeneratorFn);
+
+var _co = require('co');
+
+var _co2 = _interopRequireDefault(_co);
+
+var _is_error = require('./is_error');
+
+var _is_error2 = _interopRequireDefault(_is_error);
+
+function _interopRequireDefault(obj) {
+  return obj && obj.__esModule ? obj : {default: obj};
+}
+
+/**
+ * Copyright (c) 2014-present, Facebook, Inc. All rights reserved.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ *
+ *
+ */
+
+/**
+ * This module adds ability to test async promise code with jasmine by
+ * returning a promise from `it/test` and `before/afterEach/All` blocks.
+ */
+
+function isPromise(obj) {
+  return obj && typeof obj.then === 'function';
+}
+
+function promisifyLifeCycleFunction(originalFn, env) {
+  return function(fn, timeout) {
+    if (!fn) {
+      return originalFn.call(env);
+    }
+
+    const hasDoneCallback = fn.length > 0;
+
+    if (hasDoneCallback) {
+      // Jasmine will handle it
+      return originalFn.call(env, fn, timeout);
+    }
+
+    const extraError = new Error();
+
+    // We make *all* functions async and run `done` right away if they
+    // didn't return a promise.
+    const asyncJestLifecycle = function(done) {
+      const wrappedFn = (0, _isGeneratorFn2.default)(fn)
+        ? _co2.default.wrap(fn)
+        : fn;
+      const returnValue = wrappedFn.call({});
+
+      if (isPromise(returnValue)) {
+        returnValue.then(done.bind(null, null), error => {
+          var _checkIsError = (0, _is_error2.default)(error);
+
+          const isError = _checkIsError.isError,
+            message = _checkIsError.message;
+
+          if (message) {
+            extraError.message = message;
+          }
+          done.fail(isError ? error : extraError);
+        });
+      } else {
+        done();
+      }
+    };
+
+    return originalFn.call(env, asyncJestLifecycle, timeout);
+  };
+}
+
+// Similar to promisifyLifeCycleFunction but throws an error
+// when the return value is neither a Promise nor `undefined`
+function promisifyIt(originalFn, env) {
+  return function(specName, fn, timeout) {
+    if (!fn) {
+      const spec = originalFn.call(env, specName);
+      spec.pend('not implemented');
+      return spec;
+    }
+
+    const hasDoneCallback = fn.length > 0;
+
+    if (hasDoneCallback) {
+      return originalFn.call(env, specName, fn, timeout);
+    }
+
+    const extraError = new Error();
+
+    const asyncJestTest = function(done) {
+      const wrappedFn = (0, _isGeneratorFn2.default)(fn)
+        ? _co2.default.wrap(fn)
+        : fn;
+      const returnValue = wrappedFn.call({});
+
+      if (isPromise(returnValue)) {
+        returnValue.then(done.bind(null, null), error => {
+          var _checkIsError2 = (0, _is_error2.default)(error);
+
+          const isError = _checkIsError2.isError,
+            message = _checkIsError2.message;
+
+          if (message) {
+            extraError.message = message;
+          }
+          done.fail(isError ? error : extraError);
+        });
+      } else if (returnValue === undefined) {
+        done();
+      } else {
+        done.fail(
+          new Error(
+            'Jest: `it` and `test` must return either a Promise or undefined.'
+          )
+        );
+      }
+    };
+
+    return originalFn.call(env, specName, asyncJestTest, timeout);
+  };
+}
+
+function makeConcurrent(originalFn, env) {
+  return function(specName, fn, timeout) {
+    if (env != null && !env.specFilter({getFullName: () => specName || ''})) {
+      return originalFn.call(env, specName, () => Promise.resolve(), timeout);
+    }
+
+    let promise;
+
+    try {
+      promise = fn();
+      if (!isPromise(promise)) {
+        throw new Error(
+          `Jest: concurrent test "${specName}" must return a Promise.`
+        );
+      }
+    } catch (error) {
+      return originalFn.call(env, specName, () => Promise.reject(error));
+    }
+
+    return originalFn.call(env, specName, () => promise, timeout);
+  };
+}
+
+function install(global) {
+  const jasmine = global.jasmine;
+
+  const env = jasmine.getEnv();
+  env.it = promisifyIt(env.it, env);
+  env.fit = promisifyIt(env.fit, env);
+  global.it.concurrent = makeConcurrent(env.it, env);
+  global.it.concurrent.only = makeConcurrent(env.fit, env);
+  global.it.concurrent.skip = makeConcurrent(env.xit, env);
+  global.fit.concurrent = makeConcurrent(env.fit);
+  env.afterAll = promisifyLifeCycleFunction(env.afterAll, env);
+  env.afterEach = promisifyLifeCycleFunction(env.afterEach, env);
+  env.beforeAll = promisifyLifeCycleFunction(env.beforeAll, env);
+  env.beforeEach = promisifyLifeCycleFunction(env.beforeEach, env);
+}
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                'use strict';
+
+let jasmine2 = (() => {
+  var _ref = _asyncToGenerator(function*(
+    globalConfig,
+    config,
+    environment,
+    runtime,
+    testPath
+  ) {
+    const reporter = new _reporter2.default(globalConfig, config, testPath);
+    const jasmineFactory = runtime.requireInternalModule(JASMINE);
+    const jasmine = jasmineFactory.create({
+      process: process,
+      testPath: testPath
+    });
+
+    const env = jasmine.getEnv();
+    const jasmineInterface = jasmineFactory.interface(jasmine, env);
+    Object.assign(environment.global, jasmineInterface);
+    env.addReporter(jasmineInterface.jsApiReporter);
+
+    // TODO: Remove config option if V8 exposes some way of getting location of caller
+    // in a future version
+    if (config.testLocationInResults === true) {
+      const originalIt = environment.global.it;
+      environment.global.it = function() {
+        const stack = (0, _jestUtil.getCallsite)(1, runtime.getSourceMaps());
+        const it = originalIt.apply(undefined, arguments);
+
+        it.result.__callsite = stack;
+
+        return it;
+      };
+    }
+
+    (0, _jasmine_async.install)(environment.global);
+
+    (0, _each2.default)(environment);
+
+    environment.global.test = environment.global.it;
+    environment.global.it.only = environment.global.fit;
+    environment.global.it.skip = environment.global.xit;
+    environment.global.xtest = environment.global.xit;
+    environment.global.describe.skip = environment.global.xdescribe;
+    environment.global.describe.only = environment.global.fdescribe;
+
+    if (config.timers === 'fake') {
+      environment.fakeTimers.useFakeTimers();
+    }
+
+    env.beforeEach(function() {
+      if (config.resetModules) {
+        runtime.resetModules();
+      }
+
+      if (config.clearMocks) {
+        runtime.clearAllMocks();
+      }
+
+      if (config.resetMocks) {
+        runtime.resetAllMocks();
+
+        if (config.timers === 'fake') {
+          environment.fakeTimers.useFakeTimers();
+        }
+      }
+
+      if (config.restoreMocks) {
+        runtime.restoreAllMocks();
+      }
+    });
+
+    env.addReporter(reporter);
+
+    runtime
+      .requireInternalModule(
+        _path2.default.resolve(__dirname, './jest_expect.js')
+      )
+      .default({
+        expand: globalConfig.expand
+      });
+
+    if (globalConfig.errorOnDeprecated) {
+      (0, _error_on_private.installErrorOnPrivate)(environment.global);
+    } else {
+      // $FlowFixMe Flow seems to be confused about accessors and tries to enfoce having a `value` property.
+      Object.defineProperty(jasmine, 'DEFAULT_TIMEOUT_INTERVAL', {
+        configurable: true,
+        enumerable: true,
+        get: function() {
+          return this._DEFAULT_TIMEOUT_INTERVAL;
+        },
+        set: function(value) {
+          this._DEFAULT_TIMEOUT_INTERVAL = value;
+        }
+      });
+    }
+
+    const snapshotState = runtime
+      .requireInternalModule(
+        _path2.default.resolve(__dirname, './setup_jest_globals.js')
+      )
+      .default({
+        config: config,
+        globalConfig: globalConfig,
+        localRequire: runtime.requireModule.bind(runtime),
+        testPath: testPath
+      });
+
+    if (config.setupTestFrameworkScriptFile) {
+      runtime.requireModule(config.setupTestFrameworkScriptFile);
+    }
+
+    if (globalConfig.enabledTestsMap) {
+      env.specFilter = function(spec) {
+        const suiteMap =
+          globalConfig.enabledTestsMap &&
+          globalConfig.enabledTestsMap[spec.result.testPath];
+        return suiteMap && suiteMap[spec.result.fullName];
+      };
+    } else if (globalConfig.testNamePattern) {
+      const testNameRegex = new RegExp(globalConfig.testNamePattern, 'i');
+      env.specFilter = function(spec) {
+        return testNameRegex.test(spec.getFullName());
+      };
+    }
+
+    runtime.requireModule(testPath);
+    yield env.execute();
+
+    const results = yield reporter.getResults();
+
+    return addSnapshotData(results, snapshotState);
+  });
+
+  return function jasmine2(_x, _x2, _x3, _x4, _x5) {
+    return _ref.apply(this, arguments);
+  };
+})();
+
+var _path = require('path');
+
+var _path2 = _interopRequireDefault(_path);
+
+var _each = require('./each');
+
+var _each2 = _interopRequireDefault(_each);
+
+var _error_on_private = require('./error_on_private');
+
+var _jestUtil = require('jest-util');
+
+var _reporter = require('./reporter');
+
+var _reporter2 = _interopRequireDefault(_reporter);
+
+var _jasmine_async = require('./jasmine_async');
+
+function _interopRequireDefault(obj) {
+  return obj && obj.__esModule ? obj : {default: obj};
+}
+
+function _asyncToGenerator(fn) {
+  return function() {
+    var gen = fn.apply(this, arguments);
+    return new Promise(function(resolve, reject) {
+      function step(key, arg) {
+        try {
+          var info = gen[key](arg);
+          var value = info.value;
+        } catch (error) {
+          reject(error);
+          return;
+        }
+        if (info.done) {
+          resolve(value);
+        } else {
+          return Promise.resolve(value).then(
+            function(value) {
+              step('next', value);
+            },
+            function(err) {
+              step('throw', err);
+            }
+          );
+        }
+      }
+      return step('next');
+    });
+  };
+}
+// eslint-disable-next-line import/no-extraneous-dependencies
+/**
+ * Copyright (c) 2014-present, Facebook, Inc. All rights reserved.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ *
+ *
+ */
+
+const JASMINE = require.resolve('./jasmine/jasmine_light.js');
+
+const addSnapshotData = (results, snapshotState) => {
+  results.testResults.forEach(_ref2 => {
+    let fullName = _ref2.fullName,
+      status = _ref2.status;
+
+    if (status === 'pending' || status === 'failed') {
+      // if test is skipped or failed, we don't want to mark
+      // its snapshots as obsolete.
+      snapshotState.markSnapshotsAsCheckedForTest(fullName);
+    }
+  });
+
+  const uncheckedCount = snapshotState.getUncheckedCount();
+  const uncheckedKeys = snapshotState.getUncheckedKeys();
+
+  if (uncheckedCount) {
+    snapshotState.removeUncheckedKeys();
+  }
+
+  const status = snapshotState.save();
+  results.snapshot.fileDeleted = status.deleted;
+  results.snapshot.added = snapshotState.added;
+  results.snapshot.matched = snapshotState.matched;
+  results.snapshot.unmatched = snapshotState.unmatched;
+  results.snapshot.updated = snapshotState.updated;
+  results.snapshot.unchecked = !status.deleted ? uncheckedCount : 0;
+  // Copy the array to prevent memory leaks
+  results.snapshot.uncheckedKeys = Array.from(uncheckedKeys);
+
+  return results;
+};
+
+module.exports = jasmine2;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   'use strict';
+
+Object.defineProperty(exports, '__esModule', {
+  value: true
+});
+
+var _jestMatcherUtils = require('jest-matcher-utils');
+
+var _chalk = require('chalk');
+
+var _chalk2 = _interopRequireDefault(_chalk);
+
+var _jestDiff = require('jest-diff');
+
+var _jestDiff2 = _interopRequireDefault(_jestDiff);
+
+function _interopRequireDefault(obj) {
+  return obj && obj.__esModule ? obj : {default: obj};
+}
+
+/**
+ * Copyright (c) 2017-present, Facebook, Inc. All rights reserved.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ *
+ *
+ */
+
+const assertOperatorsMap = {
+  '!=': 'notEqual',
+  '!==': 'notStrictEqual',
+  '==': 'equal',
+  '===': 'strictEqual'
+};
+
+const humanReadableOperators = {
+  deepEqual: 'to deeply equal',
+  deepStrictEqual: 'to deeply and strictly equal',
+  equal: 'to be equal',
+  notDeepEqual: 'not to deeply equal',
+  notDeepStrictEqual: 'not to deeply and strictly equal',
+  notEqual: 'to not be equal',
+  notStrictEqual: 'not be strictly equal',
+  strictEqual: 'to strictly be equal'
+};
+
+const getOperatorName = (operator, stack) => {
+  if (typeof operator === 'string') {
+    return assertOperatorsMap[operator] || operator;
+  }
+  if (stack.match('.doesNotThrow')) {
+    return 'doesNotThrow';
+  }
+  if (stack.match('.throws')) {
+    return 'throws';
+  }
+  return '';
+};
+
+const operatorMessage = operator => {
+  const niceOperatorName = getOperatorName(operator, '');
+  // $FlowFixMe: we default to the operator itself, so holes in the map doesn't matter
+  const humanReadableOperator = humanReadableOperators[niceOperatorName];
+
+  return typeof operator === 'string'
+    ? `${humanReadableOperator || niceOperatorName} to:\n`
+    : '';
+};
+
+const assertThrowingMatcherHint = operatorName =>
+  _chalk2.default.dim('assert') +
+  _chalk2.default.dim('.' + operatorName + '(') +
+  _chalk2.default.red('function') +
+  _chalk2.default.dim(')');
+
+const assertMatcherHint = (operator, operatorName) => {
+  let message =
+    _chalk2.default.dim('assert') +
+    _chalk2.default.dim('.' + operatorName + '(') +
+    _chalk2.default.red('received') +
+    _chalk2.default.dim(', ') +
+    _chalk2.default.green('expected') +
+    _chalk2.default.dim(')');
+
+  if (operator === '==') {
+    message +=
+      ' or ' +
+      _chalk2.default.dim('assert') +
+      _chalk2.default.dim('(') +
+      _chalk2.default.red('received') +
+      _chalk2.default.dim(') ');
+  }
+
+  return message;
+};
+
+function assertionErrorMessage(error, options) {
+  const expected = error.expected,
+    actual = error.actual,
+    generatedMessage = error.generatedMessage,
+    message = error.message,
+    operator = error.operator,
+    stack = error.stack;
+
+  const diffString = (0, _jestDiff2.default)(expected, actual, options);
+  const hasCustomMessage = !generatedMessage;
+  const operatorName = getOperatorName(operator, stack);
+  const trimmedStack = stack
+    .replace(message, '')
+    .replace(/AssertionError(.*)/g, '');
+
+  if (operatorName === 'doesNotThrow') {
+    return (
+      assertThrowingMatcherHint(operatorName) +
+      '\n\n' +
+      _chalk2.default.reset(`Expected the function not to throw an error.\n`) +
+      _chalk2.default.reset(`Instead, it threw:\n`) +
+      `  ${(0, _jestMatcherUtils.printReceived)(actual)}` +
+      _chalk2.default.reset(
+        hasCustomMessage ? '\n\nMessage:\n  ' + message : ''
+      ) +
+      trimmedStack
+    );
+  }
+
+  if (operatorName === 'throws') {
+    return (
+      assertThrowingMatcherHint(operatorName) +
+      '\n\n' +
+      _chalk2.default.reset(`Expected the function to throw an error.\n`) +
+      _chalk2.default.reset(`But it didn't throw anything.`) +
+      _chalk2.default.reset(
+        hasCustomMessage ? '\n\nMessage:\n  ' + message : ''
+      ) +
+      trimmedStack
+    );
+  }
+
+  return (
+    assertMatcherHint(operator, operatorName) +
+    '\n\n' +
+    _chalk2.default.reset(`Expected value ${operatorMessage(operator)}`) +
+    `  ${(0, _jestMatcherUtils.printExpected)(expected)}\n` +
+    _chalk2.default.reset(`Received:\n`) +
+    `  ${(0, _jestMatcherUtils.printReceived)(actual)}` +
+    _chalk2.default.reset(
+      hasCustomMessage ? '\n\nMessage:\n  ' + message : ''
+    ) +
+    (diffString ? `\n\nDifference:\n\n${diffString}` : '') +
+    trimmedStack
+  );
+}
+
+exports.default = assertionErrorMessage;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          'use strict';
+
+Object.defineProperty(exports, '__esModule', {
+  value: true
+});
+exports.getSha1 = exports.worker = undefined;
+
+let worker = (exports.worker = (() => {
+  var _ref = _asyncToGenerator(function*(data) {
+    if (
+      data.hasteImplModulePath &&
+      data.hasteImplModulePath !== hasteImplModulePath
+    ) {
+      if (hasteImpl) {
+        throw new Error('jest-haste-map: hasteImplModulePath changed');
+      }
+      hasteImplModulePath = data.hasteImplModulePath;
+      // $FlowFixMe: dynamic require
+      hasteImpl = require(hasteImplModulePath);
+    }
+
+    let content;
+    let dependencies;
+    let id;
+    let module;
+    let sha1;
+
+    const computeDependencies = data.computeDependencies,
+      computeSha1 = data.computeSha1,
+      filePath = data.filePath;
+
+    const getContent = function() {
+      if (content === undefined) {
+        content = (_gracefulFs || _load_gracefulFs()).default.readFileSync(
+          filePath,
+          'utf8'
+        );
+      }
+
+      return content;
+    };
+
+    if (filePath.endsWith(PACKAGE_JSON)) {
+      // Process a package.json that is returned as a PACKAGE type with its name.
+      try {
+        const fileData = JSON.parse(getContent());
+
+        if (fileData.name) {
+          id = fileData.name;
+          module = [
+            filePath,
+            (_constants || _load_constants()).default.PACKAGE
+          ];
+        }
+      } catch (err) {
+        throw new Error(`Cannot parse ${filePath} as JSON: ${err.message}`);
+      }
+    } else if (
+      !(_blacklist || _load_blacklist()).default.has(
+        filePath.substr(filePath.lastIndexOf('.'))
+      )
+    ) {
+      // Process a random file that is returned as a MODULE.
+      if (hasteImpl) {
+        id = hasteImpl.getHasteName(filePath);
+      } else {
+        const doc = (_jestDocblock || _load_jestDocblock()).parse(
+          (_jestDocblock || _load_jestDocblock()).extract(getContent())
+        );
+        id = [].concat(doc.providesModule || doc.provides)[0];
+      }
+
+      if (computeDependencies) {
+        dependencies = (0,
+        (_extract_requires || _load_extract_requires()).default)(getContent());
+      }
+
+      if (id) {
+        module = [filePath, (_constants || _load_constants()).default.MODULE];
+      }
+    }
+
+    // If a SHA-1 is requested on update, compute it.
+    if (computeSha1) {
+      sha1 = sha1hex(
+        getContent() ||
+          (_gracefulFs || _load_gracefulFs()).default.readFileSync(filePath)
+      );
+    }
+
+    return {dependencies: dependencies, id: id, module: module, sha1: sha1};
+  });
+
+  return function worker(_x) {
+    return _ref.apply(this, arguments);
+  };
+})());
+
+let getSha1 = (exports.getSha1 = (() => {
+  var _ref2 = _asyncToGenerator(function*(data) {
+    const sha1 = data.computeSha1
+      ? sha1hex(
+          (_gracefulFs || _load_gracefulFs()).default.readFileSync(
+            data.filePath
+          )
+        )
+      : null;
+
+    return {
+      dependencies: undefined,
+      id: undefined,
+      module: undefined,
+      sha1: sha1
+    };
+  });
+
+  return function getSha1(_x2) {
+    return _ref2.apply(this, arguments);
+  };
+})());
+
+var _crypto;
+
+function _load_crypto() {
+  return (_crypto = _interopRequireDefault(require('crypto')));
+}
+
+var _path;
+
+function _load_path() {
+  return (_path = _interopRequireDefault(require('path')));
+}
+
+var _jestDocblock;
+
+function _load_jestDocblock() {
+  return (_jestDocblock = _interopRequireWildcard(require('jest-docblock')));
+}
+
+var _gracefulFs;
+
+function _load_gracefulFs() {
+  return (_gracefulFs = _interopRequireDefault(require('graceful-fs')));
+}
+
+var _blacklist;
+
+function _load_blacklist() {
+  return (_blacklist = _interopRequireDefault(require('./blacklist')));
+}
+
+var _constants;
+
+function _load_constants() {
+  return (_constants = _interopRequireDefault(require('./constants')));
+}
+
+var _extract_requires;
+
+function _load_extract_requires() {
+  return (_extract_requires = _interopRequireDefault(
+    require('./lib/extract_requires')
+  ));
+}
+
+function _interopRequireWildcard(obj) {
+  if (obj && obj.__esModule) {
+    return obj;
+  } else {
+    var newObj = {};
+    if (obj != null) {
+      for (var key in obj) {
+        if (Object.prototype.hasOwnProperty.call(obj, key))
+          newObj[key] = obj[key];
+      }
+    }
+    newObj.default = obj;
+    return newObj;
+  }
+}
+
+function _interopRequireDefault(obj) {
+  return obj && obj.__esModule ? obj : {default: obj};
+}
+
+function _asyncToGenerator(fn) {
+  return function() {
+    var gen = fn.apply(this, arguments);
+    return new Promise(function(resolve, reject) {
+      function step(key, arg) {
+        try {
+          var info = gen[key](arg);
+          var value = info.value;
+        } catch (error) {
+          reject(error);
+          return;
+        }
+        if (info.done) {
+          resolve(value);
+        } else {
+          return Promise.resolve(value).then(
+            function(value) {
+              step('next', value);
+            },
+            function(err) {
+              step('throw', err);
+            }
+          );
+        }
+      }
+      return step('next');
+    });
+  };
+}
+/**
+ * Copyright (c) 2014-present, Facebook, Inc. All rights reserved.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ *
+ *
+ */
+
+const PACKAGE_JSON = (_path || _load_path()).default.sep + 'package.json';
+
+let hasteImpl = null;
+let hasteImplModulePath = null;
+
+function sha1hex(content) {
+  return (_crypto || _load_crypto()).default
+    .createHash('sha1')
+    .update(content)
+    .digest('hex');
+}
+                                                                                                                                                                                                                                                                                                                                                                                                                          

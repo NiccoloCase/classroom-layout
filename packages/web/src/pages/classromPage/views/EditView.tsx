@@ -3,6 +3,7 @@ import { DeskInput, useEditClassroomMutation } from '../../../generated/graphql'
 import { HashLoader } from 'react-spinners';
 import { ClassRoomMap } from '../../../components/ClassRoomMap';
 import { RouteComponentProps, withRouter } from "react-router-dom"
+import { TitleComponent } from '../../../components/TitleComponent';
 
 interface EditViewProps extends RouteComponentProps<any> {
     classId: string;
@@ -83,6 +84,7 @@ const EditView: React.FC<EditViewProps> = props => {
 
     return (
         <div className="ClassroomPage__EditView">
+            <TitleComponent title="Modifica la tua classe" />
             {props.canvasWidth && props.canvasHeight ? content : <HashLoader color="#dadfe1" />}
         </div>
     );

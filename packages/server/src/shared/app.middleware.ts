@@ -14,9 +14,10 @@ export class ServeWebAppMiddleware implements NestMiddleware {
     use(req: Request, res: Response, next: NextFunction) {
         if (
             // Richiesta diretta all'API
-            req.path.indexOf("/api") === 0 ||
+            req.path.indexOf("/api") === 0// ||
+            //  req.path.indexOf("/static") === 0
             // Server non in produzione
-            !config.isProduction
+            // !config.isProduction
         ) return next();
         // Web App
         res.sendFile(join(process.cwd(), '../web/build/index.html'));
