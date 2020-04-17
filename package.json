@@ -1,6 +1,12 @@
 {
-    "private": true,
-    "workspaces": [
-        "packages/*"
-    ]
+  "name": "root",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "postinstall": "yarn run build:server && yarn run build:web",
+    "build:server": "lerna run build --scope={@crl/config,@crl/server}",
+    "build:web": "lerna run build --scope={@crl/config,@crl/web}"
+  }
 }

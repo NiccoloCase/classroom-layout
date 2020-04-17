@@ -1,5 +1,5 @@
 {
-  "name": "web",
+  "name": "@crl/web",
   "version": "0.1.0",
   "private": true,
   "homepage": "./",
@@ -16,7 +16,7 @@
     "apollo-link": "^1.2.13",
     "apollo-link-http": "^1.5.16",
     "classnames": "^2.2.6",
-    "config": "1.0.0",
+    "@crl/config": "1.0.0",
     "graphql-tag": "^2.10.3",
     "lodash": "^4.17.15",
     "node-sass": "^4.12.0",
