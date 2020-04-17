@@ -5,7 +5,7 @@ import { CustumValidationPipe } from './shared/validation';
 import { useContainer } from 'class-validator';
 import { join } from 'path';
 import { AppModule } from './app.module';
-import config from "config";
+import config from "@crl/config";
 
 async function bootstrap() {
   // APP
