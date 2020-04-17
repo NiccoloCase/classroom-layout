@@ -1,7 +1,7 @@
 import { Injectable, NestMiddleware } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
 import { join } from 'path';
-import config from "config";
+import config from "@crl/config";
 
 /**
  * Middleware che si occupa di riconoscere le richieste fatte all'API e quelle

@@ -5,7 +5,7 @@ import { GraphQLModule } from "@nestjs/graphql";
 import { MongooseModule } from "@nestjs/mongoose"
 import { ClassroomModule } from './classroom/classroom.module';
 import { ServeWebAppMiddleware } from './shared/app.middleware';
-import config from "config";
+import config from "@crl/config";
 
 @Module({
   imports: [
