@@ -9,6 +9,7 @@ export const LandingPage: React.FC<RouteComponentProps> = props => {
 
     return (
         <div>
+            <h1>CIAO!</h1>
             <button><Link to="/0UEA5Nj4l">Vai alla classe</Link></button>
             <button><Link to="/new">Configura una nuova classe</Link></button>
         </div>
