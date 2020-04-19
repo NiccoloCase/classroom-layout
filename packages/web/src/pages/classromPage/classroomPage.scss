@@ -45,7 +45,20 @@
             font-family: "Lato";
             text-align: right;
             color: $dark-grey;
-            &__title { text-transform: uppercase; }
+            &__title {           
+              display: flex;
+              justify-content: flex-end;
+              align-items: center;
+              :first-child { margin-right: .5rem;}
+              h2 {text-transform: uppercase;}
+              svg {
+                color: $shuttle-grey;
+                transition: all .4s;
+                &:hover {
+                 transform: rotate(45deg);
+                }
+              }
+             }
             &__name {font-weight:500; }
             &__id {
                 font-weight:300;
