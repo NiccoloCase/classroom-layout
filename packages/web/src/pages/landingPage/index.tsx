@@ -4,8 +4,8 @@ import { Link, RouteComponentProps } from 'react-router-dom';
 export const LandingPage: React.FC<RouteComponentProps> = props => {
 
     // cotrolla se è stato salvata una classe
-    const lastClassId = localStorage.getItem("last-classroom-id");
-    if (lastClassId) props.history.push(`/${lastClassId}`);
+    const savedClassId = localStorage.getItem("favorite-classroom-id");
+    if (savedClassId) props.history.push(`/${savedClassId}`);
 
     return (
         <div>

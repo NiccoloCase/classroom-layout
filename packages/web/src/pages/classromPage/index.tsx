@@ -2,7 +2,8 @@ import * as React from 'react';
 const { useState, useRef, useEffect } = React;
 import classnames from "classnames";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faEdit, faHistory, faCog, faMap } from '@fortawesome/free-solid-svg-icons';
+import { faEdit, faHistory, faCog, faMap, faStar } from '@fortawesome/free-solid-svg-icons';
+import { faStar as faStarOutline } from "@fortawesome/free-regular-svg-icons";
 import "./classroomPage.scss";
 import { Route, NavLink, RouteComponentProps } from "react-router-dom";
 import { MapView } from './views/MapView';
@@ -22,6 +23,8 @@ export const ClassroomPage: React.FC<RouteComponentProps<IParams>> = props => {
     const [selectedStudent, setSelectedStudent] = React.useState<string | null>(null);
     // classe
     const [classroom, setClassroom] = React.useState<Classroom | undefined>(undefined);
+    // è la classe prefirita?
+    const [isFavorite, setIsFavorite] = useState(false);
     // contenitore 
     const [contentContainer, setContentContainer] = useState<HTMLDivElement | null>(null);
     const contentContainerRef = (node: HTMLDivElement) => {
@@ -76,14 +79,32 @@ export const ClassroomPage: React.FC<RouteComponentProps<IParams>> = props => {
         else setSelectedStudent(null)
     }
 
+    /**
+     * Imposta / rimuove la classe come preferita
+     */
+    const changeClassFavoriteState = () => {
+        // salva l'id della classe nello storage
+        if (!isFavorite) localStorage.setItem("favorite-classroom-id", id);
+        // rimove la classe 
+        else localStorage.removeItem("favorite-classroom-id");
+        // aggiorna lo stato
+        setIsFavorite(!isFavorite);
+    }
+
+    /**
+     * Funzione che viene chimata a seguto del mescolamento dei banchi (studenti)
+     */
     const onDesksAreShuffled = (shuffledStudents: string[]) => {
         if (!classroom) return;
         const newClassroom = { ...classroom }
         newClassroom.students = shuffledStudents;
         setClassroom(newClassroom);
-
     }
 
+    /**
+     * Funzione chimata quando l'array di banchi viene aggiornata
+     * @param newDesks 
+     */
     const onDesksAreUpdated = (newDesks: Desk[]) => {
         if (!classroom) return;
         const newClassroom = { ...classroom };
@@ -121,12 +142,12 @@ export const ClassroomPage: React.FC<RouteComponentProps<IParams>> = props => {
         );
     }
 
-
     /**
      * Schermata principale
      */
     const renderMainView = ({ name, students, desks }: Classroom) => (
         <React.Fragment>
+            {/* MENU LATERALE DI SINISTRA */}
             <div className="left-menu">
                 <div className="navLinks">
                     <NavLink to={`/${id}/`} exact className="navLink"
@@ -148,6 +169,7 @@ export const ClassroomPage: React.FC<RouteComponentProps<IParams>> = props => {
                     </NavLink>
                 </div>
             </div>
+            {/* CONTENUTO */}
             <div className="content" ref={contentContainerRef}>
                 <Route path="/:class_id" exact component={() => (
                     <MapView
@@ -171,13 +193,20 @@ export const ClassroomPage: React.FC<RouteComponentProps<IParams>> = props => {
                 <Route path="/:class_id/history" exact component={HistoryView} />
                 <Route path="/:class_id/settings" exact component={SettingsView} />
             </div>
+            {/* MENU LATERALE DI DESTRA */}
             <div className="right-menu">
-                <div className="classroom-info">
-                    <h2 className="classroom-info__title">Classe</h2>
+                <div className="classroom-info" >
+                    <span className="classroom-info__title">
+                        <FontAwesomeIcon
+                            title={isFavorite ? "Rimuovi la classe come preferita" : "Imposta la classe come preferita"}
+                            icon={isFavorite ? faStar : faStarOutline} onClick={changeClassFavoriteState} />
+                        <h2>Classe</h2>
+                    </span>
                     <h3 className="classroom-info__name">{name}</h3>
                     <h4 className="classroom-info__id">{`#${id}`}</h4>
                 </div>
                 {renderStudents(students)}
+
             </div>
         </React.Fragment>
     );
