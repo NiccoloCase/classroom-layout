@@ -24,7 +24,7 @@ export const ClassroomPage: React.FC<RouteComponentProps<IParams>> = props => {
     // classe
     const [classroom, setClassroom] = React.useState<Classroom | undefined>(undefined);
     // è la classe prefirita?
-    const [isFavorite, setIsFavorite] = useState(false);
+    const [isFavorite, setIsFavorite] = useState(localStorage.getItem("favorite-classroom-id") != null);
     // contenitore 
     const [contentContainer, setContentContainer] = useState<HTMLDivElement | null>(null);
     const contentContainerRef = (node: HTMLDivElement) => {
