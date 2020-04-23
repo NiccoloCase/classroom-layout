@@ -3,6 +3,7 @@ import * as _ from "lodash";
 import validator from "validator";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faTimes } from '@fortawesome/free-solid-svg-icons'
+import { faCircle } from '@fortawesome/free-regular-svg-icons';
 /** Numero massimo degli studenti */
 const MAX_STDUENTS = 30;
 
@@ -10,17 +11,15 @@ const STUDENTS_TEST = ["Niccolò", "Iacopo", "Caio", "Sempronio"];
 
 interface StundentsFormProps {
     storeValues: (students: null | string[], id?: number | string) => void;
-    id?: number | string;
+    id: number | string;
+    containerHeight?: number;
 }
 
-export const StundentsForm: React.FC<StundentsFormProps> = ({ storeValues, id }) => {
-
+export const StundentsForm: React.FC<StundentsFormProps> = ({ storeValues, id, containerHeight }) => {
     const [students, setStudents] = React.useState<string[]>(STUDENTS_TEST);
     const [inputValue, setInputValue] = React.useState("");
     const [inputError, setInputError] = React.useState<string | null | undefined>(undefined);
     const studentsContainer = React.useRef<HTMLInputElement>(null);
-
-
     // Funzione chiamata ogni volta che avviene un cambiamneto nella lista degli studenti
     React.useEffect(() => {
         // SCROLL DOWN 
@@ -93,10 +92,17 @@ export const StundentsForm: React.FC<StundentsFormProps> = ({ storeValues, id })
         setInputValue("");
     }
 
+
     return (
-        <div className="StudentsForm">
+        <div className="StudentsForm" style={{ height: containerHeight }}>
             <div className="left">
-                <h1 className="subtitle">Registra gli studenti presenti nella classe</h1>
+                <div className="subtitle">
+                    <span className="number-circle">
+                        <FontAwesomeIcon icon={faCircle} />
+                        <strong className="number-circle__number">2</strong>
+                    </span>
+                    <h4>Registra gli studenti presenti nella classe:</h4>
+                </div>
                 <div className="input-box">
                     <div className="field">
                         <input

@@ -1,77 +1,124 @@
 @import "../../styles/variables";
 
-.container {
-  position: relative;
+.menuNavigation {
+  height: $top-menu-navigation-height;
+  z-index: 100;
+  position: sticky;
+  top: 0;
+  display: flex;
+  align-items: center;
+  background: $primary-color;
+  a {text-decoration: none;}
 
-  a {
-    text-decoration: none;
-  }
-
-  .header {
-    height: $top-menu-navigation-height;
-    z-index: 100;
-    position: sticky;
-    top: 0;
+  // LOGO (DI SINSTRA)
+  .logoContainer {
+    flex:1;
     display: flex;
     align-items: center;
-    background: $primary-color;
 
-    .logoContainer {
-      flex: 1;
+    .logoImage {
       display: flex;
       align-items: center;
-
-      .logoImage {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: $left-menu-width;
-        height: $top-menu-navigation-height;
-        // background:$dark-grey;
-        background: darken($color: $primary-color, $amount: 10%);
-        margin-right: .5rem;
-
-        img  {
-          $r: 2rem;
-          width:$r;
-          height: $r;
-        }
-      }
-
-      .logo {
-        text-transform: uppercase;
-        font-size: 1rem;
-        font-weight: bold;
-        color: #fff;
+      justify-content: center;
+      width: $left-menu-width;
+      height: $top-menu-navigation-height;
+      background: darken($color: $primary-color, $amount: 10%);
+      margin-right: .5rem;
+      img  {
+        $r: 2rem;
+        width:$r;
+        height: $r;
       }
     }
 
-    &Nav {
-      flex: 1;
+    .logo {
+      text-transform: uppercase;
+      font-size: 1rem;
+      font-weight: bold;
+      color: #fff;
+    }
+  }
 
-      .navLinks {
-        height: 100%;
+  // NAVIGAZIONE (SULLA DESTRA)
+  &Nav {
+    flex: 2;
+    display: flex;
+    justify-content: flex-end;
+
+    .navLinks {
+      flex:1;
+      display: flex;
+      flex-direction: row;
+      justify-content: space-around;
+      align-items: center;
+      list-style: none;
+      max-width: 700px;
+
+      .navLink {
+        color: $background-color;
         display: flex;
-        flex-direction: row;
-        justify-content: space-around;
-        list-style: none;
-
-        .navLink {
-          height: $top-menu-navigation-height;
-          color: $background-color;
-          display: flex;
-          align-items: center;
-          text-transform: uppercase;         
-          font-size: 1rem;
-          transition: font-weight .4s;
-          &.active {
-            border-bottom: solid 3px $background-color;
-          }
-          &:hover {
-            font-weight: bold;
-          }
+        align-items: center;
+        text-transform: uppercase;         
+        font-size: 1rem;
+        padding: .5rem;
+        &.active {
+          background: lighten($color: $primary-color, $amount: 3%);        
         }
       }
     }
   }
+  // PER DISPOSITIVI PICCOLI
+	@media (max-width: 700px) { 
+    &Nav {flex:none}
+    .navLinks  {
+      top:0;
+      position: fixed;
+      width:100%;
+      height: 100vh;
+      flex-direction: column;
+      background: $primary-color;
+      clip-path: circle(0 at 100% -10%);
+      -webkit-clip-path:circle(0 at 100% -10%);
+      transition: all .4s ease-out;
+      &.open {
+        clip-path: circle(1200px at 100% -10%);
+        -webkit-clip-path:circle(1200px at 100% -10%);
+      }
+    }
+    // HAMBURGER MENU
+    .hamburger {
+      $dimension: 40px;
+      $line-width: 30px;
+      $line-thickness: 5px;
+      $line-margin: 10px;
+      z-index: 2;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-right: 10px;
+      position: relative;
+      width:$dimension;
+      height: $dimension;
+      cursor: pointer;
+      .line {
+        &, &::before, &::after {
+          width:$line-width;
+          height:  $line-thickness;
+          background: #fff;
+          position: absolute;
+          border-radius: 10px;
+          transition: all .5s ease-in-out;
+        }
+        &::before, &::after { content: ""; }
+        &::before { transform: translateY(-$line-margin); }
+        &::after { transform: translateY($line-margin); }
+        &.close {
+          background: transparent;
+          &::before {transform: rotate(45deg);}
+          &::after {transform: rotate(-45deg);}
+        }
+      }
+    }
+	}
 }
+
