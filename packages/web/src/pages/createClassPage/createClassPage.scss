@@ -1,44 +1,86 @@
 @import "../../styles/variables";
+@import "../../styles/utilities";
 
-$form-width:50rem;
+$page-height: calc(100vh - #{$top-menu-navigation-height});
+$form-width:70vw;
+$max-form-width: 50rem;
 $form-height: 60vh;
 
 
 .CreateClassPage {
     background: $background-color;
-    height: calc(100% - #{$top-menu-navigation-height});
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    height: $page-height;
+    @media (max-height:450px) { height: fit-content; }
+    @include phone {  background: #fff; }
 
-    .title {
-        font-family: "Lato";
-        color:$primary-color;
-        font-weight: 900;
-        font-size: 30px;
-        margin: .5rem 1rem;
-    }
     .container {
+        $horizontal-padding: 1rem;
+
+        .title { 
+            font-family: "Lato";
+            color:$primary-color;
+            font-weight: 900;
+            font-size: 30px;
+            padding:$horizontal-padding;
+        }
+        // FORM
         .form {
             @include box-shadow;
             background: #fff;
-            max-width: $form-width;
-            height: $form-height;
-            overflow: hidden;
             border-radius: 10px;
-            padding: 1rem;
             display: flex;
             flex-direction: column;
+            width: $form-width;
+            max-width: $max-form-width;
+            height: $form-height;
 
+            @media (max-height:450px) { height: fit-content;}
+            @include phone {
+                width:100vw;
+                min-width: 0; 
+                background: transparent;
+                @include remove-shadow;
+            }
+            
             #CreateClassPage__form-content {
                flex:1;
-
+               min-width: 0;
+               min-height: 0;
+               overflow: hidden;
+    
                 .subtitle {
-                    font-weight: 300;
                     color:#4A4A4A;
-                    font-size: 25px;
                     margin-bottom: 1rem;
+                    display: flex;
+                    align-items: center;
+                    h4 {
+                        font-weight: 300;
+                        font-size: 25px;
+                    }
+                    .number-circle {
+                        $r: 2.5rem;
+                        margin-right: 1rem;
+                        position: relative;
+                        color:$medium-grey;
+                        width:$r;
+                        height: $r;
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                        svg {
+                            width:$r;
+                            height: $r;
+                          position: absolute;
+                        }
+                        &__number {
+                            z-index: 2;
+                            font-size: calc(#{$r}/2);
+                        }
+                    }
                 }
 
                 .field {
@@ -50,7 +92,7 @@ $form-height: 60vh;
                         font-size: 1rem;
                         border: none;
                         border-radius: 5px;    
-                        width: 100%;   
+                        width: 100%;
                     }
                     .error-text {
                         color: $red;
@@ -58,15 +100,16 @@ $form-height: 60vh;
                 }
             }
 
+            // PARTE INFERIORE CON I BOTTONI PER LA NAVIGAZIONE
             .form-footer {
                 display: flex;
-
+                padding: $horizontal-padding;
+                @include phone {padding-bottom: 0;}
                 .dots {
                     flex:1;
                     display: flex;
                     justify-content: center;
                     align-items: center;
-             
                     .dot {
                         margin: 0 0.5rem;
                         $radius: 10px;
@@ -89,219 +132,242 @@ $form-height: 60vh;
                     color:#fff;
                     font-weight: bold;
                     transition: all .4s;
+                    @include hover-supported {@include box-shadow;}
+                    &:active { transform: scale(1.3); }
+                    &#btn-prev {  background: $dark-grey; }
+                    &#btn-next { background: $primary-color; }
+                    &:disabled {
+                        opacity: .5;
+                        cursor: not-allowed;
+                    }
+                }
+            }
+        }
+
+        // I FORM (INFROMAZIONI GENERALI SULLA CLASSE)
+        .GeneralInformationsForm {
+            display: flex;
+            padding: $horizontal-padding;
+            .inputs {
+                flex:1;
+                display: flex;
+                height: 100%;
+                flex-direction: column;
+                .fields {
+                    height: 100%;
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: center;
+                    align-items: center;
+                }
+            }
+            .image {
+                flex:1;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                flex-direction: column;
+                $image-width: 17rem;
+                p {
+                    margin:1rem;
+                    width:$image-width;
+                    letter-spacing: 2px;
+                }
+                img { width:$image-width; }
+            }
+            // Dipositivi che si sviuluppano in altezza
+            @media (min-height: 950px) { 
+                flex-direction: column; 
+                .fields { padding: 0 2rem; }
+            }
+            // dispositivi corti
+            @media (max-height:450px) { .image { display: none; } }
+            // telefoni verticali
+            @include phone { .image { display: none; } }
+        }
+       // II FORM (STUDENTI DELLA CLASSE)
+        .StudentsForm {
+            display: flex;
+            padding: $horizontal-padding;
+            .left {
+                flex:7;
+                .input-box {
+                    display: flex;
+                    button {
+                        background: #57B845;
+                        color:#fff;
+                        font-family: 1.3rem;
+                        margin: 1.5rem 0;
+                        padding: 0.7rem 0.5rem;
+                        border: none;
+                        border-radius: 5px;
+                        margin-left: .5rem;
+                        transition: all .4s;
+                        pointer-events: auto;
+                        &:disabled {
+                            opacity: .5;
+                            cursor: not-allowed;
+                        }
+                        &:active:enabled{
+                            transform: scale(1.2);
+                        }
+                        &:hover:enabled{
+                            background: #4A4A4A;
+                        }
+                    }
+                }
+            }
+            .right {
+                flex:3;
+                margin-left: 2rem;
+                overflow-y: auto;
+                max-height: calc(#{$form-height} - 8rem);
+                .student-card {
+                    background: $light-grey;
+                    margin: .5rem 0;
+                    padding: .5rem;
+                    border: none;
+                    border-radius: 5px;
+                    width: 100%;
+                    display: flex;
+                    span { 
+                        font-size: .8rem;
+                        flex:1;
+                    }
+                    svg { 
+                        color: $shuttle-grey;
+                        @include hover-supported {color:$red; }
+                    }
+                }
+            }
+            // Visone mobile
+            @mixin mobile {
+                flex-direction: column; 
+                padding-bottom: 0;
+                .left {
+                    flex:1;
+                    .input-box button { background: #4A4A4A !important; }
+                }
+                .right {
+                    margin:0;
+                    .student-card{
+                        width: fit-content;
+                        span {margin-right: .5rem;}
+                    }
+                }
+            }
+            // Dipositivi che si sviuluppano in altezza
+            @media (min-height: 950px) {@include mobile;}
+            // Telefoni
+            @include phone {@include mobile;}              
+        }
+       // III FORM 
+        .ArrangeDesks {
+            .container {
+                .desks-info {
+                    margin-bottom: 0.5rem;
+                    color:$shuttle-grey;
+                }
+             
+                display: flex; 
+                justify-content: center;
+    
+                canvas {
+                    border-radius: 5px;
+                    border: 3px solid $light-grey;
+                }
+            }
+        }
+        // IV FORM 
+        .CreateClassPage__LastStep {
+            .error-box{
+                h1 {
+                    color: #c0392b;
+                }
+             .errors {
+                margin: 1rem 0;
+                .error {
+                    color: $background-color;
+                    background: #96281b;
+                    margin-bottom: 20px;
+                    border-radius: 5px;
+                    padding: .5rem;
+                    display: inline-block;
+                    
+                }
+              }
+            }
+    
+            .loading-box {
+                display: flex;
+                justify-content: center;
+            }
+           
+            .success-box {
+                $green: #57B845;
+    
+                h1 {
+                color: $shuttle-grey;
+                svg {color: $green; }
+                }
+    
+                p {
+                    margin: 1.5rem 0;
+                    font-size: 17px;
+                    color: $dark-grey;
+                }
+            
+                    .id-box {
+                        background: $light-grey;
+                        padding: 0.7rem 2rem;
+                        border-radius: 5px;
+                        border: none;
+                    
+                        input {
+                            margin-right: .5rem;
+                            background: transparent;
+                            border:none;
+                            color:$dark-grey;
+                            font-size: 1rem;
+                            user-select: all;
+                        }
+    
+                        button {
+                            margin-left: .5rem;
+                            background: transparent;
+                            border:none;
+                            color:$dark-grey;
+                            font-size: 1rem;
+                            transition: all .4s;
+                            &:active {
+                                transform: scale(1.2);
+                            }
+                            &:hover {
+                                color:#000;
+                            }
+                        }
+                    }
+                
+                .class-link-button {
+                    background: $green;
+                    margin: 1.5rem 0;
+                    padding: 0.7rem 2rem;
+                    border: none;
+                    border-radius: 5px;
+                    display: flex;
+                    align-items: center;
+                    transition: all .4s;
                     &:hover {
                         @include box-shadow
                     }
-                    &:active {
-                        transform: scale(1.3);
+                    a,svg {
+                        color: #fff;
+                        font-size: .9rem;
                     }
-                    &#btn-prev {
-                        background: $dark-grey;
+                    a {
+                        text-decoration: none;
+                        margin-right: 5px;
                     }
-                    &#btn-next {
-                        background: $primary-color;
-                    }
-                    &:disabled {
-                        opacity: .5;
-                        cursor: not-allowed;
-                    }
-                }
-            }
-        }
-    }
-
-    .GeneralInformationsForm {
-        display: flex;
-       
-        .inputs {
-            display: flex;
-            flex-direction: column;
-        }
-        .image {
-            flex:1;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            flex-direction: column;
-            $image-width: 17rem;
-            p {
-                margin:1rem;
-                width:$image-width;
-                letter-spacing: 2px;
-            }
-            img {
-            /*     transform: rotate3d(1, 0, 0, 60deg); */
-                width:$image-width;
-            }
-        }
-    }
-
-    .StudentsForm {
-        display: flex;
-
-        .left {
-            flex:7;
-        
-            .input-box {
-                display: flex;
-        
-                button {
-                    background: #57B845;
-                    color:#fff;
-                    font-family: 1.3rem;
-                    margin: 1.5rem 0;
-                    padding: 0.7rem 0.5rem;
-                    border: none;
-                    border-radius: 5px;
-                    margin-left: .5rem;
-                    transition: all .4s;
-                    pointer-events: auto;
-                    &:disabled {
-                        opacity: .5;
-                        cursor: not-allowed;
-                    }
-                    &:active:enabled{
-                        transform: scale(1.2);
-                    }
-                    &:hover:enabled{
-                        background: #4A4A4A;
-                    }
-                }
-            }
-        }
-        .right {
-            flex:3;
-            margin-left: 2rem;
-            overflow-y: auto;
-            max-height: calc(#{$form-height} - 8rem);
-         
-            .student-card {
-                background: $light-grey;
-                margin: .5rem 0;
-                padding: .5rem;
-                border: none;
-                border-radius: 5px;
-                width: 100%;
-                display: flex;
-                span { 
-                    font-size: .8rem;
-                    flex:1;
-                }
-                svg { 
-                    color: $dark-grey;
-                    &:hover {
-                        color:#f03434;
-                    }
-                }
-            }
-        }
-    }
-
-    .ArrangeDesks {
-        .container {
-            .desks-info {
-                margin-bottom: 0.5rem;
-                color:$shuttle-grey;
-            }
-         
-            display: flex; 
-            justify-content: center;
-
-            canvas {
-                border-radius: 5px;
-                border: 3px solid $light-grey;
-            }
-        }
-    }
-
-    .CreateClassPage__LastStep {
-        .error-box{
-            h1 {
-                color: #c0392b;
-            }
-         .errors {
-            margin: 1rem 0;
-            .error {
-                color: $background-color;
-                background: #96281b;
-                margin-bottom: 20px;
-                border-radius: 5px;
-                padding: .5rem;
-                display: inline-block;
-                
-            }
-          }
-        }
-
-        .loading-box {
-            display: flex;
-            justify-content: center;
-        }
-       
-        .success-box {
-            $green: #57B845;
-
-            h1 {
-            color: $shuttle-grey;
-            svg {color: $green; }
-            }
-
-            p {
-                margin: 1.5rem 0;
-                font-size: 17px;
-                color: $dark-grey;
-            }
-        
-                .id-box {
-                    background: $light-grey;
-                    padding: 0.7rem 2rem;
-                    border-radius: 5px;
-                    border: none;
-                
-                    input {
-                        margin-right: .5rem;
-                        background: transparent;
-                        border:none;
-                        color:$dark-grey;
-                        font-size: 1rem;
-                        user-select: all;
-                    }
-
-                    button {
-                        margin-left: .5rem;
-                        background: transparent;
-                        border:none;
-                        color:$dark-grey;
-                        font-size: 1rem;
-                        transition: all .4s;
-                        &:active {
-                            transform: scale(1.2);
-                        }
-                        &:hover {
-                            color:#000;
-                        }
-                    }
-                }
-            
-            .class-link-button {
-                background: $green;
-                margin: 1.5rem 0;
-                padding: 0.7rem 2rem;
-                border: none;
-                border-radius: 5px;
-                display: flex;
-                align-items: center;
-                transition: all .4s;
-                &:hover {
-                    @include box-shadow
-                }
-                a,svg {
-                    color: #fff;
-                    font-size: .9rem;
-                }
-                a {
-                    text-decoration: none;
-                    margin-right: 5px;
                 }
             }
         }

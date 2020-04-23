@@ -3,8 +3,7 @@
 	MISURE
 -----------------------
 */
-
-// altezza della barra d i navgiazione
+// Altezza della barra di navgiazione
 $top-menu-navigation-height: 50px;
 // larghezza del menu laterale di sinistra
 $left-menu-width: 50px;
@@ -14,10 +13,8 @@ $left-menu-width: 50px;
 	COLORI
 -----------------------
 */
-
 $primary-color: #3792E5;
 $background-color: #f0f0f0;
-
 /* GRIGIO */
 $dark-grey: #404040;
 $shuttle-grey: #5f6368;
@@ -25,42 +22,3 @@ $medium-grey: #abb7b7;
 $light-grey: #dadce0;
 /* ROSSO */
 $red: #f03434;
-
-/*
------------------------------
-	FUNZIONI E ANIMAZIONI
------------------------------
-*/
-
-@mixin background-gradient-1 {
-    background: rgb(67,206,162);
-    background: linear-gradient(45deg, rgba(67,206,162,1) 0%, rgba(75,24,157,1) 100%);
-}
-
-@mixin box-shadow {
-    -webkit-box-shadow: 10px 10px 18px 6px rgba(0,0,0,0.13); 
-    box-shadow: 10px 10px 18px 6px rgba(0,0,0,0.13);
-}
-
-@mixin  side-shadow ($direction){
-	@if $direction == right {
-		-webkit-box-shadow: 14px 0px 27px -26px rgba(0,0,0,0.65);
-		-moz-box-shadow: 14px 0px 27px -26px rgba(0,0,0,0.65);
-		box-shadow: 14px 0px 27px -26px rgba(0,0,0,0.65);
-	}
-	@if $direction == left {
-		-webkit-box-shadow: -14px 0px 27px -26px rgba(0,0,0,0.65);
-		-moz-box-shadow: -14px 0px 27px -26px rgba(0,0,0,0.65);
-		box-shadow: -14px 0px 27px -26px rgba(0,0,0,0.65);
-	}
-}
-
-@keyframes wobble {
-	16.65% { transform: translateX(8px);}
-	33.3% { transform: translateX(-6px);}
-	49.95% { transform: translateX(4px);}
-	66.6% { transform: translateX(-2px);}
-	83.25% { transform: translateX(1px);}
-	100% { transform: translateX(0);}
-}
-

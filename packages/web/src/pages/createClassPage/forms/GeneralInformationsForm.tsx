@@ -1,18 +1,21 @@
 import * as React from 'react'
 import validator from "validator";
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faCircle } from '@fortawesome/free-regular-svg-icons';
 import { useIsEmailAlreadyUsedLazyQuery } from '../../../generated/graphql';
+
 
 interface GeneralInformationsFormProps {
     storeValues: (classroomName: string | null, email: string | null, id?: number | string) => void;
-    id?: number | string;
+    id: number | string;
+    containerHeight?: number;
 }
 
-export const GeneralInformationsForm: React.FC<GeneralInformationsFormProps> = ({ storeValues, id }) => {
+export const GeneralInformationsForm: React.FC<GeneralInformationsFormProps> = ({ storeValues, id, containerHeight: height }) => {
     const [name, setName] = React.useState("");
     const [nameError, setNameError] = React.useState<string | null | undefined>(undefined);
     const [email, setEmail] = React.useState("");
     const [emailError, setEmailError] = React.useState<string | null | undefined>(undefined);
-
     // Controlla che l'email non sia già stata utilizzata
     const [checkEmail, { data }] = useIsEmailAlreadyUsedLazyQuery();
 
@@ -72,18 +75,26 @@ export const GeneralInformationsForm: React.FC<GeneralInformationsFormProps> = (
     }
 
     return (
-        <div className="GeneralInformationsForm">
+        <div className="GeneralInformationsForm" style={{ height }}>
             <div className="inputs">
-                <h1 className="subtitle">Fornisci le informazioni richieste:</h1>
-                <div className="field">
-                    <input type="text" name="name" className="input"
-                        placeholder="Nome della nuova classe" value={name} onChange={onChange} />
-                    <span className="error-text">{nameError}</span>
+                <div className="subtitle">
+                    <span className="number-circle">
+                        <FontAwesomeIcon icon={faCircle} />
+                        <strong className="number-circle__number">1</strong>
+                    </span>
+                    <h4>Fornisci le informazioni richieste:</h4>
                 </div>
-                <div className="field">
-                    <input type="email" name="email" className="input" placeholder="Email"
-                        value={email} onChange={onChange} />
-                    <span className="error-text">{emailError}</span>
+                <div className="fields">
+                    <div className="field">
+                        <input type="text" name="name" className="input"
+                            placeholder="Nome della nuova classe" value={name} onChange={onChange} />
+                        <span className="error-text">{nameError}</span>
+                    </div>
+                    <div className="field">
+                        <input type="email" name="email" className="input" placeholder="Email"
+                            value={email} onChange={onChange} />
+                        <span className="error-text">{emailError}</span>
+                    </div>
                 </div>
             </div>
             <div className="image">

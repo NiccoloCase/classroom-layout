@@ -15,7 +15,7 @@ export class CreateClassPage extends React.Component {
 
     state = {
         /** Schermata corrente */
-        step: 0,
+        step: 1,
         /** Valori del form */
         form: [
             { classroomName: undefined, email: undefined },
@@ -23,18 +23,25 @@ export class CreateClassPage extends React.Component {
             { desks: undefined }
         ],
         /** Se il bottone per andare avanti non è cliccabile */
-        nextButtonDisabled: new Array(STEPS_NUMBER).fill(true)
+        nextButtonDisabled: new Array(STEPS_NUMBER).fill(true),
+        /** Altezza del contentuto del form */
+        contentContainerHeight: undefined as number | undefined
     }
 
     slider: Slider | null;
+    contentContainer: HTMLElement | null;
+
+    componentDidMount() {
+        this.updateDimensions();
+        window.addEventListener("resize", () => this.updateDimensions());
+    }
 
     public render() {
-
         const sliderOptions = {
             initialSlide: this.state.step,
             dots: false,
             infinite: false,
-            draggable: false,
+            swipe: false,
             speed: 500,
             slidesToShow: 1,
             slidesToScroll: 1
@@ -46,10 +53,13 @@ export class CreateClassPage extends React.Component {
                 <div className="container">
                     <h1 className="title">Registra una nuova classe</h1>
                     <div className="form">
-                        <div id="CreateClassPage__form-content">
+                        <div id="CreateClassPage__form-content" ref={c => this.contentContainer = c}>
                             <Slider ref={c => (this.slider = c)}  {...sliderOptions} >
-                                <GeneralInformationsForm id={0} storeValues={this.storeValues} />
-                                <StundentsForm id={1} storeValues={this.storeValues} />
+                                <GeneralInformationsForm id={0} storeValues={this.storeValues}
+                                    containerHeight={this.state.contentContainerHeight} />
+                                <StundentsForm id={1} storeValues={this.storeValues}
+                                    containerHeight={this.state.contentContainerHeight}
+                                />
                                 <ArrangeDesks
                                     id={2}
                                     storeValues={this.storeValues}
@@ -134,5 +144,13 @@ export class CreateClassPage extends React.Component {
             this.slider.slickPrev()
             this.setState({ step: this.state.step - 1 })
         }
+    }
+
+    /**
+     * Imposta le dimensioni del contenuto del form
+     */
+    private updateDimensions = () => {
+        if (this.contentContainer)
+            this.setState({ contentContainerHeight: this.contentContainer.getBoundingClientRect().height });
     }
 }

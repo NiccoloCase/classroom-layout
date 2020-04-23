@@ -1,0 +1,79 @@
+
+/*
+------------------------
+	MEDIA QUERIES
+-----------------------
+*/
+
+// PICCOLO TABLET
+@mixin tablet {
+	@media (min-width: 481px) and (max-width: 820px) {
+	  @content;
+	}
+}
+// TELEFONO
+@mixin phone {
+	@media all and (max-width: 480px) { 
+		@content;
+	} 
+}
+// TABLET E TELEFONO
+@mixin tabletAndPhone  {
+	@include tablet { @content; }
+	@include phone { @content; }
+}
+
+// AGGIUNGE LA PROPRIETA' "HOVER" SOLO SE IL CLIENT NON E' MOBILE
+@mixin hover-supported {    
+    @media not all and (pointer: coarse) {
+        &:hover {
+            @content;
+        }
+    }
+}
+
+/*
+------------------------
+	OMBRE
+-----------------------
+*/
+
+@mixin box-shadow {
+    -webkit-box-shadow: 10px 10px 18px 6px rgba(0,0,0,0.13); 
+    box-shadow: 10px 10px 18px 6px rgba(0,0,0,0.13);
+}
+
+@mixin side-shadow ($direction){
+	@if $direction == right {
+		-webkit-box-shadow: 14px 0px 27px -26px rgba(0,0,0,0.65);
+		-moz-box-shadow: 14px 0px 27px -26px rgba(0,0,0,0.65);
+		box-shadow: 14px 0px 27px -26px rgba(0,0,0,0.65);
+	}
+	@if $direction == left {
+		-webkit-box-shadow: -14px 0px 27px -26px rgba(0,0,0,0.65);
+		-moz-box-shadow: -14px 0px 27px -26px rgba(0,0,0,0.65);
+		box-shadow: -14px 0px 27px -26px rgba(0,0,0,0.65);
+	}
+}
+
+@mixin remove-shadow {
+	-webkit-box-shadow: none;
+	-moz-box-shadow: none;
+	box-shadow: none;
+}
+
+/*
+------------------------
+	ANIMAZIONI
+-----------------------
+*/
+
+
+@keyframes side-shadow {
+	16.65% { transform: translateX(8px);}
+	33.3% { transform: translateX(-6px);}
+	49.95% { transform: translateX(4px);}
+	66.6% { transform: translateX(-2px);}
+	83.25% { transform: translateX(1px);}
+	100% { transform: translateX(0);}
+}
