@@ -64,6 +64,7 @@
             &__id {
                 font-weight:300;
                 color:$medium-grey;
+                user-select: all;
             }
         }
         .students {
