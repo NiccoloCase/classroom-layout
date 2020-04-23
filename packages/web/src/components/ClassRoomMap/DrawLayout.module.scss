@@ -1,4 +1,5 @@
 @import "../../styles/variables";
+@import "../../styles/utilities";
 
 .tools {
     $space: 5px;
@@ -14,7 +15,7 @@
         border: none;
         background: $light-grey;
         transition: all .4s;
-        &:hover {
+        @include hover-supported{
            transform: translateY(-8px)
         }
     }
@@ -51,7 +52,7 @@
                 color: #fff;
                 border-radius: 5px;
                 margin-top: 10px;
-                &:hover {
+                @include hover-supported {
                     animation: wobble .7s;
                 }
             }
@@ -60,7 +61,7 @@
            button {
                color: #000;
                background: transparent;
-               &:hover {
+               @include hover-supported  {
                 color: $red;
                }
            }
