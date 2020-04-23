@@ -5,6 +5,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faExclamationCircle, faCheckSquare, faCopy, faChevronRight } from '@fortawesome/free-solid-svg-icons';
 import { Link } from 'react-router-dom';
 import { FadeLoader } from 'react-spinners';
+import { faCircle } from '../../../../../../node_modules/@fortawesome/free-regular-svg-icons';
 
 interface LastStepProps {
     name?: string;
@@ -18,12 +19,19 @@ export const LastStep: React.FC<LastStepProps> = ({ name, email, desks, students
     // GRAPQHL
     const [addClass, { data, error }] = useCreateClassroomMutation();
 
+    // For the development
+    /* 
+    name = "shsih";
+    email = Math.random() * 100 + "abc@gmail.com";
+    desks = [{ x: 0, y: 0, orientation: 1 }, { x: 3, y: 3, orientation: 1 }];
+    students = ["abcd", "abcde"]; */
+
     /**
      * Funzione chiamata quando il componente entra o esce dallo schermo
      * @param isVisible 
      */
     const onChange = (isVisible: boolean) => {
-        if (isVisible && name && email && desks && students)
+        if (isVisible && !data && name && email && desks && students)
             addClass({ variables: { name, email, desks, students } });
     }
 
@@ -49,13 +57,13 @@ export const LastStep: React.FC<LastStepProps> = ({ name, email, desks, students
             if (err && err.extensions && err.extensions.exception) {
                 const status = err.extensions.exception.status;
                 if (status === 400)
-                    message = "Ci risulta che i dati inseriti non siano tutti validi. Controllali e riprova.";
+                    message = "Ci risulta che i dati inseriti non siano tutti validi. \n Controllali e riprova.";
             }
             return (
                 <div className="error-box">
                     <h1><FontAwesomeIcon icon={faExclamationCircle} /> Abbiamo riscontrato un errore!</h1>
                     <div className="errors">
-                        <h3>{message}</h3>
+                        {message.split("\n").map((item, i) => <h3 key={i}>{item}</h3>)}
                     </div>
                 </div>
             );
@@ -98,7 +106,13 @@ export const LastStep: React.FC<LastStepProps> = ({ name, email, desks, students
     return (
         <VisibilitySensor onChange={onChange}>
             <div className="CreateClassPage__LastStep">
-                <h1 className="subtitle">Ci siamo quasi!</h1>
+                <div className="subtitle">
+                    <span className="number-circle">
+                        <FontAwesomeIcon icon={faCircle} />
+                        <strong className="number-circle__number">4</strong>
+                    </span>
+                    <h4>Ci siamo quasi!</h4>
+                </div>
                 {renderContent()}
             </div>
         </VisibilitySensor>

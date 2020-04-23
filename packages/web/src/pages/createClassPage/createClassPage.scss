@@ -5,7 +5,7 @@ $page-height: calc(100vh - #{$top-menu-navigation-height});
 $form-width:70vw;
 $max-form-width: 50rem;
 $form-height: 60vh;
-
+$max-form-height: 80vh;
 
 .CreateClassPage {
     background: $background-color;
@@ -24,8 +24,9 @@ $form-height: 60vh;
             font-family: "Lato";
             color:$primary-color;
             font-weight: 900;
-            font-size: 30px;
             padding:$horizontal-padding;
+            font-size: 2rem;
+            @include phone { font-size: 1.5rem; }
         }
         // FORM
         .form {
@@ -40,9 +41,11 @@ $form-height: 60vh;
 
             @media (max-height:450px) { height: fit-content;}
             @include phone {
+                height: $max-form-height; 
                 width:100vw;
-                min-width: 0; 
+                min-width: 0;
                 background: transparent;
+                border-top: solid 2px $medium-grey;
                 @include remove-shadow;
             }
             
@@ -51,7 +54,6 @@ $form-height: 60vh;
                min-width: 0;
                min-height: 0;
                overflow: hidden;
-    
                 .subtitle {
                     color:#4A4A4A;
                     margin-bottom: 1rem;
@@ -59,7 +61,7 @@ $form-height: 60vh;
                     align-items: center;
                     h4 {
                         font-weight: 300;
-                        font-size: 25px;
+                        font-size: 1.2rem;
                     }
                     .number-circle {
                         $r: 2.5rem;
@@ -263,15 +265,14 @@ $form-height: 60vh;
         }
        // III FORM 
         .ArrangeDesks {
+            padding: $horizontal-padding;
             .container {
-                .desks-info {
-                    margin-bottom: 0.5rem;
-                    color:$shuttle-grey;
-                }
-             
                 display: flex; 
                 justify-content: center;
-    
+                .desks-info {
+                    margin: 0.5rem 0;
+                    color:$shuttle-grey;
+                }
                 canvas {
                     border-radius: 5px;
                     border: 3px solid $light-grey;
@@ -280,74 +281,65 @@ $form-height: 60vh;
         }
         // IV FORM 
         .CreateClassPage__LastStep {
+            padding: $horizontal-padding;
             .error-box{
-                h1 {
-                    color: #c0392b;
-                }
+             background: #d64541;
+             color: #fff;
+             font-family: "Lato";
+             border-radius: 5px;
+             padding: .5rem;
              .errors {
                 margin: 1rem 0;
                 .error {
                     color: $background-color;
-                    background: #96281b;
                     margin-bottom: 20px;
                     border-radius: 5px;
                     padding: .5rem;
                     display: inline-block;
-                    
                 }
               }
             }
-    
             .loading-box {
                 display: flex;
                 justify-content: center;
             }
-           
             .success-box {
                 $green: #57B845;
-    
                 h1 {
-                color: $shuttle-grey;
-                svg {color: $green; }
+                    color: $shuttle-grey;
+                    font-size: 1.5rem;
+                    svg {color: $green; }
                 }
-    
                 p {
                     margin: 1.5rem 0;
-                    font-size: 17px;
+                    font-size: 1rem;
                     color: $dark-grey;
                 }
-            
-                    .id-box {
-                        background: $light-grey;
-                        padding: 0.7rem 2rem;
-                        border-radius: 5px;
-                        border: none;
-                    
-                        input {
-                            margin-right: .5rem;
-                            background: transparent;
-                            border:none;
-                            color:$dark-grey;
-                            font-size: 1rem;
-                            user-select: all;
-                        }
-    
-                        button {
-                            margin-left: .5rem;
-                            background: transparent;
-                            border:none;
-                            color:$dark-grey;
-                            font-size: 1rem;
-                            transition: all .4s;
-                            &:active {
-                                transform: scale(1.2);
-                            }
-                            &:hover {
-                                color:#000;
-                            }
-                        }
+                .id-box {
+                    background: $light-grey;
+                    padding: 0.7rem 2rem;
+                    border-radius: 5px;
+                    border: none;
+                    input {
+                        max-width: 150px;
+                        margin-right: .5rem;
+                        background: transparent;
+                        border:none;
+                        color:$dark-grey;
+                        font-size: 1rem;
+                        user-select: all;
                     }
-                
+                    button {
+                        margin-left: .5rem;
+                        background: transparent;
+                        border:none;
+                        color:$dark-grey;
+                        font-size: 1rem;
+                        transition: all .4s;
+                        &:active { transform: scale(1.2); }
+                        &:hover { color:#000; }
+                    }
+                }
                 .class-link-button {
                     background: $green;
                     margin: 1.5rem 0;

@@ -15,7 +15,7 @@ export class CreateClassPage extends React.Component {
 
     state = {
         /** Schermata corrente */
-        step: 1,
+        step: 0,
         /** Valori del form */
         form: [
             { classroomName: undefined, email: undefined },
@@ -55,17 +55,23 @@ export class CreateClassPage extends React.Component {
                     <div className="form">
                         <div id="CreateClassPage__form-content" ref={c => this.contentContainer = c}>
                             <Slider ref={c => (this.slider = c)}  {...sliderOptions} >
+                                {/* I FORM: DATI ESSENZIALI*/}
                                 <GeneralInformationsForm id={0} storeValues={this.storeValues}
                                     containerHeight={this.state.contentContainerHeight} />
+                                {/* II FORM: LISTA DEGLI STUDENTI*/}
                                 <StundentsForm id={1} storeValues={this.storeValues}
                                     containerHeight={this.state.contentContainerHeight}
                                 />
+                                {/* III FORM: DISPOSIZIONI DEI BANCHI*/}
                                 <ArrangeDesks
                                     id={2}
                                     storeValues={this.storeValues}
                                     studensNumber={this.state.form[1].students ?
                                         (this.state.form[1].students as any).length : null
-                                    } />
+                                    }
+                                    containerHeight={this.state.contentContainerHeight}
+                                />
+                                {/* I FORM: CONCLUSIONE*/}
                                 <LastStep
                                     name={this.state.form[0].classroomName}
                                     email={this.state.form[0].email}
@@ -74,6 +80,7 @@ export class CreateClassPage extends React.Component {
                                 />
                             </Slider>
                         </div>
+                        {/* BOTTONI DI NAVIGAZIONE */}
                         <div className="form-footer">
                             <button onClick={this.prevStep} id="btn-prev"
                                 style={{ visibility: this.state.step > 0 ? "visible" : "hidden" }} >
@@ -151,6 +158,8 @@ export class CreateClassPage extends React.Component {
      */
     private updateDimensions = () => {
         if (this.contentContainer)
-            this.setState({ contentContainerHeight: this.contentContainer.getBoundingClientRect().height });
+            this.setState({
+                contentContainerHeight: this.contentContainer.getBoundingClientRect().height
+            });
     }
 }
