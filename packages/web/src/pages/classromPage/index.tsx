@@ -23,8 +23,6 @@ export const ClassroomPage: React.FC<RouteComponentProps<IParams>> = props => {
     const [selectedStudent, setSelectedStudent] = React.useState<string | null>(null);
     // classe
     const [classroom, setClassroom] = React.useState<Classroom | undefined>(undefined);
-    // è la classe prefirita?
-    const [isFavorite, setIsFavorite] = useState(localStorage.getItem("favorite-classroom-id") != null);
     // contenitore 
     const [contentContainer, setContentContainer] = useState<HTMLDivElement | null>(null);
     const contentContainerRef = (node: HTMLDivElement) => {
@@ -35,6 +33,8 @@ export const ClassroomPage: React.FC<RouteComponentProps<IParams>> = props => {
     // GRAPHQL
     const id = props.match.params.class_id;
     const { loading, error, data } = useGetClassroomByIdQuery({ variables: { id } });
+    // è la classe prefirita?
+    const [isFavorite, setIsFavorite] = useState(localStorage.getItem("favorite-classroom-id") === id);
 
     useEffect(() => {
         if (data) setClassroom(data.getClassroomById as Classroom | undefined);

@@ -3,11 +3,13 @@ import classnames from "classnames";
 import { NavLink, withRouter } from "react-router-dom";
 import * as styles from "./MenuNavigation.module.scss";
 
+/* interface MenuNavigationProps {
+  light?: boolean
+} */
+
 const MenuNavigation: React.FC = () => {
 
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
-
-
 
   return (
     <div className={styles.menuNavigation} id="TopMenuNavigation">
