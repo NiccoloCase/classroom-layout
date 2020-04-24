@@ -1,7 +1,7 @@
 import * as React from "react";
 import classnames from "classnames";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPlus, faMousePointer, faEraser, faTrash, faSearchPlus, faSearchMinus, faSyncAlt, faTimes } from '@fortawesome/free-solid-svg-icons';
+import { faPlus, faMousePointer, faEraser, faTrash, faSearchPlus, faSearchMinus, faSyncAlt, faTimes, faUndoAlt } from '@fortawesome/free-solid-svg-icons';
 import Popup from "reactjs-popup";
 import * as styles from "./DrawLayout.module.scss";
 import { DeskInput } from '../../generated/graphql';
@@ -45,6 +45,8 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
     ctx: CanvasRenderingContext2D;
     /** Banchi */
     desks: Desk[];
+    /** Cronologia dei banchi */
+    desksHistory: Desk[][] = [];
     /** Studenti */
     students?: string[];
     /** dimensione di una cela */
@@ -58,9 +60,9 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
 
     state = {
         /** Larghezza del canvas */
-        width: this.props.width as number | undefined,
+        width: this.props.width,
         /** Altezza del canvas */
-        height: this.props.height as number | undefined,
+        height: this.props.height,
         /** Strumento in uso */
         tool: this.props.notEditable ? ToolType.POINTER : ToolType.ADD,
         /** Orientamento con cui vengono posizionati i blocchi */
@@ -73,7 +75,8 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
     }
 
     componentDidMount() {
-        this.scale = this.props.scale || 35;
+
+        this.scale = this.props.scale || this.getScale(this.state.width, this.state.height);
         this.deltaZoom = 5;
         this.students = this.props.students;
         this.ctx = this.canvas.getContext("2d")!;
@@ -111,31 +114,37 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
         );
     }
 
+
     /**
      * Disegna la barra degli strumenti
      */
     private drawTools = () => (
         <div className={styles.tools}>
+            {/* Puntatore */}
             <button onClick={() => this.switchTool(ToolType.POINTER)} className={classnames(styles.tool, { [styles.active]: this.state.tool === ToolType.POINTER })}>
                 <FontAwesomeIcon icon={faMousePointer} />
             </button>
+            {/* Strumento aggiungi */}
             <button onClick={() => this.switchTool(ToolType.ADD)} className={classnames(styles.tool, { [styles.active]: this.state.tool === ToolType.ADD })}>
                 <FontAwesomeIcon icon={faPlus} />
             </button>
+            {/* Strumento rimuovi */}
             <button onClick={() => this.switchTool(ToolType.REMOVE)} className={classnames(styles.tool, { [styles.active]: this.state.tool === ToolType.REMOVE })} >
                 <FontAwesomeIcon icon={faEraser} />
             </button>
             <div className={styles.actions}>
+                {/* Orientamento banchi */}
                 <button onClick={() => this.swtichOrientation()} className={styles.action}>
                     <FontAwesomeIcon icon={faSyncAlt} />
                 </button>
+                {/* Orientamento zoom */}
                 <button onClick={this.zoomIn} className={styles.action}>
                     <FontAwesomeIcon icon={faSearchPlus} />
                 </button>
                 <button onClick={this.zoomOut} className={styles.action}>
                     <FontAwesomeIcon icon={faSearchMinus} />
                 </button>
-                {/*TRASH CAN*/}
+                {/* Cestino */}
                 <Popup trigger={
                     <button className={styles.action}>
                         <FontAwesomeIcon icon={faTrash} />
@@ -150,6 +159,11 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
                         </div>
                     </div>)}
                 </Popup>
+                {/* Torna indietro */}
+                <button onClick={this.undo} className={styles.action}
+                    disabled={this.desksHistory.length < 1}>
+                    <FontAwesomeIcon icon={faUndoAlt} />
+                </button>
             </div>
         </div>);
 
@@ -194,6 +208,22 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
     }
 
     /**
+     * Funzione che ripristina l'ultimo cambiamento nella cronologia
+     */
+    private undo = () => {
+        // ultima configurazione
+        const previousLayout = this.desksHistory[this.desksHistory.length - 1];
+        if (previousLayout === undefined) return;
+        // ripristina 'ultima configurazione
+        this.desks = previousLayout;
+        // elimina l'ultimo elemento dell'array
+        this.desksHistory.length = this.desksHistory.length - 1;
+        // se non è rimasato nessun altro salvateggio vecchio 
+        // riaggiorna il componente 
+        if (this.desksHistory.length === 0) this.forceUpdate();
+    }
+
+    /**
      * Funzione chiamata quando viene cliccato il mouse all'interno del canvas
      */
     private onMouseClick = (e: MouseEvent) => {
@@ -227,6 +257,15 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
         if (this.state.recommendedOrientation.value != null && (this.state.recommendedOrientation.cell[0] !== gridX || this.state.recommendedOrientation.cell[1] !== gridY)) {
             this.setState({ recommendedOrientation: { value: null, cell: [] } });
         }
+    }
+
+    /* Restiruisce la scala piu' adeguata per le dimensioni passate */
+    private getScale = (width: number, height: number) => {
+        const minScale = 35;
+        const scaleX = width / 18;
+        const scaleY = height / 6;
+        const scale = Math.min(scaleX, scaleY);
+        return scale < minScale ? minScale : scale;
     }
 
     /**
@@ -288,9 +327,14 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
         if (recommendedOrientation != null) orientation = recommendedOrientation;
         // controlla se è stato impostato un numero massimo possibile di banchi
         if (this.props.maxDesks && this.props.maxDesks === this.desks.length) return;
-        // aggiunge il banco
-        if (!this.isBusy(x, y, orientation))
+
+        if (!this.isBusy(x, y, orientation)) {
+            // aggiorna la cronologia 
+            this.desksHistory.push([...this.desks]);
+            // aggiunge il banco
             this.desks.push(new Desk(x, y, orientation));
+        }
+
         // callback
         this.callback();
     }
@@ -299,10 +343,15 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
      * Rimuove un banco
      */
     private removeDesk = (x: number, y: number) => {
+
         for (const index in this.desks) {
             if ((this.desks[index].x1 === x && this.desks[index].y1 === y) ||
-                (this.desks[index].x2 === x && this.desks[index].y2 === y))
+                (this.desks[index].x2 === x && this.desks[index].y2 === y)) {
+                // aggiorna la cronologia
+                this.desksHistory.push([...this.desks]);
+                // elimina il banco
                 this.desks.splice(Number(index), 1);
+            }
         }
         // aggiorna il client
         this.callback();
@@ -326,6 +375,7 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
      * Rimuove tutti i banchi
      */
     private delateAll = () => {
+        this.desksHistory.push([...this.desks]);
         this.desks = [];
         this.callback();
     }
