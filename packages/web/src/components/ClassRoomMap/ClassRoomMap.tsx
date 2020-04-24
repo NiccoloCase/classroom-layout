@@ -1,7 +1,7 @@
 import * as React from "react";
 import classnames from "classnames";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPlus, faMousePointer, faEraser, faTrash, faSearchPlus, faSearchMinus, faSyncAlt, faTimes, faUndoAlt } from '@fortawesome/free-solid-svg-icons';
+import { faPlus, faMousePointer, faEraser, faTrash, faSearchPlus, faSyncAlt, faTimes, faUndoAlt } from '@fortawesome/free-solid-svg-icons';
 import Popup from "reactjs-popup";
 import * as styles from "./DrawLayout.module.scss";
 import { DeskInput } from '../../generated/graphql';
@@ -50,6 +50,7 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
     /** Studenti */
     students?: string[];
     /** dimensione di una cela */
+    defaultScale: number;
     scale: number;
     /** Intervallo di zoom */
     deltaZoom: number;
@@ -71,12 +72,14 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
         recommendedOrientation: {
             value: null as Orientation | null, // orientamento 
             cell: [] as number[] // cella in cui è avvenuto il suggerimento
-        }
+        },
+        /** Valore dello zoom */
+        zoom: 1
     }
 
     componentDidMount() {
-
-        this.scale = this.props.scale || this.getScale(this.state.width, this.state.height);
+        this.defaultScale = this.props.scale || this.getScale(this.state.width, this.state.height);
+        this.scale = this.defaultScale;
         this.deltaZoom = 5;
         this.students = this.props.students;
         this.ctx = this.canvas.getContext("2d")!;
@@ -114,7 +117,6 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
         );
     }
 
-
     /**
      * Disegna la barra degli strumenti
      */
@@ -137,27 +139,31 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
                 <button onClick={() => this.swtichOrientation()} className={styles.action}>
                     <FontAwesomeIcon icon={faSyncAlt} />
                 </button>
-                {/* Orientamento zoom */}
-                <button onClick={this.zoomIn} className={styles.action}>
-                    <FontAwesomeIcon icon={faSearchPlus} />
-                </button>
-                <button onClick={this.zoomOut} className={styles.action}>
-                    <FontAwesomeIcon icon={faSearchMinus} />
-                </button>
+                {/* Zoom */}
+                <Popup trigger={
+                    <button className={styles.action}>
+                        <FontAwesomeIcon icon={faSearchPlus} />
+                    </button>} closeOnDocumentClick position="bottom center">
+                    <div className={styles.zoomPopUp}>
+                        <input type="range" min={0.2} max={2} step={0.1}
+                            value={this.state.zoom} onChange={this.changeZoom} />
+                    </div>
+                </Popup>
                 {/* Cestino */}
                 <Popup trigger={
                     <button className={styles.action}>
                         <FontAwesomeIcon icon={faTrash} />
                     </button>} closeOnDocumentClick position="bottom center">
-                    {close => (<div className={styles.popUp}>
-                        <div className={styles.left}>
-                            <div>Sei sicuro di volere cancellare tutti i banchi?</div>
-                            <button onClick={() => { this.delateAll(); close(); }}>Cancella</button>
-                        </div>
-                        <div className={styles.right}>
-                            <button><FontAwesomeIcon icon={faTimes} onClick={close} /></button>
-                        </div>
-                    </div>)}
+                    {close => (
+                        <div className={styles.trashPopUp}>
+                            <div className={styles.left}>
+                                <div>Sei sicuro di volere cancellare tutti i banchi?</div>
+                                <button onClick={() => { this.delateAll(); close(); }}>Cancella</button>
+                            </div>
+                            <div className={styles.right}>
+                                <button><FontAwesomeIcon icon={faTimes} onClick={close} /></button>
+                            </div>
+                        </div>)}
                 </Popup>
                 {/* Torna indietro */}
                 <button onClick={this.undo} className={styles.action}
@@ -380,11 +386,14 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
         this.callback();
     }
 
-    private zoomIn = () => this.scale += this.deltaZoom;
-
-    private zoomOut = () => {
-        if (this.scale - this.deltaZoom > 0)
-            this.scale -= this.deltaZoom;
+    /**
+     * Applica uo zoom secondo la proprietà passata dallo slider
+     */
+    private changeZoom = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { value } = e.target;
+        this.setState({ zoom: value });
+        this.scale = this.defaultScale * Number(value);
+        console.log(value);
     }
 
     /**

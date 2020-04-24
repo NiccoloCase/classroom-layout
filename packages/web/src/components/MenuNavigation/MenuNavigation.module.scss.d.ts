@@ -10,3 +10,4 @@ export const open: string;
 export const hamburger: string;
 export const line: string;
 export const close: string;
+export const light: string;
