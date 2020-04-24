@@ -393,7 +393,6 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
         const { value } = e.target;
         this.setState({ zoom: value });
         this.scale = this.defaultScale * Number(value);
-        console.log(value);
     }
 
     /**
