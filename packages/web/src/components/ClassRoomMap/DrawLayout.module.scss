@@ -15,28 +15,19 @@
         border: none;
         background: $light-grey;
         transition: all .4s;
-        @include hover-supported{
-           transform: translateY(-8px)
-        }
+        &:disabled { opacity: .4;}
+        &:enabled { @include hover-supported{ transform: translateY(-8px); }}
     }
-    
-    .action:active {
-        transform: scale(1.2);
+    .action:active:enabled {transform: scale(1.2);}
+    .tool.active {
+        color:#fff;
+        background: $primary-color;
     }
-
-    .tool {
-        &.active {
-           color:#fff;
-           background: $primary-color;
-        }
-    }
-
     .actions {
         $border: 2px;
         border-left: solid $border $shuttle-grey;
         padding-left: calc(#{$space} + #{$border});
     }
-
     .popUp {
         display: flex;
         padding: .5rem 1rem;
