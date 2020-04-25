@@ -84,7 +84,6 @@ export class Desk {
         }
 
         // DISEGNA IL BANCO
-
         const xw = true;
         if (xw) {
             ctx.fillStyle = "#5f6368";
@@ -96,6 +95,8 @@ export class Desk {
             ctx.strokeStyle = "#dadce0";
             ctx.lineWidth = 0.03;
         }
+
+
 
         // Se è selezionato
         if (options && options.isHighlighted) ctx.fillStyle = "#404040";

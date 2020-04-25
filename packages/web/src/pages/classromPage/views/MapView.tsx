@@ -50,7 +50,7 @@ export const MapView: React.FC<MapViewProps> = props => {
                 students={props.students}
                 highlightedDesk={props.highlightedDesk}
                 onDeskIsHighlighted={props.onDeskIsHighlighted}
-                desks={props.desks} scale={55} notEditable />
+                desks={props.desks} notEditable />
             <div className="functions">
                 <button className="btn" title="Scarica la mappa dei posti" onClick={downloadMap}>
                     <FontAwesomeIcon icon={faDownload} />

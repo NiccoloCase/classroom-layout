@@ -78,21 +78,23 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
     }
 
     componentDidMount() {
-        this.defaultScale = this.props.scale || this.getScale(this.state.width, this.state.height);
-        this.scale = this.defaultScale;
-        this.deltaZoom = 5;
-        this.students = this.props.students;
+        // CANVAS
         this.ctx = this.canvas.getContext("2d")!;
-        this.highlightedDesk = this.props.highlightedDesk;
         // EVENTI
         this.mouse = new Mouse();
         this.canvas.addEventListener("mousedown", this.onMouseClick);
         this.canvas.addEventListener("mousemove", this.onMouseMove);
-        // BANCHI
-        this.desks = this.props.desks ? Desk.objsToDesks(this.props.desks) : [];
+        // BANCHI E STUDENTI
+        this.students = this.props.students;
+        this.highlightedDesk = this.props.highlightedDesk;
+        this.desks = this.props.desks ? this.centerDesks(this.props.desks) : [];
         if (this.students) Desk.setNames(this.desks, this.students);
-        // chaiama la funzione se passata tra le proprietà
-        this.callback();
+        // SCALA E ZOOM
+        this.defaultScale = this.props.scale ||
+            this.getScale(this.state.width, this.state.height, this.desks);
+        this.scale = this.defaultScale;
+        this.deltaZoom = 5;
+
         // AVVIA IL LOOP
         this.tick();
     }
@@ -265,13 +267,58 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
         }
     }
 
-    /* Restiruisce la scala piu' adeguata per le dimensioni passate */
-    private getScale = (width: number, height: number) => {
-        const minScale = 35;
-        const scaleX = width / 18;
-        const scaleY = height / 6;
-        const scale = Math.min(scaleX, scaleY);
-        return scale < minScale ? minScale : scale;
+    /**
+     * Trasla i banchi al punto all'origine (0,0)
+     */
+    private centerDesks = (desks: DeskInput[]) => {
+        const benches = Desk.objsToDesks(desks);
+        // trova le componenti del vettore per le traslazioni 
+        // (coincidono con la distanza dagli assi del banco a loro piu' vicino)   
+        const offsetX = Math.min(...benches.map(desk => Math.min(desk.x1, desk.x2)));
+        const offsetY = Math.min(...benches.map(desk => Math.min(desk.y1, desk.y2)));
+        // ESEGUE LA TRASLAZIONE 
+        for (const desk of benches) {
+            // traslazione orizzontale
+            desk.x1 = desk.x1 - offsetX;
+            desk.x2 = desk.x2 - offsetX;
+            // traslazione veritcale
+            desk.y1 = desk.y1 - offsetY;
+            desk.y2 = desk.y2 - offsetY;
+        }
+        return benches;
+    }
+
+    /**
+     * Restiruisce la scala piu' adeguata per le dimensioni passate.
+     * Se viene passato anche un array di banchi, il calcolo della scala 
+     * prenderà in considerazione anche la disposizione di questi.
+     */
+    private getScale = (width: number, height: number, desks?: Desk[]): number => {
+        // CONFIGURAZIONE SENZA BANCHI
+        // nel calcolo della scala prende in considerazione solo le dimensioni del canvas
+        if (!desks || desks.length === 0) {
+            const minScale = 35;
+            const scaleX = width / 18;
+            const scaleY = height / 6;
+            const scale = Math.min(scaleX, scaleY);
+            return scale < minScale ? minScale : scale;
+        }
+        // CONFIGURAZIONE CON BANCHI
+        // nel calcolo della scala prende in considerazione anche la disposizione dei banchi
+        else {
+            // trova il numero di celle occupate sull'asse x
+            const nX = Math.max(...desks.map(desk => Math.max(desk.x1, desk.x2))) + 1;
+            // trova il numero di celle occupate sull'asse y
+            const nY = Math.max(...desks.map(desk => Math.max(desk.y1, desk.y2))) + 1;
+            // trova le scale: una in base alla larghezza e l'altra all'altezza 
+            const scaleX = width / nX;
+            const scaleY = height / nY;
+            // considera solo la scala piu' opportuna tra le due 
+            const scale = Math.min(scaleX, scaleY);
+            // valore massimo della scala al fine di impedire preview toppo zommate 
+            const maxScale = 100;
+            return scale < maxScale ? scale : maxScale;
+        }
     }
 
     /**
