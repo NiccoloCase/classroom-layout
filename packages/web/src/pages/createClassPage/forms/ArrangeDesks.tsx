@@ -30,7 +30,7 @@ export const ArrangeDesks: React.FC<ArrangeDesksProps> =
         React.useEffect(() => { // invia i valori al form
             if (desks.length === studensNumber) storeValues(desks, id);
             else storeValues(null, id);
-        }, [desks])
+        }, [desks, studensNumber])
 
         /**
          * Imposta le dimensioni del canvas

@@ -1,12 +1,15 @@
 import * as React from 'react';
 import Slider from "react-slick";
-import * as classnames from "classnames"
-import { GeneralInformationsForm } from "./forms/GeneralInformationsForm"
+import * as classnames from "classnames";
+import { TitleComponent } from '../../components/TitleComponent';
+import { IntermittentButton } from '../../components/IntermittentButton';
 import "./createClassPage.scss";
+
+// FORM
+import { GeneralInformationsForm } from "./forms/GeneralInformationsForm";
 import { StundentsForm } from './forms/StundentsForm';
 import { ArrangeDesks } from './forms/ArrangeDesks';
 import { LastStep } from "./forms/LastStep";
-import { TitleComponent } from '../../components/TitleComponent';
 
 /** Numero di schermate */
 const STEPS_NUMBER = 4;
@@ -42,6 +45,7 @@ export class CreateClassPage extends React.Component {
             dots: false,
             infinite: false,
             swipe: false,
+            arrows: false,
             speed: 500,
             slidesToShow: 1,
             slidesToScroll: 1
@@ -80,20 +84,18 @@ export class CreateClassPage extends React.Component {
                                 />
                             </Slider>
                         </div>
-                        {/* BOTTONI DI NAVIGAZIONE */}
+                        {/* PULSANTI DI NAVIGAZIONE */}
                         <div className="form-footer">
-                            <button onClick={this.prevStep} id="btn-prev"
-                                style={{ visibility: this.state.step > 0 ? "visible" : "hidden" }} >
+                            <IntermittentButton onClick={this.prevStep} id="btn-prev" interval={600}
+                                style={{ opacity: this.state.step > 0 ? 1 : 0 }} >
                                 Indietro
-                            </button>
-                            <div className="dots">
-                                {this.drawDots()}
-                            </div>
-                            <button onClick={this.nextStep} id="btn-next"
+                            </IntermittentButton>
+                            <div className="dots"> {this.drawDots()}</div>
+                            <IntermittentButton onClick={this.nextStep} id="btn-next" interval={600}
                                 style={{ visibility: this.state.step === STEPS_NUMBER - 1 ? "hidden" : "visible" }}
                                 disabled={this.state.nextButtonDisabled[this.state.step]}>
                                 Avanti
-                            </button>
+                            </IntermittentButton>
                         </div>
                     </div>
                 </div>
@@ -139,7 +141,7 @@ export class CreateClassPage extends React.Component {
         if (this.slider && this.state.step < STEPS_NUMBER - 1) {
             // va allo step sucessivo
             this.slider.slickNext()
-            this.setState({ step: this.state.step + 1 })
+            this.setState({ step: this.state.step + 1 });
         }
     }
 
@@ -147,6 +149,7 @@ export class CreateClassPage extends React.Component {
      * Torna allo step precedente se è possibile
      */
     private prevStep = () => {
+        console.log("sciao");
         if (this.slider && this.state.step > 0) {
             this.slider.slickPrev()
             this.setState({ step: this.state.step - 1 })
