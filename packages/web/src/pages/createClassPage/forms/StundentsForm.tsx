@@ -92,7 +92,6 @@ export const StundentsForm: React.FC<StundentsFormProps> = ({ storeValues, id, c
         setInputValue("");
     }
 
-
     return (
         <div className="StudentsForm" style={{ height: containerHeight }}>
             <div className="left">
@@ -106,13 +105,14 @@ export const StundentsForm: React.FC<StundentsFormProps> = ({ storeValues, id, c
                 <div className="input-box">
                     <div className="field">
                         <input
-                            type="text" className="input" placeholder="Cognome dello studente"
                             value={inputValue}
+                            type="text" className="input" placeholder="Cognome dello studente"
+                            onKeyPress={e => { if (e.key === "Enter" && inputError === null) addStudent(); }}
                             onChange={e => {
                                 setInputValue(e.target.value);
                                 validateInputBox(e.target.value)
                             }}
-                            onKeyPress={e => { if (e.key === "Enter") addStudent() }} />
+                        />
                     </div>
                     <button
                         onClick={addStudent}
