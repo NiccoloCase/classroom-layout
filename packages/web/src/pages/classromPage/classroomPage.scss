@@ -140,30 +140,83 @@
         display: flex;
         justify-content: center;
         align-items: center;
-        margin-top: 2rem;
+        padding: 2rem;
 
         .title {
             font-family: "Montserrat";
-            font-size: 27px;
             font-weight: 500;
             color:#4A4A4A;
-            margin-bottom: 1rem;
+            margin-bottom: .5rem;
         }
     }
+    
+    /*
+    -------------------------
+        SCHERMATE 
+    -------------------------
+    */
 
-    &__MapView {
-        border-radius: 10px;
-        padding: 1rem;
-        background: #fff;
-        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, .1), 0 10px 10px -5px rgba(0, 0, 0, .04);
+    &__MapView, &__EditView {
+        flex:1;
+        height: 100%;
+       .card {
+            height: calc(100% - 2rem);
+            border-radius: 5px;
+            padding: 1rem;
+            background: #fff;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, .1), 0 10px 10px -5px rgba(0, 0, 0, .04);
+            .canvas-wrapper {
+                height: 100%;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                position: relative;
+                canvas { 
+                    position: absolute; 
+                    top:0; 
+                    left:0;
+                }
+            }
+
+            .functions {
+                display: flex;
+                justify-content: flex-end;
+                align-items: center;
+                margin-top: .5rem;
+                .btn {
+                    border: none;
+                    border-radius: 10px;
+                    padding: .5rem 1rem;
+                    font-size: 1rem;
+                    color: $shuttle-grey;
+                    margin-left: .5rem;
+                    transition: all .5s;
+                    a {  text-decoration: none; }       
+                    &:last-child {
+                        background: $primary-color;
+                        color:#fff; 
+                    }
+                    &:disabled {
+                        opacity: .2;
+                        cursor: not-allowed;
+                    }
+                    &:hover {
+                        background: $shuttle-grey;
+                        color: #fff;
+                    }
+                }
+            }
+       }
     }
 
+
     &__EditView {
-        border-radius: 10px;
         padding: 1rem;
         background: #fff;
         box-shadow: 0 20px 25px -5px rgba(0, 0, 0, .1), 0 10px 10px -5px rgba(0, 0, 0, .04);
-
+     
         .functions .desks-counter{
             color:$dark-grey;
             font-weight: bold;
@@ -171,40 +224,7 @@
             cursor: default;
         }
     }
-    &__MapView, &__EditView {
-        .functions {
-            display: flex;
-            justify-content: flex-end;
-            align-items: center;
-            margin-top: .5rem;
-            .btn {
-                border: none;
-                border-radius: 10px;
-                padding: .5rem 1rem;
-                font-size: 1rem;
-                color: $shuttle-grey;
-                margin-left: .5rem;
-                transition: all .5s;
 
-                a {
-                    text-decoration: none;
-                }
-                
-                &:last-child {
-                    background: $primary-color;
-                    color:#fff; 
-                }
-                &:disabled {
-                    opacity: .2;
-                    cursor: not-allowed;
-                }
-                &:hover {
-                    background: $shuttle-grey;
-                    color: #fff;
-                }
-            }
-        }
-    }
     &__SettingsView {
         border-radius: 10px;
         padding: 1rem;

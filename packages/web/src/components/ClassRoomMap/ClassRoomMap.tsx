@@ -39,7 +39,28 @@ interface ClassRoomMapProps {
     onDeskIsHighlighted?: (index: number | null) => void;
 }
 
+interface ClassRoomMapState {
+    /** Larghezza del canvas */
+    width: number;
+    /** Altezza del canvas */
+    height: number;
+    /** Strumento in uso */
+    tool: ToolType;
+    /** Orientamento con cui vengono posizionati i blocchi */
+    orientation: Orientation,
+    /** Orientamento non voluto dall'utente ma proposto a seconda della situazione */
+    recommendedOrientation: {
+        /** orientamento suggerito */
+        value: Orientation | null,
+        /** cella in cui è avvenuto il suggerimento */
+        cell: number[]
+    },
+    /** Valore dello zoom */
+    zoom: number
+}
+
 class ClassRoomMap extends React.Component<ClassRoomMapProps> {
+
     // CANVAS
     canvas: HTMLCanvasElement;
     ctx: CanvasRenderingContext2D;
@@ -58,23 +79,31 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
     mouse: Mouse;
     /** Banco evidenziato */
     highlightedDesk?: number | null;
+    /** Stato */
+    state: ClassRoomMapState;
 
-    state = {
-        /** Larghezza del canvas */
-        width: this.props.width,
-        /** Altezza del canvas */
-        height: this.props.height,
-        /** Strumento in uso */
-        tool: this.props.notEditable ? ToolType.POINTER : ToolType.ADD,
-        /** Orientamento con cui vengono posizionati i blocchi */
-        orientation: Orientation.E,
-        /** Orientamento non voluto dall'utente ma proposto a seconda della situazione */
-        recommendedOrientation: {
-            value: null as Orientation | null, // orientamento 
-            cell: [] as number[] // cella in cui è avvenuto il suggerimento
-        },
-        /** Valore dello zoom */
-        zoom: 1
+    constructor(props: ClassRoomMapProps) {
+        super(props);
+        // STATO
+        this.state = {
+            width: this.props.width,
+            height: this.props.height,
+            tool: this.props.notEditable ? ToolType.POINTER : ToolType.ADD,
+            orientation: Orientation.E,
+            recommendedOrientation: { value: null, cell: [] },
+            zoom: 1
+        };
+
+        // BANCHI E STUDENTI
+        this.students = props.students;
+        this.highlightedDesk = props.highlightedDesk;
+        this.desks = props.desks ? this.centerDesks(props.desks) : [];
+        if (this.students) Desk.setNames(this.desks, this.students);
+        // SCALA E ZOOM
+        this.defaultScale = props.scale ||
+            this.getScale(this.state.width, this.state.height, this.desks);
+        this.scale = this.defaultScale;
+        this.deltaZoom = 5;
     }
 
     componentDidMount() {
@@ -84,29 +113,40 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
         this.mouse = new Mouse();
         this.canvas.addEventListener("mousedown", this.onMouseClick);
         this.canvas.addEventListener("mousemove", this.onMouseMove);
-        // BANCHI E STUDENTI
-        this.students = this.props.students;
-        this.highlightedDesk = this.props.highlightedDesk;
-        this.desks = this.props.desks ? this.centerDesks(this.props.desks) : [];
-        if (this.students) Desk.setNames(this.desks, this.students);
-        // SCALA E ZOOM
-        this.defaultScale = this.props.scale ||
-            this.getScale(this.state.width, this.state.height, this.desks);
-        this.scale = this.defaultScale;
-        this.deltaZoom = 5;
-
         // AVVIA IL LOOP
         this.tick();
     }
 
-    UNSAFE_componentWillReceiveProps({ width, height, highlightedDesk, students, desks }: ClassRoomMapProps) {
-        if (width) this.setState({ width });
-        if (height) this.setState({ height });
-        if (highlightedDesk) this.highlightDesk = this.highlightDesk;
-        if (desks) this.desks = Desk.objsToDesks(desks);
-        if (students) {
-            this.students = students;
-            Desk.setNames(this.desks, this.students);
+    componentWillUnmount() {
+        // rimuove gli eventi
+        this.canvas.removeEventListener("mousedown", this.onMouseClick);
+        this.canvas.removeEventListener("mousemove", this.onMouseMove);
+    }
+
+    componentDidUpdate(prevProps: ClassRoomMapProps, prevState: ClassRoomMapState) {
+        // VARIAZIONE NEI BANCHI
+        if (this.props.desks && this.desks !== Desk.objsToDesks(this.props.desks)) {
+            this.desks = Desk.objsToDesks(this.props.desks);
+            if (this.students) Desk.setNames(this.desks, this.students);
+        }
+
+        // VARIAZIONE DEGLI STUDENT
+        if (this.props.students !== this.students) {
+            this.students = this.props.students;
+            if (this.students) Desk.setNames(this.desks, this.students);
+        }
+
+        // VARIAZIONE DEL BANCO SELEZIONATO 
+        if (this.highlightedDesk !== this.props.highlightedDesk)
+            this.highlightedDesk = this.props.highlightedDesk;
+
+        // VARIAZIONE DELLE DIMENSIONI
+        if (this.props.width !== prevState.width || this.props.height !== prevState.height) {
+            // aggiorna le dimensioni
+            this.setState({ width: this.props.width, height: this.props.height });
+            // imposta la nuova scala
+            this.defaultScale = this.getScale(this.props.width, this.props.height, this.desks);
+            this.scale = this.defaultScale;
         }
     }
 
@@ -509,9 +549,8 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
     /**
      * Pulisce lo sfondo
      */
-    private clearBackground = () => {
+    private clearBackground = () =>
         this.ctx.clearRect(0, 0, this.state.width!, this.state.height!);
-    }
 
     private tick = () => {
         // pulisce lo sfondo

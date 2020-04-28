@@ -10,8 +10,6 @@ interface MapViewProps {
     classId: string;
     students: string[];
     desks: DeskInput[];
-    canvasWidth?: number;
-    canvasHeight?: number;
     highlightedDesk?: number;
     /** Funzione chiamata quando un banco viene selezionato / deselezionato */
     onDeskIsHighlighted?: (index: number | null) => void;
@@ -20,8 +18,24 @@ interface MapViewProps {
 }
 
 export const MapView: React.FC<MapViewProps> = props => {
+    // contenitore del canvas
+    const canvasWrapper = React.useRef<HTMLDivElement>(null);
+    // dimensioni canvas 
+    const [canvasDims, setCanvasDims] = React.useState<{ width: number, height: number }>();
     // GRAPQHL
     const [shuffleMutation] = useShuffleDesksMutation({ variables: { id: props.classId } });
+
+    React.useEffect(() => {
+        const resizeListener = () => {
+            if (!canvasWrapper || !canvasWrapper.current) return;
+            const { width, height } = canvasWrapper.current.getBoundingClientRect();
+            setCanvasDims({ width, height });
+        }
+        resizeListener();
+        window.addEventListener('resize', resizeListener);
+        return () => window.removeEventListener('resize', resizeListener);
+    }, [])
+
 
     /**
      * Sacrica la piantina della classe
@@ -36,36 +50,40 @@ export const MapView: React.FC<MapViewProps> = props => {
         link.click();
     }
 
+    /** Mescola i banchi */
     const shuffleDesks = async () => {
         const { data } = await shuffleMutation();
         if (data)
             props.onDesksAreShuffled(data.shuffleDesks.students);
     }
 
-    const content = (
-        <React.Fragment>
-            <ClassRoomMap
-                width={props.canvasWidth!}
-                height={props.canvasHeight!}
-                students={props.students}
-                highlightedDesk={props.highlightedDesk}
-                onDeskIsHighlighted={props.onDeskIsHighlighted}
-                desks={props.desks} notEditable />
-            <div className="functions">
-                <button className="btn" title="Scarica la mappa dei posti" onClick={downloadMap}>
-                    <FontAwesomeIcon icon={faDownload} />
-                </button>
-                <button className="btn" title="Cambia i posti" onClick={shuffleDesks}>
-                    <FontAwesomeIcon icon={faRandom} />
-                </button>
-            </div>
-        </React.Fragment>
-    );
 
     return (
         <div className="ClassroomPage__MapView">
             <TitleComponent title="Gestisci la tua classe" />
-            {props.canvasWidth && props.canvasHeight ? content : <HashLoader color="#dadfe1" />}
-        </div>
+            <h3 className="title">Pianta della tua classe:</h3>
+            <div className="card">
+                <div className="canvas-wrapper" ref={canvasWrapper}>
+                    {canvasDims ?
+                        <ClassRoomMap
+                            width={canvasDims.width}
+                            height={canvasDims.height}
+                            students={props.students}
+                            highlightedDesk={props.highlightedDesk}
+                            onDeskIsHighlighted={props.onDeskIsHighlighted}
+                            desks={props.desks} notEditable /> :
+                        <HashLoader color="#dadfe1" />
+                    }
+                </div>
+                <div className="functions">
+                    <button className="btn" title="Scarica la mappa dei posti" onClick={downloadMap}>
+                        <FontAwesomeIcon icon={faDownload} />
+                    </button>
+                    <button className="btn" title="Cambia i posti" onClick={shuffleDesks}>
+                        <FontAwesomeIcon icon={faRandom} />
+                    </button>
+                </div>
+            </div>
+        </div >
     );
 }
