@@ -5,7 +5,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEdit, faHistory, faCog, faMap, faStar } from '@fortawesome/free-solid-svg-icons';
 import { faStar as faStarOutline } from "@fortawesome/free-regular-svg-icons";
 import "./classroomPage.scss";
-import { Route, NavLink, RouteComponentProps } from "react-router-dom";
+import { Route, NavLink, RouteComponentProps, Switch } from "react-router-dom";
 import { MapView } from './views/MapView';
 import EditView from './views/EditView';
 import { HistoryView } from './views/HistoryView';
@@ -17,17 +17,10 @@ import { NotFoundView } from '../../components/NotFound';
 interface IParams { class_id: string };
 
 export const ClassroomPage: React.FC<RouteComponentProps<IParams>> = props => {
-    // dimensioni del canvas
-    const [canvasDimensions, setCanvasDimensions] = useState<{ width?: number, height?: number }>({});
     // studente selezionato 
     const [selectedStudent, setSelectedStudent] = React.useState<string | null>(null);
     // classe
     const [classroom, setClassroom] = React.useState<Classroom | undefined>(undefined);
-    // contenitore 
-    const [contentContainer, setContentContainer] = useState<HTMLDivElement | null>(null);
-    const contentContainerRef = (node: HTMLDivElement) => {
-        if (node !== null) setContentContainer(node);
-    }
     // lista degli studenti 
     const studentsContainer = useRef<HTMLDivElement>(null);
     // GRAPHQL
@@ -40,21 +33,6 @@ export const ClassroomPage: React.FC<RouteComponentProps<IParams>> = props => {
         if (data) setClassroom(data.getClassroomById as Classroom | undefined);
     }, [data]);
 
-    useEffect(() => {
-        setClassroomDimensions();
-        window.addEventListener('resize', setClassroomDimensions);
-        return () => window.removeEventListener('resize', setClassroomDimensions);
-    }, [contentContainer])
-
-    /**
-     * Imposta le dimensioni del canvas
-     */
-    const setClassroomDimensions = () => {
-        if (!contentContainer) return;
-        const { width, height } = contentContainer.getBoundingClientRect();
-        const offset = 130;
-        setCanvasDimensions({ width: width - offset, height: height - offset });
-    }
 
     /**
      * Funzione che viene chiamata quando viene selezionato / deselezionato un banco
@@ -170,28 +148,28 @@ export const ClassroomPage: React.FC<RouteComponentProps<IParams>> = props => {
                 </div>
             </div>
             {/* CONTENUTO */}
-            <div className="content" ref={contentContainerRef}>
-                <Route path="/:class_id" exact component={() => (
-                    <MapView
-                        classId={id}
-                        desks={desks} students={students}
-                        canvasWidth={canvasDimensions.width}
-                        canvasHeight={canvasDimensions.height}
-                        highlightedDesk={selectedStudent ? students.indexOf(selectedStudent) : undefined}
-                        onDeskIsHighlighted={onDeskIsHighlighted}
-                        onDesksAreShuffled={onDesksAreShuffled}
-                    />)} />
-                <Route path="/:class_id/edit" exact component={() =>
-                    <EditView
-                        classId={id}
-                        desks={desks} students={students}
-                        canvasWidth={canvasDimensions.width}
-                        canvasHeight={canvasDimensions.height}
-                        onSave={onDesksAreUpdated}
-                    />}
-                />
-                <Route path="/:class_id/history" exact component={HistoryView} />
-                <Route path="/:class_id/settings" exact component={SettingsView} />
+            <div className="content" >
+                <Switch>
+                    <Route path="/:class_id" exact children={() => (
+                        <MapView
+                            classId={id}
+                            desks={desks} students={students}
+                            highlightedDesk={selectedStudent ? students.indexOf(selectedStudent) : undefined}
+                            onDeskIsHighlighted={onDeskIsHighlighted}
+                            onDesksAreShuffled={onDesksAreShuffled}
+                        />)} />
+                    <Route path="/:class_id/edit" exact children={() =>
+                        <EditView
+                            classId={id}
+                            desks={desks} students={students}
+                            canvasWidth={600}
+                            canvasHeight={600}
+                            onSave={onDesksAreUpdated}
+                        />}
+                    />
+                    <Route path="/:class_id/history" exact children={HistoryView} />
+                    <Route path="/:class_id/settings" exact children={SettingsView} />
+                </Switch>
             </div>
             {/* MENU LATERALE DI DESTRA */}
             <div className="right-menu">

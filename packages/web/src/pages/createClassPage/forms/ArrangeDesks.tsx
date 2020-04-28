@@ -24,27 +24,25 @@ export const ArrangeDesks: React.FC<ArrangeDesksProps> =
 
         // Imposta le dimensioni del canvas 
         React.useEffect(() => {
+            const setCanvasSize = () => {
+                if (containerHeight && container && container.current) {
+                    // dimensioni del contenitore
+                    const containerWidth = container.current.getBoundingClientRect().width;
+                    // imposta le dimensioni del canvas
+                    const offsetY = 90;
+                    setWith(containerWidth);
+                    setHeight(containerHeight - container.current.offsetTop - offsetY);
+                }
+            }
             setCanvasSize();
+            window.addEventListener("resize", setCanvasSize);
+            return () => window.removeEventListener("resize", setCanvasSize);
         }, [container, containerHeight]);
 
         React.useEffect(() => { // invia i valori al form
             if (desks.length === studensNumber) storeValues(desks, id);
             else storeValues(null, id);
         }, [desks, studensNumber])
-
-        /**
-         * Imposta le dimensioni del canvas
-         */
-        const setCanvasSize = () => {
-            if (containerHeight && container && container.current) {
-                // dimensioni del contenitore
-                const containerWidth = container.current.getBoundingClientRect().width;
-                // imposta le dimensioni del canvas
-                const offsetY = 90;
-                setWith(containerWidth);
-                setHeight(containerHeight - container.current.offsetTop - offsetY);
-            }
-        }
 
         /**
          * Testo riguardo il numero degli banchi disposti  

@@ -7,8 +7,6 @@ import { LandingPage } from '../pages/landingPage';
 import { ClassroomPage } from '../pages/classromPage';
 import { CreateClassPage } from "../pages/createClassPage"
 
-
-
 export const Routes = () => {
   return (
     <Router >
