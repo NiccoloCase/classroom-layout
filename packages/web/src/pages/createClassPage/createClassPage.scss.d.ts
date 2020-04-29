@@ -15,6 +15,7 @@ export const dot: string;
 export const active: string;
 export const btnPrev: string;
 export const btnNext: string;
+export const temporarilyDisabled: string;
 export const generalInformationsForm: string;
 export const inputs: string;
 export const fields: string;
