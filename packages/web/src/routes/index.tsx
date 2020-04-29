@@ -6,6 +6,7 @@ import { TitleComponent } from '../components/TitleComponent';
 import { LandingPage } from '../pages/landingPage';
 import { ClassroomPage } from '../pages/classromPage';
 import { CreateClassPage } from "../pages/createClassPage"
+import FooterComponent from '../components/Footer';
 
 export const Routes = () => {
   return (
@@ -17,6 +18,7 @@ export const Routes = () => {
         <Route path="/new" exact component={CreateClassPage} />
         <Route path="/:class_id" component={ClassroomPage} />
       </Switch>
+      <FooterComponent />
     </Router>
   );
 };

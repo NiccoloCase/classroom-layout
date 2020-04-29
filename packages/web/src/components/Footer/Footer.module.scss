@@ -1,0 +1,136 @@
+@import "../../styles/variables";
+@import "../../styles/utilities";
+
+.footer {
+    width: 100%;
+    .main {
+        background: $dark-grey;
+        display: flex;
+        padding: 1rem 2rem;
+
+        .sectionTitle {
+             font-family: "Arial";
+             text-transform: uppercase;
+             color: #fff;
+             font-size: .9rem;
+         }
+
+        .logoSection, .searchSection, .navigationSection, .contactsSection {
+            padding: .5rem;
+        }
+
+        .navigationSection, .contactsSection {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .logoSection {
+            flex:1;
+            padding-right: 1rem;
+            .logoWrapper {
+                display: flex;
+                align-items: center;
+                img { 
+                    $d: 3rem;
+                    width: $d;
+                    height: $d;
+                    margin-right: .5rem;
+                    opacity: .5;
+                }
+                h2 {
+                    text-transform: uppercase;
+                    color:$medium-grey;
+                    font-family: "Lato";
+                    font-size: 1.5rem;
+                }
+            }
+            @media all and (max-width: 1000px){ display: none;  }
+        }
+
+        .searchSection {
+            flex:1.5;
+            display: flex;
+            flex-direction: column;
+            .searchBar {
+                background: lighten($dark-grey, 10%);
+                color: lighten($dark-grey, 50%);
+                border: none;
+                border-radius: 5px;
+                width: 100%;
+                padding: .5rem .3rem;
+                margin: .5rem 0 .3rem 0;
+            }
+            .searchButton {
+                border: none;
+                border-radius: 5px;
+                padding: .5rem;
+                color: #fff;
+                background: $primary-color;
+                align-self: flex-end;
+                transition: background .4s;
+                @include hover-supported { background: darken($primary-color, 20%) }
+            }
+        }
+
+        .navigationSection {
+            flex:1;
+            .links {
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                padding: .5rem;
+                .link {
+                    text-decoration: none;
+                    color: $medium-grey;
+                    margin: .3rem 0;
+                    transition: color .4s;
+                    @include hover-supported { color:#fff; }
+                }
+            }
+        }
+
+        .contactsSection {
+            flex:1;
+            .contacts {
+                padding: .5rem;
+                .contact {
+                    display: flex;
+                    align-items: center;
+                    margin: .5rem 0;
+                    color: $medium-grey;  
+                    transition: color .4s;
+                    @include hover-supported { color:#fff; }
+                    span { font-size: .9rem;}
+                    svg {
+                        font-size: 1.3rem;
+                        margin-right: .5rem;
+                    }
+                }
+            }
+        }
+    }
+    .minor {
+        background: $primary-color;
+        padding: 1rem 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        .copyright { color: #fff; }
+    }
+
+    @include phone {
+        .main {
+            flex-direction: column;
+            .navigationSection, .contactsSection {
+                align-items: flex-start;
+            }
+            .logoSection {
+                margin-bottom: 1rem;
+                .logoWrapper {
+                    justify-content: center;
+                }
+            }
+        }
+    }
+}
