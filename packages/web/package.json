@@ -25,6 +25,7 @@
     "react": "^16.9.0",
     "react-dom": "^16.9.0",
     "react-helmet": "^6.0.0",
+    "react-indiana-drag-scroll": "^1.6.1",
     "react-router-dom": "^5.1.2",
     "react-scripts-ts": "4.0.8",
     "react-share": "^4.1.0",
@@ -32,6 +33,7 @@
     "react-spinners": "^0.8.1",
     "react-visibility-sensor": "^5.1.1",
     "reactjs-popup": "^1.5.0",
+    "use-callback-ref": "^1.2.3",
     "validator": "^12.2.0"
   },
   "scripts": {

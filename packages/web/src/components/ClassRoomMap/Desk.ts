@@ -84,23 +84,21 @@ export class Desk {
         }
 
         // DISEGNA IL BANCO
-        const xw = true;
-        if (xw) {
+        const dark = false;
+        if (dark) {
             ctx.fillStyle = "#5f6368";
             ctx.strokeStyle = "#303030";
-            // ctx.lineWidth = 0.05;
-            ctx.lineWidth = 0.03;
         } else {
-            ctx.fillStyle = "#ecf0f1";
+            ctx.fillStyle = "#eeeeee";
             ctx.strokeStyle = "#dadce0";
-            ctx.lineWidth = 0.03;
         }
 
-
-
-        // Se è selezionato
-        if (options && options.isHighlighted) ctx.fillStyle = "#404040";
-
+        // Se il banco è selezionato
+        if (options && options.isHighlighted) {
+            ctx.fillStyle = "#606060";
+            ctx.strokeStyle = "#585858";
+        }
+        ctx.lineWidth = 0.03;
         ctx.fillRect(x, y, d, h);
         ctx.strokeRect(x, y, d, h);
 
@@ -112,8 +110,8 @@ export class Desk {
                 defaultSize
 
             ctx.font = `${size}px Arial`;
-            ctx.fillStyle = "#404040";
-            ctx.fillStyle = "#f5f5f5";
+            ctx.fillStyle = "#909090";
+            if (dark) ctx.fillStyle = "#f5f5f5";
             ctx.textBaseline = 'middle';
             ctx.textAlign = "center";
             ctx.fillText(this.name, x + d / 2, y + h / 2);

@@ -9,16 +9,31 @@ interface EditViewProps extends RouteComponentProps<any> {
     classId: string;
     students: string[];
     desks: DeskInput[];
-    canvasWidth?: number;
-    canvasHeight?: number;
     /** Funzione chiamata quando vengono salvate le modifiche */
     onSave: (desks: DeskInput[]) => void;
 }
 
 const EditView: React.FC<EditViewProps> = props => {
+    // banchi
     const [desks, setDesks] = React.useState(props.desks);
+    // contenitore del canvas
+    const canvasWrapper = React.useRef<HTMLDivElement>(null);
+    // dimensioni canvas 
+    const [canvasDims, setCanvasDims] = React.useState<{ width: number, height: number }>();
     // GRAPHQL
     const [editClass] = useEditClassroomMutation()
+
+    React.useEffect(() => {
+        const resizeListener = () => {
+            if (!canvasWrapper || !canvasWrapper.current) return;
+            const { width, height } = canvasWrapper.current.getBoundingClientRect();
+            const offset = 50; // barra strumenti 
+            setCanvasDims({ width, height: height - offset });
+        }
+        resizeListener();
+        window.addEventListener('resize', resizeListener);
+        return () => window.removeEventListener('resize', resizeListener);
+    }, [])
 
     /**
      *  Elimina le modifiche e riposta la vecchia configurazione
@@ -60,32 +75,36 @@ const EditView: React.FC<EditViewProps> = props => {
         else return true;
     }
 
-    const content = (
-        <React.Fragment>
-            <ClassRoomMap
-                width={props.canvasWidth!}
-                height={props.canvasHeight!}
-                handleChanges={setDesks}
-                desks={desks} scale={55} maxDesks={props.students.length} />
-            <div className="functions">
-                <span className="desks-counter" title="Numero di banchi">
-                    {`${desks.length}/${props.students.length}`}
-                </span>
-                <button className="btn" title="Ripristina la configurazione" onClick={restore}>
-                    ripristina
-                </button>
-                <button className="btn" title="Salva le modifiche"
-                    onClick={saveEdits} disabled={!isValidConfiguration()}>
-                    salva
-                </button>
-            </div>
-        </React.Fragment>
-    );
-
     return (
         <div className="ClassroomPage__EditView">
             <TitleComponent title="Modifica la tua classe" />
-            {props.canvasWidth && props.canvasHeight ? content : <HashLoader color="#dadfe1" />}
+            <h3 className="title">Modifica la tua classe:</h3>
+            <div className="card">
+                <div className="canvas-wrapper" ref={canvasWrapper}>
+                    {canvasDims ?
+                        <ClassRoomMap
+                            width={canvasDims.width}
+                            height={canvasDims.height}
+                            handleChanges={setDesks}
+                            desks={desks}
+                            maxDesks={props.students.length}
+                            disableAutofocus /> :
+                        <HashLoader color="#dadfe1" />
+                    }
+                </div>
+                <div className="functions">
+                    <span className="desks-counter" title="Numero di banchi">
+                        {`${desks.length}/${props.students.length}`}
+                    </span>
+                    <button className="btn" title="Ripristina la configurazione" onClick={restore}>
+                        ripristina
+                </button>
+                    <button className="btn" title="Salva le modifiche"
+                        onClick={saveEdits} disabled={!isValidConfiguration()}>
+                        salva
+                </button>
+                </div>
+            </div>
         </div>
     );
 }
