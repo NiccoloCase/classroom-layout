@@ -26,6 +26,8 @@ interface ClassRoomMapProps {
     students?: string[];
     /** Indice del banco evidenziato */
     highlightedDesk?: number;
+    /** Disattiva la funzione che centra i banchi ad ogni loro cambiamento */
+    disableAutofocus?: boolean;
     // FUNZIONI
     /**
      * Funzione chiamata ogni vole che avviene un cambiamento 
@@ -126,7 +128,15 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
     componentDidUpdate(prevProps: ClassRoomMapProps, prevState: ClassRoomMapState) {
         // VARIAZIONE NEI BANCHI
         if (this.props.desks && this.desks !== Desk.objsToDesks(this.props.desks)) {
-            this.desks = Desk.objsToDesks(this.props.desks);
+            // controlla se deve centare i banchi
+            if (!this.props.disableAutofocus) {
+                this.desks = this.centerDesks(this.props.desks);
+                // imposta la nuova scala
+                this.defaultScale = this.getScale(this.props.width, this.props.height, this.desks);
+                this.scale = this.defaultScale;
+            }
+            else this.desks = Desk.objsToDesks(this.props.desks);
+            // associa gli studenti ai nuovi banchi 
             if (this.students) Desk.setNames(this.desks, this.students);
         }
 
@@ -152,7 +162,7 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
 
     render() {
         return (
-            <div>
+            <div id="ClassroomMap">
                 {!this.props.notEditable && this.drawTools()}
                 <canvas ref={c => (this.canvas = c!)} width={this.state.width} height={this.state.height} />
             </div>
@@ -540,7 +550,7 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
             this.ctx.moveTo(0, i * this.scale);
             this.ctx.lineTo(width, i * this.scale);
         }
-        this.ctx.lineWidth = 0.1;
+        this.ctx.lineWidth = 0.05;
         this.ctx.strokeStyle = "#000";
         this.ctx.stroke();
     }
