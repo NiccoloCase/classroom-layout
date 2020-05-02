@@ -2,7 +2,6 @@ import { registerDecorator, ValidationOptions, ValidatorConstraint, ValidatorCon
 import { Injectable } from "@nestjs/common";
 import { ClassroomService } from "../../classroom/classroom.service";
 
-
 @ValidatorConstraint({ async: true })
 @Injectable()
 export class IsEmailAlreadyUsedConstraint implements ValidatorConstraintInterface {

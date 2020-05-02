@@ -8,7 +8,6 @@ import { NewClassroomDTO, EditClassroomDTO } from './classroom.dto';
 
 @Injectable()
 export class ClassroomService {
-
     constructor(@InjectModel("Classroom") private readonly classroomModel: Model<IClassroomModel>) { }
 
     /**
@@ -37,7 +36,6 @@ export class ClassroomService {
         catch (err) {
             throw new BadRequestException();
         }
-
     }
 
     /**
@@ -55,10 +53,13 @@ export class ClassroomService {
      * @param id  ID della classe da modificare
      * @param edits  Modifiche
      */
-    async editClassroom(id: string, edits: EditClassroomDTO): Promise<Classroom> {
+    async editClassroom(payload: EditClassroomDTO): Promise<Classroom> {
         let classroom: Classroom;
+        const { id } = payload;
+        delete payload.id;
+
         try {
-            classroom = await this.classroomModel.findByIdAndUpdate(id, edits, { new: true, });
+            classroom = await this.classroomModel.findByIdAndUpdate(id, payload, { new: true, });
         } catch (err) {
             throw new BadRequestException();
         }

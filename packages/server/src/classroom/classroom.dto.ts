@@ -1,4 +1,4 @@
-import { IsEmail, IsString, ArrayUnique, Length, IsArray, ArrayMaxSize, ArrayMinSize } from 'class-validator';
+import { IsEmail, IsString, ArrayUnique, Length, IsArray, ArrayMaxSize, ArrayMinSize, IsOptional } from 'class-validator';
 import { IsEmailAlreadyUsed, HasSameLength } from '../shared/validation';
 import { DeskInput } from '../graphql';
 
@@ -24,15 +24,26 @@ export class NewClassroomDTO {
 }
 
 export class EditClassroomDTO {
+    /** ID della classe */
+    @IsString()
+    id: string;
     /** Nome */
+    @IsOptional()
     @IsString()
     @Length(2, 20)
     name?: string;
+    /** Email */
+    @IsOptional()
+    @IsEmail()
+    @IsEmailAlreadyUsed()
+    email?: string;
     /** Banchi */
+    @IsOptional()
     @IsArray()
     @HasSameLength("students")
     desks?: DeskInput[];
     /** Studenti */
+    @IsOptional()
     @ArrayUnique()
     @ArrayMaxSize(30)
     @ArrayMinSize(2)
