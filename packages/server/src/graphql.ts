@@ -29,7 +29,7 @@ export interface Desk {
 
 export interface IMutation {
     createClassroom(email: string, name: string, desks: DeskInput[], students: string[]): Classroom | Promise<Classroom>;
-    editClassroom(id: string, name?: string, desks?: DeskInput[], students?: string[]): Classroom | Promise<Classroom>;
+    editClassroom(id: string, name?: string, email?: string, desks?: DeskInput[], students?: string[]): Classroom | Promise<Classroom>;
     shuffleDesks(classId: string): Classroom | Promise<Classroom>;
 }
 

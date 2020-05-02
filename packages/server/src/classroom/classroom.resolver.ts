@@ -35,16 +35,8 @@ export class ClassroomResolver {
     }
 
     @Mutation()
-    async editClassroom(@Args() args) {
-        // rimuove i valori vuoti
-        for (let propName in args) {
-            if (args[propName] === null || args[propName] === undefined)
-                delete args[propName];
-        }
-        const edits = { ...args };
-        delete edits.id;
-
-        return this.classroomService.editClassroom(args.id, edits);
+    async editClassroom(@Args() args: EditClassroomDTO) {
+        return this.classroomService.editClassroom(args);
     }
 
     @Mutation()
