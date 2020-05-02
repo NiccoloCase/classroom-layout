@@ -1,18 +1,20 @@
 import * as React from 'react';
 import classnames from "classnames";
-import ScrollContainer from 'react-indiana-drag-scroll'
+import ScrollContainer from "react-indiana-drag-scroll";
+import { HashLoader } from 'react-spinners';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEdit, faHistory, faCog, faMap, faStar } from '@fortawesome/free-solid-svg-icons';
 import { faStar as faStarOutline } from "@fortawesome/free-regular-svg-icons";
 import "./classroomPage.scss";
 import { Route, NavLink, RouteComponentProps, Switch } from "react-router-dom";
+import { useGetClassroomByIdQuery, Classroom } from "../../generated/graphql"
+// SCHERMATE
 import { MapView } from './views/MapView';
-import EditView from './views/EditView';
+import { EditView } from './views/EditView';
 import { HistoryView } from './views/HistoryView';
 import { SettingsView } from './views/SettingsView';
-import { useGetClassroomByIdQuery, Classroom, Desk, DeskInput } from "../../generated/graphql"
-import { HashLoader } from 'react-spinners';
 import { NotFoundView } from '../../components/NotFound';
+
 
 interface IParams { class_id: string };
 
@@ -23,7 +25,7 @@ export const ClassroomPage: React.FC<RouteComponentProps<IParams>> = props => {
     const [classroom, setClassroom] = React.useState<Classroom | undefined>(undefined);
     // GRAPHQL
     const id = props.match.params.class_id;
-    const { loading, error, data } = useGetClassroomByIdQuery({ variables: { id } });
+    const { loading, error, data, refetch } = useGetClassroomByIdQuery({ variables: { id } });
     // è la classe prefirita?
     const [isFavorite, setIsFavorite] = React.useState(localStorage.getItem("favorite-classroom-id") === id);
     // contenitore della lista degli studenti 
@@ -81,17 +83,6 @@ export const ClassroomPage: React.FC<RouteComponentProps<IParams>> = props => {
     }
 
     /**
-     * Funzione chimata quando l'array di banchi viene aggiornata
-     * @param newDesks 
-     */
-    const onDesksAreUpdated = (newDesks: Desk[]) => {
-        if (!classroom) return;
-        const newClassroom = { ...classroom };
-        newClassroom.desks = newDesks;
-        setClassroom(newClassroom);
-    }
-
-    /**
      * Disegna il riquadro degli studenti
      */
     const renderStudents = (students: string[]) => {
@@ -123,18 +114,18 @@ export const ClassroomPage: React.FC<RouteComponentProps<IParams>> = props => {
     /**
      * Schermate della navgazione interna 
      */
-    const renderRoutes = (students: string[], desks: DeskInput[]) => (
+    const renderRoutes = (room: Classroom) => (
         <Switch>
             <Route path="/:class_id" exact children={() => (
                 <MapView
                     classId={id}
-                    desks={desks} students={students}
-                    highlightedDesk={selectedStudent ? students.indexOf(selectedStudent) : undefined}
+                    desks={room.desks} students={room.students}
+                    highlightedDesk={selectedStudent ? room.students.indexOf(selectedStudent) : undefined}
                     onDeskIsHighlighted={onDeskIsHighlighted}
                     onDesksAreShuffled={onDesksAreShuffled}
                 />)} />
             <Route path="/:class_id/edit" exact children={() =>
-                <EditView classId={id} desks={desks} students={students} onSave={onDesksAreUpdated} />}
+                <EditView classroom={room} onClassroomIsUpdated={refetch} />}
             />
             <Route path="/:class_id/history" exact children={HistoryView} />
             <Route path="/:class_id/settings" exact children={SettingsView} />
@@ -144,7 +135,7 @@ export const ClassroomPage: React.FC<RouteComponentProps<IParams>> = props => {
     /**
      * Schermata principale
      */
-    const renderMainView = ({ name, students, desks }: Classroom) => (
+    const renderMainView = (room: Classroom) => (
         <React.Fragment>
             {/* MENU LATERALE DI SINISTRA */}
             <div className="left-menu">
@@ -155,7 +146,7 @@ export const ClassroomPage: React.FC<RouteComponentProps<IParams>> = props => {
                         <FontAwesomeIcon icon={faMap} />
                     </NavLink>
                     <NavLink to={`/${id}/edit`} exact className="navLink"
-                        activeClassName="active" title="Modifica i posti">
+                        activeClassName="active" title="Modifica la classe">
                         <FontAwesomeIcon icon={faEdit} />
                     </NavLink>
                     <NavLink to={`/${id}/history`} exact className="navLink"
@@ -169,7 +160,7 @@ export const ClassroomPage: React.FC<RouteComponentProps<IParams>> = props => {
                 </div>
             </div>
             {/* CONTENUTO */}
-            <div className="content"> {renderRoutes(students, desks)} </div>
+            <div className="content"> {renderRoutes({ ...room, id })} </div>
             {/* MENU LATERALE DI DESTRA */}
             <div className="right-menu">
                 <div className="classroom-info" >
@@ -179,10 +170,10 @@ export const ClassroomPage: React.FC<RouteComponentProps<IParams>> = props => {
                             icon={isFavorite ? faStar : faStarOutline} onClick={changeClassFavoriteState} />
                         <h2>Classe</h2>
                     </span>
-                    <h3 className="classroom-info__name">{name}</h3>
+                    <h3 className="classroom-info__name">{room.name}</h3>
                     <h4 className="classroom-info__id">{`#${id}`}</h4>
                 </div>
-                {renderStudents(students)}
+                {renderStudents(room.students)}
             </div>
         </React.Fragment>
     );
