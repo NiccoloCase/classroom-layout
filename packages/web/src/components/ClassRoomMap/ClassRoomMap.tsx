@@ -20,6 +20,8 @@ interface ClassRoomMapProps {
     notEditable?: boolean;
     /** Banchi */
     desks?: DeskInput[];
+    /** Banchi inizali */
+    defaultDesks?: DeskInput[];
     /** Dimnesione delle celle */
     scale?: number;
     /** Array di studenti */
@@ -31,9 +33,9 @@ interface ClassRoomMapProps {
     // FUNZIONI
     /**
      * Funzione chiamata ogni vole che avviene un cambiamento 
-     * @param desks Array di banchi nel formato oggetto
+     * @param desksRow Array di banchi (nel formato oggetto) nella posizione i cui sono stati collocati
      */
-    handleChanges?: (desks: DeskInput[]) => void;
+    handleChanges?: (desksRaw: DeskInput[]) => void;
     /**
      * Funziuone chiamata quando un banco viene selezionato
      * @param desks Index del banco
@@ -62,6 +64,39 @@ interface ClassRoomMapState {
 }
 
 class ClassRoomMap extends React.Component<ClassRoomMapProps> {
+    /*
+    -----------------------
+        FUNZIONI STATICHE
+    -----------------------
+    */
+
+    /**
+     * Trasla i banchi contenuti nell'array passato al punto all'origine (0,0)
+     * @param desks Banchi da traslare
+     */
+    static centerDesks(desks: DeskInput[]): Desk[] {
+        const benches = Desk.objsToDesks(desks);
+        // trova le componenti del vettore per le traslazioni 
+        // (coincidono con la distanza dagli assi del banco a loro piu' vicino)   
+        const offsetX = Math.min(...benches.map(desk => Math.min(desk.x1, desk.x2)));
+        const offsetY = Math.min(...benches.map(desk => Math.min(desk.y1, desk.y2)));
+        // ESEGUE LA TRASLAZIONE 
+        for (const desk of benches) {
+            // traslazione orizzontale
+            desk.x1 = desk.x1 - offsetX;
+            desk.x2 = desk.x2 - offsetX;
+            // traslazione veritcale
+            desk.y1 = desk.y1 - offsetY;
+            desk.y2 = desk.y2 - offsetY;
+        }
+        return benches;
+    }
+
+    /*
+    -----------------------
+        ISTANZA
+    -----------------------
+    */
 
     // CANVAS
     canvas: HTMLCanvasElement;
@@ -95,12 +130,14 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
             recommendedOrientation: { value: null, cell: [] },
             zoom: 1
         };
-
-        // BANCHI E STUDENTI
-        this.students = props.students;
+        // BANCHI
         this.highlightedDesk = props.highlightedDesk;
-        this.desks = props.desks ? this.centerDesks(props.desks) : [];
-        if (this.students) Desk.setNames(this.desks, this.students);
+        if (props.defaultDesks) this.desks = ClassRoomMap.centerDesks(props.defaultDesks);
+        else if (props.desks) this.desks = ClassRoomMap.centerDesks(props.desks)
+        else this.desks = [];
+        // STUDENTI
+        this.students = props.students;
+        if (this.students && this.desks.length > 0) Desk.setNames(this.desks, this.students);
         // SCALA E ZOOM
         this.defaultScale = props.scale ||
             this.getScale(this.state.width, this.state.height, this.desks);
@@ -130,7 +167,7 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
         if (this.props.desks && this.desks !== Desk.objsToDesks(this.props.desks)) {
             // controlla se deve centare i banchi
             if (!this.props.disableAutofocus) {
-                this.desks = this.centerDesks(this.props.desks);
+                this.desks = ClassRoomMap.centerDesks(this.props.desks);
                 // imposta la nuova scala
                 this.defaultScale = this.getScale(this.props.width, this.props.height, this.desks);
                 this.scale = this.defaultScale;
@@ -231,7 +268,7 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
     private callback = () => {
         // verifica se la funzione è stata passata tra le proprietà
         if (typeof this.props.handleChanges === "function")
-            this.props.handleChanges(this.desksToObjects());
+            this.props.handleChanges(Desk.desksToObjs(this.desks));
     }
 
     /**
@@ -239,14 +276,6 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
      */
     private switchTool = (tool: ToolType) => {
         this.setState({ tool });
-    }
-
-    /**
-     * Converte i banche nel formato oggetto
-     */
-    private desksToObjects = (): DeskInput[] => {
-        const objs = this.desks.map(desk => desk.object);
-        return objs;
     }
 
     /**
@@ -315,27 +344,6 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
         if (this.state.recommendedOrientation.value != null && (this.state.recommendedOrientation.cell[0] !== gridX || this.state.recommendedOrientation.cell[1] !== gridY)) {
             this.setState({ recommendedOrientation: { value: null, cell: [] } });
         }
-    }
-
-    /**
-     * Trasla i banchi al punto all'origine (0,0)
-     */
-    private centerDesks = (desks: DeskInput[]) => {
-        const benches = Desk.objsToDesks(desks);
-        // trova le componenti del vettore per le traslazioni 
-        // (coincidono con la distanza dagli assi del banco a loro piu' vicino)   
-        const offsetX = Math.min(...benches.map(desk => Math.min(desk.x1, desk.x2)));
-        const offsetY = Math.min(...benches.map(desk => Math.min(desk.y1, desk.y2)));
-        // ESEGUE LA TRASLAZIONE 
-        for (const desk of benches) {
-            // traslazione orizzontale
-            desk.x1 = desk.x1 - offsetX;
-            desk.x2 = desk.x2 - offsetX;
-            // traslazione veritcale
-            desk.y1 = desk.y1 - offsetY;
-            desk.y2 = desk.y2 - offsetY;
-        }
-        return benches;
     }
 
     /**

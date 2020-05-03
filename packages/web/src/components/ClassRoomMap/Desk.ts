@@ -22,6 +22,14 @@ export class Desk {
     }
 
     /**
+     * Funzione che converte i banchi passati nel formato oggetto
+     * @param desks 
+     */
+    static desksToObjs(desks: Desk[]): DeskInput[] {
+        return desks.map(desk => desk.object);
+    }
+
+    /**
      * Associa ogni banco dell'array passato a un nome dell'array di studenti
      * @param desks Array di banchi
      * @param students Nomi

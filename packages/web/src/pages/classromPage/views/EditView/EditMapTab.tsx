@@ -1,7 +1,7 @@
 import * as React from "react";
 import { HashLoader } from 'react-spinners';
 import { DeskInput, Classroom, MutationEditClassroomArgs } from '../../../../generated/graphql';
-import { ClassRoomMap } from '../../../../components/ClassRoomMap';
+import { ClassRoomMap, Desk } from '../../../../components/ClassRoomMap';
 
 interface EditMapTabProps {
     /** classe */
@@ -10,7 +10,6 @@ interface EditMapTabProps {
     saveEdits: (edits: MutationEditClassroomArgs) => void;
 }
 
-
 export const EditMapTab: React.FC<EditMapTabProps> = ({ classroom, saveEdits }) => {
     // contenitore del canvas
     const canvasWrapper = React.useRef<HTMLDivElement>(null);
@@ -18,7 +17,6 @@ export const EditMapTab: React.FC<EditMapTabProps> = ({ classroom, saveEdits }) 
     const [canvasDims, setCanvasDims] = React.useState<{ width: number, height: number }>();
     // banchi
     const [desks, setDesks] = React.useState(classroom.desks as DeskInput[]);
-
 
     React.useEffect(() => {
         const resizeListener = () => {
@@ -64,8 +62,14 @@ export const EditMapTab: React.FC<EditMapTabProps> = ({ classroom, saveEdits }) 
     /**
      * Funzione chiamata al click del pulsante per salvare le modifiche
      */
-    const handleSaveButton = () =>
-        saveEdits({ id: classroom.id, desks })
+    const handleSaveButton = () => {
+        // trasla i banchi verso l'origine
+        const benches = ClassRoomMap.centerDesks(desks);
+        // converte i banchi in oggetti 
+        const desksObj = Desk.desksToObjs(benches);
+        // salva le modifiche 
+        saveEdits({ id: classroom.id, desks: desksObj });
+    }
 
     return (
         <div className="edit-map-tab">
@@ -75,7 +79,7 @@ export const EditMapTab: React.FC<EditMapTabProps> = ({ classroom, saveEdits }) 
                         width={canvasDims!.width}
                         height={canvasDims!.height}
                         handleChanges={setDesks}
-                        desks={desks}
+                        defaultDesks={desks}
                         maxDesks={classroom.students.length}
                         disableAutofocus /> :
                     <HashLoader color="#dadfe1" />
@@ -89,7 +93,8 @@ export const EditMapTab: React.FC<EditMapTabProps> = ({ classroom, saveEdits }) 
                     ripristina
             </button>
                 <button className="btn" title="Salva le modifiche"
-                    onClick={handleSaveButton} disabled={!isValidConfiguration()}>
+                    onClick={handleSaveButton}
+                    disabled={!isValidConfiguration()}>
                     salva
             </button>
             </div>
