@@ -31,7 +31,6 @@ export const EditInfoTab: React.FC<EditInfoTabProps> = ({ classroom, saveEdits }
         saveEdits({ name, id: classroom.id });
     }
 
-
     return (
         <div className="edit-info-tab">
             <div className="form">

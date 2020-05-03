@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { ClassRoomMap } from '../../../components/ClassRoomMap';
+import { ClassRoomMap, Desk } from '../../../components/ClassRoomMap';
 import { HashLoader } from "react-spinners"
 import { DeskInput } from '../../../generated/graphql';
 import { FontAwesomeIcon } from '../../../../../../node_modules/@fortawesome/react-fontawesome';
@@ -39,8 +39,16 @@ export const ArrangeDesks: React.FC<ArrangeDesksProps> =
             return () => window.removeEventListener("resize", setCanvasSize);
         }, [container, containerHeight]);
 
-        React.useEffect(() => { // invia i valori al form
-            if (desks.length === studensNumber) storeValues(desks, id);
+        // invia i valori al form
+        React.useEffect(() => {
+            if (desks.length === studensNumber) {
+                // trasla i banchi verso l'origine
+                const translatedBenches = ClassRoomMap.centerDesks(desks);
+                // converte i banchi in oggetti 
+                const desksObj = Desk.desksToObjs(translatedBenches);
+                // invia i banchi
+                storeValues(desksObj, id);
+            }
             else storeValues(null, id);
         }, [desks, studensNumber])
 

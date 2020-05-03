@@ -1,7 +1,7 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import * as _ from "lodash";
 import { InjectModel } from '@nestjs/mongoose';
-import { Classroom } from '../graphql';
+import { Classroom, Desk } from '../graphql';
 import { IClassroomModel } from './classroom.schema';
 import { Model } from 'mongoose';
 import { NewClassroomDTO, EditClassroomDTO } from './classroom.dto';

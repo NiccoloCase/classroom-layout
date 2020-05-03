@@ -7,9 +7,11 @@ import { join } from 'path';
 import { AppModule } from './app.module';
 import config from "@crl/config";
 
+export let app: NestExpressApplication;
+
 async function bootstrap() {
   // APP
-  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  app = await NestFactory.create<NestExpressApplication>(AppModule);
   // VALIDAZIONE 
   app.useGlobalPipes(CustumValidationPipe);
   useContainer(app.select(AppModule), { fallbackOnErrors: true });
