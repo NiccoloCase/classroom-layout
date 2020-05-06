@@ -1,23 +1,29 @@
 import * as React from "react";
 import { HashLoader } from 'react-spinners';
-import { DeskInput, Classroom, MutationEditClassroomArgs } from '../../../../generated/graphql';
-import { ClassRoomMap, Desk } from '../../../../components/ClassRoomMap';
+import { DeskInput, Classroom, MutationEditClassroomArgs, Omit } from '../../../../generated/graphql';
+import { ClassRoomMap, /* Desk */ } from '../../../../components/ClassRoomMap';
+import { TabsEditsErrors } from '.';
 
 interface EditMapTabProps {
-    /** classe */
+    /** Classe */
     classroom: Classroom;
-    /** Funzione che richiede al server il salvataggio delle modifiche */
-    saveEdits: (edits: MutationEditClassroomArgs) => void;
+    /** Modifiche */
+    edits: MutationEditClassroomArgs;
+    /** Funzione che manda al componente parente le modifiche apportate */
+    sendEdits: (edits: Omit<MutationEditClassroomArgs, "id">, errors?: TabsEditsErrors) => void;
 }
 
-export const EditMapTab: React.FC<EditMapTabProps> = ({ classroom, saveEdits }) => {
+export const EditMapTab: React.FC<EditMapTabProps> = ({ classroom, sendEdits, edits }) => {
     // contenitore del canvas
     const canvasWrapper = React.useRef<HTMLDivElement>(null);
     // dimensioni canvas 
     const [canvasDims, setCanvasDims] = React.useState<{ width: number, height: number }>();
+    // numero di studenti
+    const studentsNumber = edits.students ? edits.students.length : classroom.students.length;
     // banchi
-    const [desks, setDesks] = React.useState(classroom.desks as DeskInput[]);
+    const desks = edits.desks || classroom.desks;
 
+    // imposta le dimensioni corrette del canvas
     React.useEffect(() => {
         const resizeListener = () => {
             if (!canvasWrapper || !canvasWrapper.current) return;
@@ -30,73 +36,51 @@ export const EditMapTab: React.FC<EditMapTabProps> = ({ classroom, saveEdits }) 
         return () => window.removeEventListener('resize', resizeListener);
     }, [])
 
-
     /**
-     *  Elimina le modifiche e riposta la vecchia configurazione
+     * Funzione chiamata ad ogni cambiamento dei banchi
+     * @param desksRaw 
      */
-    const restore = () => setDesks([...classroom.desks]);
-
-    /**
-     * Controlla se sono state apportate modifiche alla 
-     * configurazione dei banchi o è rimasta invariata 
-     */
-    const hasSomethingChanged = (): boolean => {
-        // elimina le proprità aggiunte da graphql
-        const prevDesks = desks.map(map => ({ x: map.x, y: map.y, orientation: map.orientation }));
-        const newDesks = classroom.desks.map(map => ({ x: map.x, y: map.y, orientation: map.orientation }))
-        // Controlla se la nuova disposizione dei banchi è ugaule ala vecchia
-        return JSON.stringify(prevDesks) !== JSON.stringify(newDesks);
+    const handleDesksChanges = (desksRaw: DeskInput[]) => {
+        if (desksRaw.length === studentsNumber)
+            sendEdits({ desks: desksRaw }, { desks: false });
+        else sendEdits({ desks: desksRaw }, { desks: true })
     }
 
     /**
-     * Controlla se la nuova configurazione è valida o no
+     * Mostra gli avvisi di errore
      */
-    const isValidConfiguration = (): boolean => {
-        // controlla che la congigurazione non sia ugaule a quella precedente
-        if (!hasSomethingChanged()) return false;
-        // verifica che il numero di banchi sia uguale a quello di studenti
-        else if (desks.length !== classroom.students.length) return false;
-        else return true;
-    }
+    const renderWarnings = () => {
+        let warning;
+        const diff = desks.length - studentsNumber;
+        if (desks.length > studentsNumber)
+            warning = `Hai disposto ${Math.abs(diff)} banc${Math.abs(diff) === 1 ? "o" : "hi"} in più.`;
+        else if (desks.length < studentsNumber)
+            warning = `Devi ancora disporre ${Math.abs(diff)} banc${Math.abs(diff) === 1 ? "o" : "hi"}.`;
 
-    /**
-     * Funzione chiamata al click del pulsante per salvare le modifiche
-     */
-    const handleSaveButton = () => {
-        // trasla i banchi verso l'origine
-        const benches = ClassRoomMap.centerDesks(desks);
-        // converte i banchi in oggetti 
-        const desksObj = Desk.desksToObjs(benches);
-        // salva le modifiche 
-        saveEdits({ id: classroom.id, desks: desksObj });
+        return (
+            <h4 className="error-msg" style={{ opacity: warning ? 1 : 0 }}>
+                {warning}
+            </h4>
+        );
     }
 
     return (
         <div className="edit-map-tab">
-            <div className="form" ref={canvasWrapper}>
+            <div className="top-section">
+                <p className="section-title">Hai disposto {desks.length} banchi.</p>
+                {renderWarnings()}
+            </div>
+            <div className="canvas-wrapper" ref={canvasWrapper}>
                 {canvasDims ?
                     <ClassRoomMap
                         width={canvasDims!.width}
                         height={canvasDims!.height}
-                        handleChanges={setDesks}
-                        defaultDesks={desks}
-                        maxDesks={classroom.students.length}
+                        handleChanges={handleDesksChanges}
+                        desks={desks}
+                        maxDesks={studentsNumber}
                         disableAutofocus /> :
                     <HashLoader color="#dadfe1" />
                 }
-            </div>
-            <div className="functions">
-                <span className="desks-counter" title="Numero di banchi">
-                    {`${desks.length}/${classroom.students.length}`}
-                </span>
-                <button className="btn" title="Ripristina la configurazione" onClick={restore}>
-                    ripristina
-            </button>
-                <button className="btn" title="Salva le modifiche"
-                    onClick={handleSaveButton}
-                    disabled={!isValidConfiguration()}>
-                    salva
-            </button>
             </div>
         </div>
     );

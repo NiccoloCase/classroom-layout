@@ -167,12 +167,17 @@
                 justify-content: flex-end;
                 align-items: center;
                 margin-top: .5rem;
+                .warning {
+                    flex:1;
+                    color: $medium-grey;
+                 }
                 .btn {
                     border: none;
-                    border-radius: 10px;
+                    border-radius: 5px;
                     padding: .5rem 1rem;
                     font-size: 1rem;
                     color: $shuttle-grey;
+                    background: $background-color;
                     margin-left: .5rem;
                     transition: all .5s;
                     a {  text-decoration: none; }       
@@ -181,17 +186,20 @@
                         color:#fff; 
                     }
                     &:disabled {
-                        opacity: .2;
+                        opacity: .3;
                         cursor: not-allowed;
                     }
-                    &:hover {
-                        background: $shuttle-grey;
-                        color: #fff;
-                    }
+                    @include hover-supported {background: $medium-grey;}
                 }
             }
        }
     }
+
+    /*
+    -------------------------
+        SCHERMATE: MAPPA 
+    -------------------------
+    */
 
     &__MapView .card {
         flex-direction: column;
@@ -210,6 +218,13 @@
             }
         }
     }
+
+    
+    /*
+    -------------------------
+        SCHERMATE: MODIFICA 
+    -------------------------
+    */
     
     &__EditView .card {
         $border-radius: 3px;
@@ -238,6 +253,10 @@
                         color: $primary-color;
                         background: #fff;
                     }
+                    .error-mark {
+                        margin-left: .3rem;
+                        color: $red;
+                    }
                 }
             }
         }
@@ -246,26 +265,23 @@
             flex:1;
             padding: 1rem;
             padding-left: 2rem;
+            display: flex;
+            flex-direction: column;
 
-            .edit-info-tab, .edit-map-tab{
-                height: 100%;
-                display: flex;
-                flex-direction: column;
-                .form { flex:1; }
+            .edit-info-tab, .edit-students-tab, .edit-map-tab{ height: 100%;  }
+            .section-title {
+                font-weight: 500;
+                color:$shuttle-grey;
+                margin-bottom: .5rem;
             }
 
             // FORM PER MODIFICARE INFORMAZIONI GENERALI
             .edit-info-tab {
-                .form .fields {
+                .fields {
                     width: 70%;
                     .field {
                         margin: 3rem 0;
                         width: 100%;
-                        label {
-                            color:$shuttle-grey;
-                            font-family: Arial;
-                            font-weight: 600;
-                        }
                         input {
                             background: $light-grey;
                             padding: 0.7rem 0.5rem;
@@ -277,15 +293,76 @@
                     }
                 }
             }
-
+            // FORM PER MODIFICARE GLI STUDENTI
+            .edit-students-tab {
+                overflow-y: auto;
+                .students-wrapper {
+                    overflow-y: auto;
+                    display: grid;
+                    grid-template-columns: repeat(auto-fill, minmax(9em, 1fr));
+                    .student {
+                        margin: .3rem 0;
+                        padding: .5rem 1rem;
+                        border-radius: 3px;
+                        background: $background-color;
+                        width:fit-content;
+                        height: fit-content;
+                        display: flex;
+                        align-items: center;
+                        svg {
+                            margin-left: 1rem;
+                            color: $shuttle-grey;
+                            @include hover-supported { color:$red; }
+                        }
+                    }
+                }
+                .bottom-section {
+                    margin: 2rem 0;
+                    .add-student-input {   
+                        $border-radius: 3px; 
+                        margin-bottom: 2rem;
+                        .input-box {
+                            width:100%;
+                            max-width: 25rem;
+                            display: flex;
+                            input, button { padding:.7rem; }  
+                            input {
+                                background: $background-color;    
+                                border-top-left-radius: $border-radius;
+                                border-bottom-left-radius: $border-radius;
+                                border:none;
+                                flex:1;
+                            }
+                            button {
+                                background: darken($background-color, 10%);
+                                border-top-right-radius: $border-radius;
+                                border-bottom-right-radius: $border-radius;
+                                border:none;
+                                font-weight: 600;
+                                color:$shuttle-grey;
+                                transition: all .3s;
+                                @include hover-supported {background: $medium-grey; }
+                            }
+                        }
+                    }
+                    .changelog h4 { color: $red; }
+                }
+            }
             // FORM PER MODIFICARE PIANTA DELLA MAPPA
             .edit-map-tab {
-
-                .form{
-
-                    display: flex;
-                    justify-content: center;
-                    align-items: center;
+                display: flex;
+                flex-direction: column;
+                .top-section {
+                    margin-bottom: .5rem; 
+                    .section-title { margin: 0rem; }
+                    .error-msg {
+                        color:$red;
+                        transition: opacity .4s;
+                        display: inline-block;
+                    }
+                }
+                .canvas-wrapper  {
+                    flex:1;
                     position: relative;
                     #ClassroomMap { 
                         position: absolute; 
@@ -294,15 +371,22 @@
                         canvas {  padding: 5px 0; }
                     }
                 }
-                .functions .desks-counter{
-                    color:$dark-grey;
-                    font-weight: bold;
-                    flex:1;
-                    cursor: default;
-                }
+            }
+            .functions .desks-counter{
+                color:$dark-grey;
+                font-weight: bold;
+                flex:1;
+                cursor: default;
             }
         }
     }
+
+    
+    /*
+    -----------------------------
+        SCHERMATE: IMPOSTAZIONI 
+    -----------------------------
+    */
 
     &__SettingsView {
         border-radius: 10px;

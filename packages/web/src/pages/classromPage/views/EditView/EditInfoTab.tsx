@@ -1,57 +1,51 @@
 import * as React from "react";
-import { Classroom, MutationEditClassroomArgs } from '../../../../generated/graphql';
+import { Classroom, MutationEditClassroomArgs, Omit } from '../../../../generated/graphql';
+import { TabsEditsErrors } from '.';
 
 interface EditInfoTabProps {
-    /** classe */
+    /** Classe */
     classroom: Classroom;
-    /** Funzione che richiede al server il salvataggio delle modifiche */
-    saveEdits: (edits: MutationEditClassroomArgs) => void;
+    /** Modifiche */
+    edits: MutationEditClassroomArgs;
+    /** Funzione che manda al componente parente le modifiche apportate */
+    sendEdits: (edits: Omit<MutationEditClassroomArgs, "id">, errors?: TabsEditsErrors) => void;
 }
 
-export const EditInfoTab: React.FC<EditInfoTabProps> = ({ classroom, saveEdits }) => {
-    // nome della classe
-    const [name, setName] = React.useState(classroom.name);
-    // email associata alla classe
-    const [email, setEmail] = React.useState(classroom.email);
+export const EditInfoTab: React.FC<EditInfoTabProps> = ({ sendEdits, edits }) => {
 
+    /**
+     * Funzione chiamata quando avviene nel campo del nome
+     */
     const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { value } = e.target;
-        setName(value);
-    }
-
-    const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const { value } = e.target;
-        setEmail(value);
+        // setName(value);
+        if (value.length < 3)
+            sendEdits({ name: value }, { name: true });
+        else sendEdits({ name: value }, { name: false });
     }
 
     /**
-     * Funzione chiamata al click del pulsante per salvare le modifiche
+     * Funione chiamata quando avviene nel campo dell'email
      */
-    const handleSaveButton = () => {
-        saveEdits({ name, id: classroom.id });
+    const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { value } = e.target;
+        // setEmail(value);
+        if (value.length < 3)
+            sendEdits({ email: value }, { email: true });
+        else sendEdits({ email: value }, { email: false });
     }
 
     return (
         <div className="edit-info-tab">
-            <div className="form">
-                <div className="fields">
-                    <div className="field">
-                        <label htmlFor="name-input">Nome della classe</label>
-                        <input type="text" value={name} id="name-input" onChange={handleNameChange} />
-                    </div>
-                    <div className="field">
-                        <label htmlFor="email-input">Email asscoiata</label>
-                        <input type="email" value={email} id="email-input" onChange={handleEmailChange} />
-                    </div>
+            <div className="fields">
+                <div className="field">
+                    <label htmlFor="name-input" className="section-title">Nome della classe</label>
+                    <input type="text" value={edits.name!} id="name-input" onChange={handleNameChange} />
                 </div>
-            </div>
-            <div className="functions">
-                <button className="btn" title="Ripristina" >
-                    ripristina
-                </button>
-                <button className="btn" title="Salva le modifiche" onClick={handleSaveButton}>
-                    salva
-                </button>
+                <div className="field">
+                    <label htmlFor="email-input" className="section-title">Email asscoiata</label>
+                    <input type="email" value={edits.email!} id="email-input" onChange={handleEmailChange} />
+                </div>
             </div>
         </div>
     );

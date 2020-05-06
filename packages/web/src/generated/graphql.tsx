@@ -56,6 +56,7 @@ export type MutationCreateClassroomArgs = {
 export type MutationEditClassroomArgs = {
   id: Scalars['ID'];
   name?: Maybe<Scalars['String']>;
+  email?: Maybe<Scalars['String']>;
   desks?: Maybe<Array<DeskInput>>;
   students?: Maybe<Array<Scalars['String']>>;
 };
@@ -146,6 +147,7 @@ export type ShuffleDesksMutation = (
 export type EditClassroomMutationVariables = {
   id: Scalars['ID'];
   name?: Maybe<Scalars['String']>;
+  email?: Maybe<Scalars['String']>;
   desks?: Maybe<Array<DeskInput>>;
   students?: Maybe<Array<Scalars['String']>>;
 };
@@ -155,11 +157,7 @@ export type EditClassroomMutation = (
   { __typename?: 'Mutation' }
   & { editClassroom: (
     { __typename?: 'Classroom' }
-    & Pick<Classroom, 'name' | 'email' | 'students'>
-    & { desks: Array<(
-      { __typename?: 'Desk' }
-      & Pick<Desk, 'x' | 'y' | 'orientation'>
-    )> }
+    & Pick<Classroom, 'id'>
   ) }
 );
 
@@ -327,16 +325,9 @@ export type ShuffleDesksMutationHookResult = ReturnType<typeof useShuffleDesksMu
 export type ShuffleDesksMutationResult = ApolloReactCommon.MutationResult<ShuffleDesksMutation>;
 export type ShuffleDesksMutationOptions = ApolloReactCommon.BaseMutationOptions<ShuffleDesksMutation, ShuffleDesksMutationVariables>;
 export const EditClassroomDocument = gql`
-    mutation EditClassroom($id: ID!, $name: String, $desks: [DeskInput!], $students: [String!]) {
-  editClassroom(id: $id, name: $name, desks: $desks, students: $students) {
-    name
-    email
-    students
-    desks {
-      x
-      y
-      orientation
-    }
+    mutation EditClassroom($id: ID!, $name: String, $email: String, $desks: [DeskInput!], $students: [String!]) {
+  editClassroom(id: $id, name: $name, email: $email, desks: $desks, students: $students) {
+    id
   }
 }
     `;
@@ -363,6 +354,7 @@ export type EditClassroomComponentProps = Omit<ApolloReactComponents.MutationCom
  *   variables: {
  *      id: // value for 'id'
  *      name: // value for 'name'
+ *      email: // value for 'email'
  *      desks: // value for 'desks'
  *      students: // value for 'students'
  *   },

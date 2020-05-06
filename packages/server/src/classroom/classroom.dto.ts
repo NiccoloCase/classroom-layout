@@ -40,7 +40,6 @@ export class EditClassroomDTO {
     /** Banchi */
     @IsOptional()
     @IsArray()
-    @HasSameLength("students")
     desks?: DeskInput[];
     /** Studenti */
     @IsOptional()

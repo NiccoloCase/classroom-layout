@@ -53,16 +53,9 @@ export const shuffleDesksMutation = gql`
  * Cabia i banchi
  */
 export const editClassroomMutation = gql`
-    mutation EditClassroom($id: ID!, $name: String, $desks: [DeskInput!], $students: [String!]){
-        editClassroom(id: $id, name: $name, desks: $desks, students: $students) {
-            name
-            email
-            students
-            desks {
-                x
-                y
-                orientation
-            }
+    mutation EditClassroom($id: ID!, $name: String, $email: String, $desks: [DeskInput!], $students: [String!]){
+        editClassroom(id: $id, name: $name, email: $email, desks: $desks, students: $students) {
+            id
         }
     }
 `

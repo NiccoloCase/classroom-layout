@@ -43,7 +43,7 @@ export const ArrangeDesks: React.FC<ArrangeDesksProps> =
         React.useEffect(() => {
             if (desks.length === studensNumber) {
                 // trasla i banchi verso l'origine
-                const translatedBenches = ClassRoomMap.centerDesks(desks);
+                const translatedBenches = Desk.centerDesks(desks);
                 // converte i banchi in oggetti 
                 const desksObj = Desk.desksToObjs(translatedBenches);
                 // invia i banchi
