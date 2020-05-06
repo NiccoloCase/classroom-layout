@@ -64,39 +64,6 @@ interface ClassRoomMapState {
 }
 
 class ClassRoomMap extends React.Component<ClassRoomMapProps> {
-    /*
-    -----------------------
-        FUNZIONI STATICHE
-    -----------------------
-    */
-
-    /**
-     * Trasla i banchi contenuti nell'array passato al punto all'origine (0,0)
-     * @param desks Banchi da traslare
-     */
-    static centerDesks(desks: DeskInput[]): Desk[] {
-        const benches = Desk.objsToDesks(desks);
-        // trova le componenti del vettore per le traslazioni 
-        // (coincidono con la distanza dagli assi del banco a loro piu' vicino)   
-        const offsetX = Math.min(...benches.map(desk => Math.min(desk.x1, desk.x2)));
-        const offsetY = Math.min(...benches.map(desk => Math.min(desk.y1, desk.y2)));
-        // ESEGUE LA TRASLAZIONE 
-        for (const desk of benches) {
-            // traslazione orizzontale
-            desk.x1 = desk.x1 - offsetX;
-            desk.x2 = desk.x2 - offsetX;
-            // traslazione veritcale
-            desk.y1 = desk.y1 - offsetY;
-            desk.y2 = desk.y2 - offsetY;
-        }
-        return benches;
-    }
-
-    /*
-    -----------------------
-        ISTANZA
-    -----------------------
-    */
 
     // CANVAS
     canvas: HTMLCanvasElement;
@@ -132,8 +99,8 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
         };
         // BANCHI
         this.highlightedDesk = props.highlightedDesk;
-        if (props.defaultDesks) this.desks = ClassRoomMap.centerDesks(props.defaultDesks);
-        else if (props.desks) this.desks = ClassRoomMap.centerDesks(props.desks)
+        if (props.defaultDesks) this.desks = Desk.centerDesks(props.defaultDesks);
+        else if (props.desks) this.desks = Desk.centerDesks(props.desks)
         else this.desks = [];
         // STUDENTI
         this.students = props.students;
@@ -166,8 +133,10 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
         // VARIAZIONE NEI BANCHI
         if (this.props.desks && this.desks !== Desk.objsToDesks(this.props.desks)) {
             // controlla se deve centare i banchi
+            console.log(this.props.desks);
             if (!this.props.disableAutofocus) {
-                this.desks = ClassRoomMap.centerDesks(this.props.desks);
+                console.log("dentro");
+                this.desks = Desk.centerDesks(this.props.desks);
                 // imposta la nuova scala
                 this.defaultScale = this.getScale(this.props.width, this.props.height, this.desks);
                 this.scale = this.defaultScale;
@@ -308,6 +277,8 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
         // se non è rimasato nessun altro salvateggio vecchio 
         // riaggiorna il componente 
         if (this.desksHistory.length === 0) this.forceUpdate();
+        // chiama la funzione callback
+        this.callback();
     }
 
     /**

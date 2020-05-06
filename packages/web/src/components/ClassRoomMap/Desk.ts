@@ -42,6 +42,28 @@ export class Desk {
         }
     }
 
+    /**
+     * Trasla i banchi contenuti nell'array passato al punto all'origine (0,0)
+     * @param desks Banchi da traslare
+     */
+    static centerDesks(desks: DeskInput[]): Desk[] {
+        const benches = Desk.objsToDesks(desks);
+        // trova le componenti del vettore per le traslazioni 
+        // (coincidono con la distanza dagli assi del banco a loro piu' vicino)   
+        const offsetX = Math.min(...benches.map(desk => Math.min(desk.x1, desk.x2)));
+        const offsetY = Math.min(...benches.map(desk => Math.min(desk.y1, desk.y2)));
+        // ESEGUE LA TRASLAZIONE 
+        for (const desk of benches) {
+            // traslazione orizzontale
+            desk.x1 = desk.x1 - offsetX;
+            desk.x2 = desk.x2 - offsetX;
+            // traslazione veritcale
+            desk.y1 = desk.y1 - offsetY;
+            desk.y2 = desk.y2 - offsetY;
+        }
+        return benches;
+    }
+
     x1: number;
     y1: number;
     x2: number;
