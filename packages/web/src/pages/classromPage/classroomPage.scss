@@ -290,6 +290,7 @@
                             border-radius: 5px;    
                             width: 100%;
                         }
+                        h5 { color:$red; }
                     }
                 }
             }
@@ -341,8 +342,18 @@
                                 font-weight: 600;
                                 color:$shuttle-grey;
                                 transition: all .3s;
-                                @include hover-supported {background: $medium-grey; }
+                                &:disabled { 
+                                    background: $background-color; 
+                                    color: $medium-grey;   
+                                }
+                                &:enabled {
+                                    @include hover-supported {background: $medium-grey; }
+                                }
                             }
+                        }
+                        .input-error {
+                            font-size: .8rem;
+                            color: $shuttle-grey;
                         }
                     }
                     .changelog h4 { color: $red; }
@@ -354,11 +365,12 @@
                 flex-direction: column;
                 .top-section {
                     margin-bottom: .5rem; 
-                    .section-title { margin: 0rem; }
-                    .error-msg {
-                        color:$red;
-                        transition: opacity .4s;
-                        display: inline-block;
+                    .section-title { 
+                        margin: 0rem;
+                        &.error { 
+                            color: $red; 
+                            font-weight: bold;
+                        }
                     }
                 }
                 .canvas-wrapper  {

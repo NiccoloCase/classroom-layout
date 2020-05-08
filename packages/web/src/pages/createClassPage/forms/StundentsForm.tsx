@@ -1,13 +1,14 @@
 import * as React from 'react'
-import * as _ from "lodash";
-import validator from "validator";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faTimes } from '@fortawesome/free-solid-svg-icons'
 import { faCircle } from '@fortawesome/free-regular-svg-icons';
+import { useValueValidation, validateClassroomStudentName } from '../../../helper';
+import config from "@crl/config";
+
 /** Numero massimo degli studenti */
 const MAX_STDUENTS = 30;
 
-const STUDENTS_TEST = ["Niccolò", "Iacopo", "Caio", "Sempronio"];
+const defaultStudents = config.isProduction ? [] : ["Prova 1", "Prova 2", "Prova 3", "Prova 4"];
 
 interface StundentsFormProps {
     storeValues: (students: null | string[], id?: number | string) => void;
@@ -16,10 +17,11 @@ interface StundentsFormProps {
 }
 
 export const StundentsForm: React.FC<StundentsFormProps> = ({ storeValues, id, containerHeight }) => {
-    const [students, setStudents] = React.useState<string[]>(STUDENTS_TEST);
+    const [students, setStudents] = React.useState<string[]>(defaultStudents);
     const [inputValue, setInputValue] = React.useState("");
-    const [inputError, setInputError] = React.useState<string | null | undefined>(undefined);
+    const [studentsValidation, validateStudents] = useValueValidation(validateClassroomStudentName);
     const studentsContainer = React.useRef<HTMLInputElement>(null);
+
     // Funzione chiamata ogni volta che avviene un cambiamneto nella lista degli studenti
     React.useEffect(() => {
         // SCROLL DOWN 
@@ -37,18 +39,6 @@ export const StundentsForm: React.FC<StundentsFormProps> = ({ storeValues, id, c
         else storeValues(null, id);
     }, [students]);
 
-
-    /**
-     * Controlla se il valore passato è validto come nome di uno studente
-     * @param value 
-     */
-    const validateInputBox = (value: string) => {
-        if (validator.isEmpty(value)) setInputError("E' richiesto un nome");
-        else if (!validator.isLength(value, { min: 3 })) setInputError("Il nome è troppo corto");
-        else if (!validator.isLength(value, { max: 20 })) setInputError("Il nome è troppo lungo");
-        else if (_.includes(students, value)) setInputError("Hai già aggiunto uno studente con questo nome");
-        else setInputError(null);
-    }
 
     /**
      * Restituisce un messagio in cui è detto il numero di studenti aggiunti
@@ -107,17 +97,20 @@ export const StundentsForm: React.FC<StundentsFormProps> = ({ storeValues, id, c
                         <input
                             value={inputValue}
                             type="text" className="input" placeholder="Cognome dello studente"
-                            onKeyPress={e => { if (e.key === "Enter" && inputError === null) addStudent(); }}
+                            onKeyPress={e => {
+                                if (e.key === "Enter" && studentsValidation.hasPassed)
+                                    addStudent();
+                            }}
                             onChange={e => {
                                 setInputValue(e.target.value);
-                                validateInputBox(e.target.value)
+                                validateStudents(e.target.value, { students })
                             }}
                         />
                     </div>
                     <button
                         onClick={addStudent}
-                        disabled={inputError !== null}
-                        title={inputError !== null ? inputError : undefined}>
+                        disabled={!studentsValidation.hasPassed}
+                        title={studentsValidation.msg ? studentsValidation.msg : undefined}>
                         Aggiungi
                     </button>
                 </div>
