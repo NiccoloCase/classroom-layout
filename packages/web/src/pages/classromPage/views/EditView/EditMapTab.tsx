@@ -1,4 +1,5 @@
 import * as React from "react";
+import classnames from "classnames";
 import { HashLoader } from 'react-spinners';
 import { DeskInput, Classroom, MutationEditClassroomArgs, Omit } from '../../../../generated/graphql';
 import { ClassRoomMap, /* Desk */ } from '../../../../components/ClassRoomMap';
@@ -10,7 +11,7 @@ interface EditMapTabProps {
     /** Modifiche */
     edits: MutationEditClassroomArgs;
     /** Funzione che manda al componente parente le modifiche apportate */
-    sendEdits: (edits: Omit<MutationEditClassroomArgs, "id">, errors?: TabsEditsErrors) => void;
+    sendEdits: (edits: Omit<MutationEditClassroomArgs, "id">, errors?: TabsEditsErrors | boolean) => void;
 }
 
 export const EditMapTab: React.FC<EditMapTabProps> = ({ classroom, sendEdits, edits }) => {
@@ -42,33 +43,33 @@ export const EditMapTab: React.FC<EditMapTabProps> = ({ classroom, sendEdits, ed
      */
     const handleDesksChanges = (desksRaw: DeskInput[]) => {
         if (desksRaw.length === studentsNumber)
-            sendEdits({ desks: desksRaw }, { desks: false });
-        else sendEdits({ desks: desksRaw }, { desks: true })
+            sendEdits({ desks: desksRaw }, false);
+        else sendEdits({ desks: desksRaw }, true)
     }
 
     /**
-     * Mostra gli avvisi di errore
+     * Renderizza il messaggio informativo
      */
-    const renderWarnings = () => {
-        let warning;
+    const renderText = () => {
+        const defaultText = `Hai disposto ${desks.length} banchi.`; // messaggio predefinito
+        let error; // messaggio di errrore
         const diff = desks.length - studentsNumber;
         if (desks.length > studentsNumber)
-            warning = `Hai disposto ${Math.abs(diff)} banc${Math.abs(diff) === 1 ? "o" : "hi"} in più.`;
+            error = `Hai disposto ${Math.abs(diff)} banc${Math.abs(diff) === 1 ? "o" : "hi"} in più.`;
         else if (desks.length < studentsNumber)
-            warning = `Devi ancora disporre ${Math.abs(diff)} banc${Math.abs(diff) === 1 ? "o" : "hi"}.`;
+            error = `Devi ancora disporre ${Math.abs(diff)} banc${Math.abs(diff) === 1 ? "o" : "hi"}.`;
 
         return (
-            <h4 className="error-msg" style={{ opacity: warning ? 1 : 0 }}>
-                {warning}
-            </h4>
+            <p className={classnames("section-title", { error })}>
+                {error ? error : defaultText}
+            </p>
         );
     }
 
     return (
         <div className="edit-map-tab">
             <div className="top-section">
-                <p className="section-title">Hai disposto {desks.length} banchi.</p>
-                {renderWarnings()}
+                {renderText()}
             </div>
             <div className="canvas-wrapper" ref={canvasWrapper}>
                 {canvasDims ?

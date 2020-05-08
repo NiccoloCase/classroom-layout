@@ -1,7 +1,9 @@
 import * as React from "react";
+import { isEmpty } from "lodash";
 import { Classroom, MutationEditClassroomArgs, Omit } from '../../../../generated/graphql';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTimes } from '@fortawesome/free-solid-svg-icons';
+import { useValueValidation, validateClassroomStudentName } from '../../../../helper';
 import { TabsEditsErrors } from '.';
 
 interface EditStudentsTabProps {
@@ -10,12 +12,13 @@ interface EditStudentsTabProps {
     /** Modifiche */
     edits: MutationEditClassroomArgs;
     /** Funzione che manda al componente parente le modifiche apportate */
-    sendEdits: (edits: Omit<MutationEditClassroomArgs, "id">, errors?: TabsEditsErrors) => void;
+    sendEdits: (edits: Omit<MutationEditClassroomArgs, "id">, errors?: TabsEditsErrors | boolean) => void;
 }
 
 export const EditStudentsTab: React.FC<EditStudentsTabProps> =
     ({ classroom, sendEdits, edits: { students, desks } }) => {
         const [inputValue, setInputValue] = React.useState("");
+        const [studentsValidation, validateStudents] = useValueValidation(validateClassroomStudentName);
 
         /**
          * Funzione chimata ad ogni modifica di stato dell'input box
@@ -23,6 +26,7 @@ export const EditStudentsTab: React.FC<EditStudentsTabProps> =
         const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
             const { value } = e.target;
             setInputValue(value);
+            validateStudents(value);
         }
 
         /**
@@ -103,8 +107,11 @@ export const EditStudentsTab: React.FC<EditStudentsTabProps> =
                             <input type="text" placeholder="Cognome di un nuovo studente"
                                 value={inputValue} onChange={handleInputChange}
                             />
-                            <button onClick={addStudent}>Aggiungi</button>
+                            <button onClick={addStudent} disabled={!studentsValidation.hasPassed}>
+                                Aggiungi
+                            </button>
                         </div>
+                        {!isEmpty(inputValue) && <p className="input-error">{studentsValidation.msg}</p>}
                     </div>
                     {renderChangelog()}
                 </div>

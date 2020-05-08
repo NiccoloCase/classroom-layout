@@ -29,9 +29,8 @@ export const EditView: React.FC<EditViewProps> = ({ classroom, onClassroomIsUpda
     const [tabPage, setTabPage] = React.useState(0);
     // modifiche
     const [edits, setEdits] = React.useState<MutationEditClassroomArgs>(classroom);
-    // 
+    // errori
     const [tabsErrors, setTabsErrors] = React.useState<TabsEditsErrors>({});
-
     // GRAPHQL
     const [editClass] = useEditClassroomMutation();
 
@@ -62,11 +61,22 @@ export const EditView: React.FC<EditViewProps> = ({ classroom, onClassroomIsUpda
 
     /**
      * Funzione passata ai componenti figli per
-     * aggiungere le modifiche e rimuove / aggiunge gli errori
+     * aggiungere modifiche e rimuove / aggiunge errori
+     * @param changes modifiche effettuate 
+     * @param errors errori riscontarti:
+     * può essere passato un oggetto nel quale è specificato quale campo è errato,
+     * oppure può essere passato un valore booleano che viene applicato a tutti i campi
+     * contenuti nell'oggetto delle modifiche (primo argomento)
      */
-    const saveEdits = async (changes: MutationEditClassroomArgs, errors?: TabsEditsErrors) => {
+    const saveEdits = async (changes: MutationEditClassroomArgs, errors?: TabsEditsErrors | boolean) => {
         setEdits({ ...edits, ...changes });
-        setTabsErrors({ ...tabsErrors, ...errors });
+        // Imposta gli errori
+        if (typeof errors === "boolean") {
+            const newErrors = { ...tabsErrors };
+            for (const edit of Object.keys(changes)) newErrors[edit] = errors;
+            setTabsErrors(newErrors);
+        }
+        else setTabsErrors({ ...tabsErrors, ...errors });
     }
 
     /**
