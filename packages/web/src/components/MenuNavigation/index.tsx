@@ -1,14 +1,10 @@
 import * as React from "react";
 import classnames from "classnames";
-import { NavLink, withRouter } from "react-router-dom";
+import { NavLink, withRouter, Link } from "react-router-dom";
 import * as styles from "./MenuNavigation.module.scss";
 
-/* interface MenuNavigationProps {
-  light?: boolean
-} */
-
 const MenuNavigation: React.FC = () => {
-
+  // se il manu ad humburger è aperto
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
 
   return (
@@ -18,7 +14,7 @@ const MenuNavigation: React.FC = () => {
         <div className={styles.logoImage}>
           <img src={require("../../assets/images/logo.png")} alt="LOGO" />
         </div>
-        <h4 className={styles.logo}>Classroom layout</h4>
+        <Link to="/" className={styles.logo}>Classroom layout</Link>
       </div>
       <nav className={styles.menuNavigationNav}>
         {/* MENU AD HAMBURGER */}

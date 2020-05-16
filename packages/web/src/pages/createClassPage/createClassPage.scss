@@ -32,7 +32,7 @@ $max-form-height: 80vh;
         .form {
             @include box-shadow;
             background: #fff;
-            border-radius: 10px;
+            border-radius: 4px;
             display: flex;
             flex-direction: column;
             width: $form-width;

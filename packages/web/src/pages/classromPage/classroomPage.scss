@@ -32,111 +32,11 @@
             }
         }
     }
-
-    .right-menu {
-        background: #fff;
-        display: flex;
-        flex-direction: column;
-        min-width: 13rem;
-        @include side-shadow(left);
-  
-        .classroom-info {
-            margin-top: 2rem;
-            padding: 1rem;
-            font-family: "Lato";
-            text-align: right;
-            color: $dark-grey;
-            &__title {           
-              display: flex;
-              justify-content: flex-end;
-              align-items: center;
-              :first-child { margin-right: .5rem;}
-              h2 {text-transform: uppercase;}
-              svg {
-                color: $shuttle-grey;
-                transition: all .4s;
-                &:hover {
-                 transform: rotate(45deg);
-                }
-              }
-             }
-            &__name {font-weight:500; }
-            &__id {
-                font-weight:300;
-                color:$medium-grey;
-                user-select: all;
-            }
-        }
-        .students {
-            padding: 1rem;
-            color: $dark-grey;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            .section-title {
-                font-family: "Lato";
-                font-weight: 800;
-                border-top: solid 1px $light-grey;
-                text-align: center;
-                padding: 1rem;
-            }
-
-            .students-container {
-                flex:1;
-                
-                .student {
-                    display: flex;
-                    align-items: center;
-                    border:none;
-                    font-size: .9rem;
-                    margin-bottom: .5rem;
-                    padding: 0 10px 0 0;
-                    background: $background-color;
-                    border-radius: 10px;
-                    border-top-left-radius: 1rem;
-                    border-bottom-left-radius: 1rem;
-                    transition: all .4s;
-                    // non selezionabile
-                    -webkit-user-select: none;  
-                    -moz-user-select: none;     
-                    -ms-user-select: none;    
-                    user-select: none;        
-
-                    &.active { background: $medium-grey; }
-        
-                    // THUMBNAIL
-                    $colors: #F5D1D1, #D1F5E9, #D1D7F9, #FFEDCB, #D1EFF9;
-                    @for $i from 1 through length($colors) {
-                        &:nth-child(#{length($colors)}n+#{$i}) {
-                            .thumbnail {
-                              background: nth($colors, $i);
-                                color: darken(nth($colors, $i), 30%);
-                                //background: $shuttle-grey;
-                                //color: nth($colors, $i);
-                            }
-                        }
-                    }
-                    .thumbnail {
-                        $radius: 1rem;
-                        width: $radius * 2;
-                        height: $radius * 2;
-                        border-radius: $radius;
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                        text-transform: uppercase;
-                        margin-right: 10px;
-                    }
-                } 
-            }
-        }
-    }
     .content {
         flex:1;
         display: flex;
         justify-content: center;
         align-items: center;
-        padding: 2rem;
 
         .title {
             font-family: "Montserrat";
@@ -151,6 +51,8 @@
         SCHERMATE 
     -------------------------
     */
+
+    $view_padding: 2rem;
 
     &__MapView, &__EditView {
         flex:1;
@@ -201,180 +103,19 @@
     -------------------------
     */
 
-    &__MapView .card {
-        flex-direction: column;
-        padding: 1rem;
-        .canvas-wrapper {
-            height: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            position: relative;
-            #ClassroomMap { 
-                position: absolute; 
-                top:0; 
-                left:0;
-                canvas {  padding: 5px 0; }
-            }
-        }
-    }
-
-    
-    /*
-    -------------------------
-        SCHERMATE: MODIFICA 
-    -------------------------
-    */
-    
-    &__EditView .card {
-        $border-radius: 3px;
-        border-radius: $border-radius;
-        .card__tab-menu {
-            background: darken($background-color, 6%);
-            border-top-left-radius: $border-radius;
-            border-bottom-left-radius: $border-radius;
-            .tabs {
-                margin-top: 1rem;
-                display: flex;
-                flex-direction: column;
-                .tab {
-                    padding: 3rem 1rem;
-                    width: 100%;
-                    border: none;
-                    border-left: solid 3px transparent;
-                    background: transparent;
-                    text-transform: uppercase;
-                    color: darken($medium-grey, 6%);
-                    font-weight: 600;
-                    transition: all .4s;
-                    transition-property: background, color;
-                    &.current {
-                        border-left-color: $primary-color;
-                        color: $primary-color;
-                        background: #fff;
-                    }
-                    .error-mark {
-                        margin-left: .3rem;
-                        color: $red;
-                    }
-                }
-            }
-        }
-
-        .card__content {         
+    &__MapView {
+        display: flex;
+        .left-section {
             flex:1;
-            padding: 1rem;
-            padding-left: 2rem;
-            display: flex;
-            flex-direction: column;
-
-            .edit-info-tab, .edit-students-tab, .edit-map-tab{ height: 100%;  }
-            .section-title {
-                font-weight: 500;
-                color:$shuttle-grey;
-                margin-bottom: .5rem;
-            }
-
-            // FORM PER MODIFICARE INFORMAZIONI GENERALI
-            .edit-info-tab {
-                .fields {
-                    width: 70%;
-                    .field {
-                        margin: 3rem 0;
-                        width: 100%;
-                        input {
-                            background: $light-grey;
-                            padding: 0.7rem 0.5rem;
-                            font-size: 1rem;
-                            border: none;
-                            border-radius: 5px;    
-                            width: 100%;
-                        }
-                        h5 { color:$red; }
-                    }
-                }
-            }
-            // FORM PER MODIFICARE GLI STUDENTI
-            .edit-students-tab {
-                overflow-y: auto;
-                .students-wrapper {
-                    overflow-y: auto;
-                    display: grid;
-                    grid-template-columns: repeat(auto-fill, minmax(9em, 1fr));
-                    .student {
-                        margin: .3rem 0;
-                        padding: .5rem 1rem;
-                        border-radius: 3px;
-                        background: $background-color;
-                        width:fit-content;
-                        height: fit-content;
-                        display: flex;
-                        align-items: center;
-                        svg {
-                            margin-left: 1rem;
-                            color: $shuttle-grey;
-                            @include hover-supported { color:$red; }
-                        }
-                    }
-                }
-                .bottom-section {
-                    margin: 2rem 0;
-                    .add-student-input {   
-                        $border-radius: 3px; 
-                        margin-bottom: 2rem;
-                        .input-box {
-                            width:100%;
-                            max-width: 25rem;
-                            display: flex;
-                            input, button { padding:.7rem; }  
-                            input {
-                                background: $background-color;    
-                                border-top-left-radius: $border-radius;
-                                border-bottom-left-radius: $border-radius;
-                                border:none;
-                                flex:1;
-                            }
-                            button {
-                                background: darken($background-color, 10%);
-                                border-top-right-radius: $border-radius;
-                                border-bottom-right-radius: $border-radius;
-                                border:none;
-                                font-weight: 600;
-                                color:$shuttle-grey;
-                                transition: all .3s;
-                                &:disabled { 
-                                    background: $background-color; 
-                                    color: $medium-grey;   
-                                }
-                                &:enabled {
-                                    @include hover-supported {background: $medium-grey; }
-                                }
-                            }
-                        }
-                        .input-error {
-                            font-size: .8rem;
-                            color: $shuttle-grey;
-                        }
-                    }
-                    .changelog h4 { color: $red; }
-                }
-            }
-            // FORM PER MODIFICARE PIANTA DELLA MAPPA
-            .edit-map-tab {
-                display: flex;
+            padding: $view_padding;
+            .card {
                 flex-direction: column;
-                .top-section {
-                    margin-bottom: .5rem; 
-                    .section-title { 
-                        margin: 0rem;
-                        &.error { 
-                            color: $red; 
-                            font-weight: bold;
-                        }
-                    }
-                }
-                .canvas-wrapper  {
-                    flex:1;
+                padding: 1rem;
+                .canvas-wrapper {
+                    height: 100%;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
                     position: relative;
                     #ClassroomMap { 
                         position: absolute; 
@@ -384,15 +125,277 @@
                     }
                 }
             }
-            .functions .desks-counter{
-                color:$dark-grey;
-                font-weight: bold;
-                flex:1;
-                cursor: default;
+        }
+        .right-section {
+            background: #fff;
+            display: flex;
+            flex-direction: column;
+            min-width: 13rem;
+            @include side-shadow(left);
+    
+            .classroom-info {
+                margin-top: 2rem;
+                padding: 1rem;
+                font-family: "Lato";
+                text-align: right;
+                color: $dark-grey;
+                &__title {           
+                display: flex;
+                justify-content: flex-end;
+                align-items: center;
+                :first-child { margin-right: .5rem;}
+                h2 {text-transform: uppercase;}
+                svg {
+                    color: $shuttle-grey;
+                    transition: all .4s;
+                    &:hover {
+                    transform: rotate(45deg);
+                    }
+                }
+                }
+                &__name {font-weight:500; }
+                &__id {
+                    font-weight:300;
+                    color:$medium-grey;
+                    user-select: all;
+                }
+            }
+            .students {
+                padding: 1rem;
+                color: $dark-grey;
+                display: flex;
+                flex-direction: column;
+                overflow: hidden;
+                .section-title {
+                    font-family: "Lato";
+                    font-weight: 800;
+                    border-top: solid 1px $light-grey;
+                    text-align: center;
+                    padding: 1rem;
+                }
+
+                .students-container {
+                    flex:1;
+                    
+                    .student {
+                        display: flex;
+                        align-items: center;
+                        border:none;
+                        font-size: .9rem;
+                        margin-bottom: .5rem;
+                        padding: 0 10px 0 0;
+                        background: $background-color;
+                        border-radius: 10px;
+                        border-top-left-radius: 1rem;
+                        border-bottom-left-radius: 1rem;
+                        transition: all .4s;
+                        // non selezionabile
+                        -webkit-user-select: none;  
+                        -moz-user-select: none;     
+                        -ms-user-select: none;    
+                        user-select: none;        
+                        &.active { background: $medium-grey; }
+                        // THUMBNAIL
+                        $colors: #F5D1D1, #D1F5E9, #D1D7F9, #FFEDCB, #D1EFF9;
+                        @for $i from 1 through length($colors) {
+                            &:nth-child(#{length($colors)}n+#{$i}) {
+                                .thumbnail {
+                                    background: nth($colors, $i);
+                                    color: darken(nth($colors, $i), 30%);
+                                }
+                            }
+                        }
+                        .thumbnail {
+                            $radius: 1rem;
+                            width: $radius * 2;
+                            height: $radius * 2;
+                            border-radius: $radius;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            text-transform: uppercase;
+                            margin-right: 10px;
+                        }
+                    } 
+                }
             }
         }
     }
+    /*
+    -------------------------
+        SCHERMATE: MODIFICA 
+    -------------------------
+    */
 
+    &__EditView {
+        padding: $view_padding;
+        .card {
+            $border-radius: 3px;
+            border-radius: $border-radius;
+            .card__tab-menu {
+                background: darken($background-color, 6%);
+                border-top-left-radius: $border-radius;
+                border-bottom-left-radius: $border-radius;
+                .tabs {
+                    margin-top: 1rem;
+                    display: flex;
+                    flex-direction: column;
+                    .tab {
+                        padding: 3rem 1rem;
+                        width: 100%;
+                        border: none;
+                        border-left: solid 3px transparent;
+                        background: transparent;
+                        text-transform: uppercase;
+                        color: darken($medium-grey, 6%);
+                        font-weight: 600;
+                        transition: all .4s;
+                        transition-property: background, color;
+                        &.current {
+                            border-left-color: $primary-color;
+                            color: $primary-color;
+                            background: #fff;
+                        }
+                        .error-mark {
+                            margin-left: .3rem;
+                            color: $red;
+                        }
+                    }
+                }
+            }
+
+            .card__content {         
+                flex:1;
+                padding: 1rem;
+                padding-left: 2rem;
+                display: flex;
+                flex-direction: column;
+
+                .edit-info-tab, .edit-students-tab, .edit-map-tab{ height: 100%;  }
+                .section-title {
+                    font-weight: 500;
+                    color:$shuttle-grey;
+                    margin-bottom: .5rem;
+                }
+
+                // FORM PER MODIFICARE INFORMAZIONI GENERALI
+                .edit-info-tab {
+                    .fields {
+                        width: 70%;
+                        .field {
+                            margin: 3rem 0;
+                            width: 100%;
+                            input {
+                                background: $light-grey;
+                                padding: 0.7rem 0.5rem;
+                                font-size: 1rem;
+                                border: none;
+                                border-radius: 5px;    
+                                width: 100%;
+                            }
+                            h5 { color:$red; }
+                        }
+                    }
+                }
+                // FORM PER MODIFICARE GLI STUDENTI
+                .edit-students-tab {
+                    overflow-y: auto;
+                    .students-wrapper {
+                        overflow-y: auto;
+                        display: grid;
+                        grid-template-columns: repeat(auto-fill, minmax(9em, 1fr));
+                        .student {
+                            margin: .3rem 0;
+                            padding: .5rem 1rem;
+                            border-radius: 3px;
+                            background: $background-color;
+                            width:fit-content;
+                            height: fit-content;
+                            display: flex;
+                            align-items: center;
+                            svg {
+                                margin-left: 1rem;
+                                color: $shuttle-grey;
+                                @include hover-supported { color:$red; }
+                            }
+                        }
+                    }
+                    .bottom-section {
+                        margin: 2rem 0;
+                        .add-student-input {   
+                            $border-radius: 3px; 
+                            margin-bottom: 2rem;
+                            .input-box {
+                                width:100%;
+                                max-width: 25rem;
+                                display: flex;
+                                input, button { padding:.7rem; }  
+                                input {
+                                    background: $background-color;    
+                                    border-top-left-radius: $border-radius;
+                                    border-bottom-left-radius: $border-radius;
+                                    border:none;
+                                    flex:1;
+                                }
+                                button {
+                                    background: darken($background-color, 10%);
+                                    border-top-right-radius: $border-radius;
+                                    border-bottom-right-radius: $border-radius;
+                                    border:none;
+                                    font-weight: 600;
+                                    color:$shuttle-grey;
+                                    transition: all .3s;
+                                    &:disabled { 
+                                        background: $background-color; 
+                                        color: $medium-grey;   
+                                    }
+                                    &:enabled {
+                                        @include hover-supported {background: $medium-grey; }
+                                    }
+                                }
+                            }
+                            .input-error {
+                                font-size: .8rem;
+                                color: $shuttle-grey;
+                            }
+                        }
+                        .changelog h4 { color: $red; }
+                    }
+                }
+                // FORM PER MODIFICARE PIANTA DELLA MAPPA
+                .edit-map-tab {
+                    display: flex;
+                    flex-direction: column;
+                    .top-section {
+                        margin-bottom: .5rem; 
+                        .section-title { 
+                            margin: 0rem;
+                            &.error { 
+                                color: $red; 
+                                font-weight: bold;
+                            }
+                        }
+                    }
+                    .canvas-wrapper  {
+                        flex:1;
+                        position: relative;
+                        #ClassroomMap { 
+                            position: absolute; 
+                            top:0; 
+                            left:0;
+                            canvas {  padding: 5px 0; }
+                        }
+                    }
+                }
+                .functions .desks-counter{
+                    color:$dark-grey;
+                    font-weight: bold;
+                    flex:1;
+                    cursor: default;
+                }
+            }
+        }
+    }
     
     /*
     -----------------------------

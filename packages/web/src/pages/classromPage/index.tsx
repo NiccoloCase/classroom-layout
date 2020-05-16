@@ -1,10 +1,7 @@
 import * as React from 'react';
-import classnames from "classnames";
-import ScrollContainer from "react-indiana-drag-scroll";
 import { HashLoader } from 'react-spinners';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faEdit, faHistory, faCog, faMap, faStar } from '@fortawesome/free-solid-svg-icons';
-import { faStar as faStarOutline } from "@fortawesome/free-regular-svg-icons";
+import { faEdit, faHistory, faCog, faMap } from '@fortawesome/free-solid-svg-icons';
 import "./classroomPage.scss";
 import { Route, NavLink, RouteComponentProps, Switch } from "react-router-dom";
 import { useGetClassroomByIdQuery, Classroom } from "../../generated/graphql"
@@ -15,62 +12,19 @@ import { HistoryView } from './views/HistoryView';
 import { SettingsView } from './views/SettingsView';
 import { NotFoundView } from '../../components/NotFound';
 
-
 interface IParams { class_id: string };
 
 export const ClassroomPage: React.FC<RouteComponentProps<IParams>> = props => {
-    // studente selezionato 
-    const [selectedStudent, setSelectedStudent] = React.useState<string | null>(null);
     // classe
     const [classroom, setClassroom] = React.useState<Classroom | undefined>(undefined);
     // GRAPHQL
     const id = props.match.params.class_id;
     const { loading, error, data, refetch } = useGetClassroomByIdQuery({ variables: { id } });
-    // è la classe prefirita?
-    const [isFavorite, setIsFavorite] = React.useState(localStorage.getItem("favorite-classroom-id") === id);
-    // contenitore della lista degli studenti 
-    const studentsSlider = React.createRef<ScrollContainer>();
 
     // GRAOHQL
     React.useEffect(() => {
         if (data) setClassroom(data.getClassroomById as Classroom | undefined);
     }, [data]);
-
-    /**
-     * Funzione che viene chiamata quando viene selezionato / deselezionato un banco
-     * @param index 
-     */
-    const onDeskIsHighlighted = (index: number | null) => {
-        if (!classroom) return;
-        const { students } = classroom;
-        const slider = studentsSlider.current;
-
-        if (index !== null && students && slider) {
-            const student = students[index];
-            setSelectedStudent(student);
-            // Scorre la lista degli alunni fino allo studente selezionato
-            const wrapper = slider.getElement();
-            const i = [...students].sort().indexOf(student);
-            const item = wrapper.childNodes[i] as HTMLElement;
-            if (item) {
-                const count = item.offsetTop - wrapper.scrollTop - 260;
-                wrapper.scrollBy({ top: count, left: 0, behavior: 'smooth' })
-            }
-        }
-        else setSelectedStudent(null)
-    }
-
-    /**
-     * Imposta / rimuove la classe come preferita
-     */
-    const changeClassFavoriteState = () => {
-        // salva l'id della classe nello storage
-        if (!isFavorite) localStorage.setItem("favorite-classroom-id", id);
-        // rimove la classe 
-        else localStorage.removeItem("favorite-classroom-id");
-        // aggiorna lo stato
-        setIsFavorite(!isFavorite);
-    }
 
     /**
      * Funzione che viene chimata a seguto del mescolamento dei banchi (studenti)
@@ -83,47 +37,12 @@ export const ClassroomPage: React.FC<RouteComponentProps<IParams>> = props => {
     }
 
     /**
-     * Disegna il riquadro degli studenti
-     */
-    const renderStudents = (students: string[]) => {
-        const selectStudent = (student: string) => {
-            if (selectedStudent !== student) setSelectedStudent(student)
-            else setSelectedStudent(null)
-        }
-
-        const cards = [...students].sort().map((student, index) => (
-            <button
-                className={classnames("student", { active: selectedStudent === student })}
-                onClick={() => selectStudent(student)} key={index}>
-                <div className="thumbnail" >
-                    {student[0] + student[1]}
-                </div>
-                <p>{student}</p>
-            </button>
-        ));
-        return (
-            <div className="students">
-                <h4 className="section-title">{students.length} studenti:</h4>
-                <ScrollContainer className="students-container" horizontal={false} ref={studentsSlider}>
-                    {cards}
-                </ScrollContainer>
-            </div>
-        );
-    }
-
-    /**
      * Schermate della navgazione interna 
      */
     const renderRoutes = (room: Classroom) => (
         <Switch>
             <Route path="/:class_id" exact children={() => (
-                <MapView
-                    classId={id}
-                    desks={room.desks} students={room.students}
-                    highlightedDesk={selectedStudent ? room.students.indexOf(selectedStudent) : undefined}
-                    onDeskIsHighlighted={onDeskIsHighlighted}
-                    onDesksAreShuffled={onDesksAreShuffled}
-                />)} />
+                <MapView classroom={room} onDesksAreShuffled={onDesksAreShuffled} />)} />
             <Route path="/:class_id/edit" exact children={() =>
                 <EditView classroom={room} onClassroomIsUpdated={refetch} />}
             />
@@ -161,20 +80,6 @@ export const ClassroomPage: React.FC<RouteComponentProps<IParams>> = props => {
             </div>
             {/* CONTENUTO */}
             <div className="content"> {renderRoutes({ ...room, id })} </div>
-            {/* MENU LATERALE DI DESTRA */}
-            <div className="right-menu">
-                <div className="classroom-info" >
-                    <span className="classroom-info__title">
-                        <FontAwesomeIcon
-                            title={isFavorite ? "Rimuovi la classe come preferita" : "Imposta la classe come preferita"}
-                            icon={isFavorite ? faStar : faStarOutline} onClick={changeClassFavoriteState} />
-                        <h2>Classe</h2>
-                    </span>
-                    <h3 className="classroom-info__name">{room.name}</h3>
-                    <h4 className="classroom-info__id">{`#${id}`}</h4>
-                </div>
-                {renderStudents(room.students)}
-            </div>
         </React.Fragment>
     );
 
