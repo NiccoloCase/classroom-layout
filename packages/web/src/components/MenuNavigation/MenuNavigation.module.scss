@@ -8,6 +8,7 @@
   display: flex;
   align-items: center;
   background: $primary-color;
+
   a {text-decoration: none;}
 
   // LOGO (DI SINSTRA)
@@ -22,7 +23,7 @@
       justify-content: center;
       width: $left-menu-width;
       height: $top-menu-navigation-height;
-      background: darken($color: $primary-color, $amount: 10%);
+      background: darken($color: $primary-color, $amount: 6%);
       margin-right: .5rem;
       img  {
         $r: 2rem;

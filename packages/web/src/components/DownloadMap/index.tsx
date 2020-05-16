@@ -4,8 +4,8 @@ import { DeskInput } from '../../generated/graphql';
 import styles from "./DownloadMap.module.scss";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTimes, faMinus, faPlus } from '@fortawesome/free-solid-svg-icons';
-import { SlideDown } from 'react-slidedown'
-import 'react-slidedown/lib/slidedown.css'
+import { SlideDown } from 'react-slidedown';
+import 'react-slidedown/lib/slidedown.css';
 import { ClassRoomMap, classroomMapColors, IClassroomMapColors } from '../ClassRoomMap';
 import { useOutsideClickDetector } from '../../helper';
 
