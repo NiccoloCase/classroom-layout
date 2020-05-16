@@ -5,7 +5,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faExclamationCircle, faCheckSquare, faCopy, faChevronRight } from '@fortawesome/free-solid-svg-icons';
 import { Link } from 'react-router-dom';
 import { FadeLoader } from 'react-spinners';
-import { faCircle } from '../../../../../../node_modules/@fortawesome/free-regular-svg-icons';
+import { faCircle } from '@fortawesome/free-regular-svg-icons';
 
 interface LastStepProps {
     name?: string;

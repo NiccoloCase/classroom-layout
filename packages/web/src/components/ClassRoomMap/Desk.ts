@@ -1,9 +1,17 @@
 import { Orientation } from './enums';
 import { DeskInput } from '../../generated/graphql';
+import * as Color from "color";
+import { classroomMapColors } from "."
 
 interface DeskRenderOptions {
     /** Se il banco è selezionato */
     isHighlighted?: boolean;
+    /** Stile */
+    style?: {
+        desksFillColor?: string | null;
+        desksStrokeColor?: string | null;
+        textColor?: string | null;
+    };
 }
 
 export class Desk {
@@ -99,7 +107,7 @@ export class Desk {
      * @param ctx 
      * @param options 
      */
-    render(ctx: CanvasRenderingContext2D, options?: DeskRenderOptions) {
+    render(ctx: CanvasRenderingContext2D, options: DeskRenderOptions = {}) {
         // CALCOLA LE DIMENSIONI
         const x = this.x1 < this.x2 ? this.x1 : this.x2;
         const y = this.y1 > this.y2 ? this.y2 : this.y1;
@@ -113,24 +121,24 @@ export class Desk {
             h = 1;
         }
 
-        // DISEGNA IL BANCO
-        const dark = false;
-        if (dark) {
-            ctx.fillStyle = "#5f6368";
-            ctx.strokeStyle = "#303030";
-        } else {
-            ctx.fillStyle = "#eeeeee";
-            ctx.strokeStyle = "#dadce0";
-        }
+        // DISEGNA I BANCHI
+        const defaultStyle = classroomMapColors.light;
 
+        // colori
+        const style = options.style || {};
+        ctx.fillStyle = style.desksFillColor || defaultStyle.desksFillColor!;
+        ctx.strokeStyle = style.desksStrokeColor || defaultStyle.desksStrokeColor!;
         // Se il banco è selezionato
         if (options && options.isHighlighted) {
-            ctx.fillStyle = "#606060";
-            ctx.strokeStyle = "#585858";
+            const fill = new Color(ctx.fillStyle);
+            const stroke = new Color(ctx.strokeStyle);
+            ctx.fillStyle = fill.isLight() ? fill.darken(0.2).hex() : fill.lighten(0.2).hex();
+            ctx.strokeStyle = stroke.isLight() ? stroke.darken(0.2).hex() : stroke.lighten(0.2).hex()
         }
         ctx.lineWidth = 0.03;
-        ctx.fillRect(x, y, d, h);
-        ctx.strokeRect(x, y, d, h);
+
+        if (style.desksFillColor !== null) ctx.fillRect(x, y, d, h);
+        if (style.desksStrokeColor !== null) ctx.strokeRect(x, y, d, h);
 
         // DISEGNA IL NOME DELL'ALLUNNO SUL BANCO
         if (this.name) {
@@ -140,11 +148,10 @@ export class Desk {
                 defaultSize
 
             ctx.font = `${size}px Arial`;
-            ctx.fillStyle = "#909090";
-            if (dark) ctx.fillStyle = "#f5f5f5";
+            ctx.fillStyle = style.textColor || defaultStyle.textColor!;
             ctx.textBaseline = 'middle';
             ctx.textAlign = "center";
-            ctx.fillText(this.name, x + d / 2, y + h / 2);
+            if (style.textColor !== null) ctx.fillText(this.name, x + d / 2, y + h / 2);
         }
     }
 

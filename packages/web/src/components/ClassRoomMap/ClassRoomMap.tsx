@@ -8,8 +8,11 @@ import { DeskInput } from '../../generated/graphql';
 import { ToolType, ReferenceSystemType as RSType, Orientation } from './enums';
 import { Mouse } from './Mouse';
 import { Desk } from "./Desk";
+import { IClassroomMapColors } from "./";
 
 interface ClassRoomMapProps {
+    /** Se la mappa è statica o interattiva */
+    static?: boolean;
     /** Larghezza del canvas */
     width: number;
     /** Altezza del canvas */
@@ -30,6 +33,10 @@ interface ClassRoomMapProps {
     highlightedDesk?: number;
     /** Disattiva la funzione che centra i banchi ad ogni loro cambiamento */
     disableAutofocus?: boolean;
+    /** Stile */
+    style?: IClassroomMapColors;
+    /** Nome della classe HTML */
+    className?: string;
     // FUNZIONI
     /**
      * Funzione chiamata ogni vole che avviene un cambiamento 
@@ -64,7 +71,6 @@ interface ClassRoomMapState {
 }
 
 class ClassRoomMap extends React.Component<ClassRoomMapProps> {
-
     // CANVAS
     canvas: HTMLCanvasElement;
     ctx: CanvasRenderingContext2D;
@@ -116,9 +122,11 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
         // CANVAS
         this.ctx = this.canvas.getContext("2d")!;
         // EVENTI
-        this.mouse = new Mouse();
-        this.canvas.addEventListener("mousedown", this.onMouseClick);
-        this.canvas.addEventListener("mousemove", this.onMouseMove);
+        if (!this.props.static) {
+            this.mouse = new Mouse();
+            this.canvas.addEventListener("mousedown", this.onMouseClick);
+            this.canvas.addEventListener("mousemove", this.onMouseMove);
+        }
         // AVVIA IL LOOP
         this.tick();
     }
@@ -133,9 +141,7 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
         // VARIAZIONE NEI BANCHI
         if (this.props.desks && this.desks !== Desk.objsToDesks(this.props.desks)) {
             // controlla se deve centare i banchi
-            console.log(this.props.desks);
             if (!this.props.disableAutofocus) {
-                console.log("dentro");
                 this.desks = Desk.centerDesks(this.props.desks);
                 // imposta la nuova scala
                 this.defaultScale = this.getScale(this.props.width, this.props.height, this.desks);
@@ -168,7 +174,7 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
 
     render() {
         return (
-            <div id="ClassroomMap">
+            <div id="ClassroomMap" className={this.props.className}>
                 {!this.props.notEditable && this.drawTools()}
                 <canvas ref={c => (this.canvas = c!)} width={this.state.width} height={this.state.height} />
             </div>
@@ -344,8 +350,8 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
             const scaleY = height / nY;
             // considera solo la scala piu' opportuna tra le due 
             const scale = Math.min(scaleX, scaleY);
-            // valore massimo della scala al fine di impedire preview toppo zommate 
-            const maxScale = 100;
+            // valore massimo della scala al fine di impedire preview toppo zoommate 
+            const maxScale = this.props.static ? Infinity : 100;
             return scale < maxScale ? scale : maxScale;
         }
     }
@@ -536,25 +542,33 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
 
 
     /**
-     * Pulisce lo sfondo
+     * Pulisce e disegna lo sfondo
      */
-    private clearBackground = () =>
-        this.ctx.clearRect(0, 0, this.state.width!, this.state.height!);
-
-    private tick = () => {
+    private drawBackground = () => {
+        if (!this.state.width && !this.state.height) return;
         // pulisce lo sfondo
-        this.clearBackground();
+        this.ctx.clearRect(0, 0, this.state.width, this.state.height);
+        // colora lo sofndo se è stato passato un colore
+        if (this.props.style && this.props.style.backgroundColor) {
+            this.ctx.fillStyle = this.props.style.backgroundColor;
+            this.ctx.fillRect(0, 0, this.state.width, this.state.height);
+        }
         // disegna la griglia 
         if (!this.props.notEditable) this.renderGrid();
+    }
 
+    private tick = () => {
+        // disegna lo sfondo
+        this.drawBackground();
         this.ctx.save();
         this.ctx.scale(this.scale, this.scale);
         // evidenzia la zona in cui può essere piazzato un banco
         this.highlightCursor();
         // disegna i banchi
+        const { style } = this.props;
         for (let i = 0; i < this.desks.length; i++) {
             const isHighlighted = this.highlightedDesk === i;
-            this.desks[i].render(this.ctx, { isHighlighted });
+            this.desks[i].render(this.ctx, { isHighlighted, style });
         }
         this.ctx.restore();
 

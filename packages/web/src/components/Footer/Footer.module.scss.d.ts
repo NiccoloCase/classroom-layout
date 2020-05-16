@@ -14,3 +14,4 @@ export const contacts: string;
 export const contact: string;
 export const minor: string;
 export const copyright: string;
+export const sideShadow: string;

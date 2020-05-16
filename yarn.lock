@@ -1073,6 +1073,12 @@
   dependencies:
     regenerator-runtime "^0.13.4"
 
+"@babel/runtime@^7.9.2":
+  version "7.9.6"
+  resolved "https://registry.yarnpkg.com/@babel/runtime/-/runtime-7.9.6.tgz#a9102eb5cadedf3f31d08a9ecf294af7827ea29f"
+  dependencies:
+    regenerator-runtime "^0.13.4"
+
 "@babel/template@^7.1.0", "@babel/template@^7.8.3", "@babel/template@^7.8.6":
   version "7.8.6"
   resolved "https://registry.yarnpkg.com/@babel/template/-/template-7.8.6.tgz#86b22af15f828dfb086474f964dcc3e39c43ce2b"
@@ -1153,7 +1159,7 @@
     "@emotion/utils" "0.11.3"
     "@emotion/weak-memoize" "0.2.5"
 
-"@emotion/core@^10.0.15":
+"@emotion/core@^10.0.14", "@emotion/core@^10.0.15":
   version "10.0.28"
   resolved "https://registry.yarnpkg.com/@emotion/core/-/core-10.0.28.tgz#bb65af7262a234593a9e952c041d0f1c9b9bef3d"
   dependencies:
@@ -1647,6 +1653,10 @@
     graphql-tools-fork "8.9.6"
     tslib "1.11.1"
     valid-url "1.0.9"
+
+"@icons/material@^0.2.4":
+  version "0.2.4"
+  resolved "https://registry.yarnpkg.com/@icons/material/-/material-0.2.4.tgz#e90c9f71768b3736e76d7dd6783fc6c2afa88bc8"
 
 "@jest/types@^24.9.0":
   version "24.9.0"
@@ -2678,6 +2688,18 @@
     "@svgr/core" "^2.4.1"
     loader-utils "^1.1.0"
 
+"@swiftcarrot/color-fns@^3.0.4":
+  version "3.0.4"
+  resolved "https://registry.yarnpkg.com/@swiftcarrot/color-fns/-/color-fns-3.0.4.tgz#96e1cad6259192526eaf54c8beb9df3e42729442"
+
+"@swiftcarrot/utils@^0.1.2":
+  version "0.1.2"
+  resolved "https://registry.yarnpkg.com/@swiftcarrot/utils/-/utils-0.1.2.tgz#08d468220d7d7d40f4040b28f06d157aa6c80f71"
+  dependencies:
+    "@babel/runtime" "^7.5.5"
+    lodash "^4.17.15"
+    qss "^2.0.3"
+
 "@ts-morph/common@~0.4.0":
   version "0.4.0"
   resolved "https://registry.yarnpkg.com/@ts-morph/common/-/common-0.4.0.tgz#c8fdb870692b16a80ca0722af7d12d6bb7c78ed7"
@@ -2712,9 +2734,21 @@
   version "2.2.10"
   resolved "https://registry.yarnpkg.com/@types/classnames/-/classnames-2.2.10.tgz#cc658ca319b6355399efc1f5b9e818f1a24bf999"
 
-"@types/color-name@^1.1.1":
+"@types/color-convert@*":
+  version "1.9.0"
+  resolved "https://registry.yarnpkg.com/@types/color-convert/-/color-convert-1.9.0.tgz#bfa8203e41e7c65471e9841d7e306a7cd8b5172d"
+  dependencies:
+    "@types/color-name" "*"
+
+"@types/color-name@*", "@types/color-name@^1.1.1":
   version "1.1.1"
   resolved "https://registry.yarnpkg.com/@types/color-name/-/color-name-1.1.1.tgz#1c1261bbeaa10a8055bbc5d8ab84b7b2afc846a0"
+
+"@types/color@^3.0.1":
+  version "3.0.1"
+  resolved "https://registry.yarnpkg.com/@types/color/-/color-3.0.1.tgz#2900490ed04da8116c5058cd5dba3572d5a25071"
+  dependencies:
+    "@types/color-convert" "*"
 
 "@types/connect@*":
   version "3.4.33"
@@ -3210,6 +3244,16 @@
   dependencies:
     tslib "^1.9.3"
 
+"@xkit/popover@^0.1.20":
+  version "0.1.22"
+  resolved "https://registry.yarnpkg.com/@xkit/popover/-/popover-0.1.22.tgz#9ad030c5d46ac53071c1f8ead7f466ae2d952b3b"
+  dependencies:
+    "@babel/runtime" "^7.5.5"
+    "@emotion/core" "^10.0.14"
+    "@swiftcarrot/utils" "^0.1.2"
+    popper.js "^1.15.0"
+    use-onclickoutside "^0.3.1"
+
 "@xtuc/ieee754@^1.2.0":
   version "1.2.0"
   resolved "https://registry.yarnpkg.com/@xtuc/ieee754/-/ieee754-1.2.0.tgz#eef014a3145ae477a1cbc00cd1e552336dceb790"
@@ -3291,6 +3335,12 @@ acorn@^6.0.1, acorn@^6.0.2:
 acorn@^7.1.1:
   version "7.1.1"
   resolved "https://registry.yarnpkg.com/acorn/-/acorn-7.1.1.tgz#e35668de0b402f359de515c5482a1ab9f89a69bf"
+
+add-dom-event-listener@^1.1.0:
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/add-dom-event-listener/-/add-dom-event-listener-1.1.0.tgz#6a92db3a0dd0abc254e095c0f1dc14acbbaae310"
+  dependencies:
+    object-assign "4.x"
 
 address@1.0.3:
   version "1.0.3"
@@ -3814,6 +3864,10 @@ aproba@^1.0.3, aproba@^1.1.1:
 aproba@^2.0.0:
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/aproba/-/aproba-2.0.0.tgz#52520b8ae5b569215b354efc0caa3fe1e45a8adc"
+
+are-passive-events-supported@^1.1.0:
+  version "1.1.1"
+  resolved "https://registry.yarnpkg.com/are-passive-events-supported/-/are-passive-events-supported-1.1.1.tgz#3db180a1753a2186a2de50a32cded3ac0979f5dc"
 
 are-we-there-yet@~1.1.2:
   version "1.1.5"
@@ -4351,7 +4405,7 @@ babel-register@^6.26.0:
     mkdirp "^0.5.1"
     source-map-support "^0.4.15"
 
-babel-runtime@^6.22.0, babel-runtime@^6.26.0, babel-runtime@^6.9.2:
+babel-runtime@6.x, babel-runtime@^6.22.0, babel-runtime@^6.26.0, babel-runtime@^6.9.2:
   version "6.26.0"
   resolved "https://registry.yarnpkg.com/babel-runtime/-/babel-runtime-6.26.0.tgz#965c7058668e82b55d7bfe04ff2337bc8b5647fe"
   dependencies:
@@ -5375,7 +5429,7 @@ color-string@^1.5.2:
     color-name "^1.0.0"
     simple-swizzle "^0.2.2"
 
-color@^3.0.0:
+color@^3.0.0, color@^3.1.2:
   version "3.1.2"
   resolved "https://registry.yarnpkg.com/color/-/color-3.1.2.tgz#68148e7f85d41ad7649c5fa8c8106f098d229e10"
   dependencies:
@@ -5385,6 +5439,16 @@ color@^3.0.0:
 colors@^1.1.2:
   version "1.4.0"
   resolved "https://registry.yarnpkg.com/colors/-/colors-1.4.0.tgz#c50491479d4c1bdaed2c9ced32cf7c7dc2360f78"
+
+colr-convert@^1.0.5:
+  version "1.0.5"
+  resolved "https://registry.yarnpkg.com/colr-convert/-/colr-convert-1.0.5.tgz#b4a22c9322dfa238d2a80aa90736c11271841b71"
+
+colr@^1.2.2:
+  version "1.2.2"
+  resolved "https://registry.yarnpkg.com/colr/-/colr-1.2.2.tgz#6003289b8e3c53f60824ec7bbc08e033878ad4f6"
+  dependencies:
+    colr-convert "^1.0.5"
 
 columnify@^1.5.4:
   version "1.5.4"
@@ -5434,9 +5498,19 @@ compare-func@^1.3.1:
     array-ify "^1.0.0"
     dot-prop "^3.0.0"
 
+component-classes@^1.2.5:
+  version "1.2.6"
+  resolved "https://registry.yarnpkg.com/component-classes/-/component-classes-1.2.6.tgz#c642394c3618a4d8b0b8919efccbbd930e5cd691"
+  dependencies:
+    component-indexof "0.0.3"
+
 component-emitter@^1.2.0, component-emitter@^1.2.1:
   version "1.3.0"
   resolved "https://registry.yarnpkg.com/component-emitter/-/component-emitter-1.3.0.tgz#16e4070fba8ae29b679f2215853ee181ab2eabc0"
+
+component-indexof@0.0.3:
+  version "0.0.3"
+  resolved "https://registry.yarnpkg.com/component-indexof/-/component-indexof-0.0.3.tgz#11d091312239eb8f32c8f25ae9cb002ffe8d3c24"
 
 compressible@~2.0.16:
   version "2.0.18"
@@ -5669,6 +5743,10 @@ core-js@2.5.7:
   version "2.5.7"
   resolved "https://registry.yarnpkg.com/core-js/-/core-js-2.5.7.tgz#f972608ff0cead68b841a16a932d0b183791814e"
 
+core-js@^1.0.0:
+  version "1.2.7"
+  resolved "https://registry.yarnpkg.com/core-js/-/core-js-1.2.7.tgz#652294c14651db28fa93bd2d5ff2983a4f08c636"
+
 core-js@^2.4.0, core-js@^2.4.1, core-js@^2.5.0:
   version "2.6.11"
   resolved "https://registry.yarnpkg.com/core-js/-/core-js-2.6.11.tgz#38831469f9922bded8ee21c9dc46985e0399308c"
@@ -5757,6 +5835,14 @@ create-hmac@^1.1.0, create-hmac@^1.1.2, create-hmac@^1.1.4:
     safe-buffer "^5.0.1"
     sha.js "^2.4.8"
 
+create-react-class@15.x:
+  version "15.6.3"
+  resolved "https://registry.yarnpkg.com/create-react-class/-/create-react-class-15.6.3.tgz#2d73237fb3f970ae6ebe011a9e66f46dbca80036"
+  dependencies:
+    fbjs "^0.8.9"
+    loose-envify "^1.3.1"
+    object-assign "^4.1.1"
+
 cross-env@^7.0.2:
   version "7.0.2"
   resolved "https://registry.yarnpkg.com/cross-env/-/cross-env-7.0.2.tgz#bd5ed31339a93a3418ac4f3ca9ca3403082ae5f9"
@@ -5829,6 +5915,13 @@ crypto-browserify@^3.11.0:
 crypto-random-string@^1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/crypto-random-string/-/crypto-random-string-1.0.0.tgz#a230f64f568310e1498009940790ec99545bca7e"
+
+css-animation@^1.3.2:
+  version "1.6.1"
+  resolved "https://registry.yarnpkg.com/css-animation/-/css-animation-1.6.1.tgz#162064a3b0d51f958b7ff37b3d6d4de18e17039e"
+  dependencies:
+    babel-runtime "6.x"
+    component-classes "^1.2.5"
 
 css-color-names@0.0.4, css-color-names@^0.0.4:
   version "0.0.4"
@@ -6378,6 +6471,10 @@ doctrine@^2.1.0:
   resolved "https://registry.yarnpkg.com/doctrine/-/doctrine-2.1.0.tgz#5cd01fc101621b42c4cd7f5d1a66243716d3f39d"
   dependencies:
     esutils "^2.0.2"
+
+dom-align@^1.7.0:
+  version "1.11.1"
+  resolved "https://registry.yarnpkg.com/dom-align/-/dom-align-1.11.1.tgz#7592be99a660a36cdedc1d6eeb22b8109d758cae"
 
 dom-converter@^0.2:
   version "0.2.0"
@@ -7202,6 +7299,18 @@ fb-watchman@^2.0.0:
 fbjs-css-vars@^1.0.0:
   version "1.0.2"
   resolved "https://registry.yarnpkg.com/fbjs-css-vars/-/fbjs-css-vars-1.0.2.tgz#216551136ae02fe255932c3ec8775f18e2c078b8"
+
+fbjs@^0.8.9:
+  version "0.8.17"
+  resolved "https://registry.yarnpkg.com/fbjs/-/fbjs-0.8.17.tgz#c4d598ead6949112653d6588b01a5cdcd9f90fdd"
+  dependencies:
+    core-js "^1.0.0"
+    isomorphic-fetch "^2.1.1"
+    loose-envify "^1.0.0"
+    object-assign "^4.1.0"
+    promise "^7.1.1"
+    setimmediate "^1.0.5"
+    ua-parser-js "^0.7.18"
 
 fbjs@^1.0.0:
   version "1.0.0"
@@ -10222,7 +10331,7 @@ lodash.xorby@^4.7.0:
   version "4.7.0"
   resolved "https://registry.yarnpkg.com/lodash.xorby/-/lodash.xorby-4.7.0.tgz#9c19a6f9f063a6eb53dd03c1b6871799801463d7"
 
-lodash@4.17.15, "lodash@>=3.5 <5", lodash@^4.0.0, lodash@^4.17.10, lodash@^4.17.11, lodash@^4.17.12, lodash@^4.17.13, lodash@^4.17.14, lodash@^4.17.15, lodash@^4.17.4, lodash@^4.17.5, lodash@^4.2.1, lodash@~4.17.12:
+lodash@4.17.15, "lodash@>=3.5 <5", lodash@^4.0.0, lodash@^4.0.1, lodash@^4.17.10, lodash@^4.17.11, lodash@^4.17.12, lodash@^4.17.13, lodash@^4.17.14, lodash@^4.17.15, lodash@^4.17.4, lodash@^4.17.5, lodash@^4.2.1, lodash@~4.17.12:
   version "4.17.15"
   resolved "https://registry.yarnpkg.com/lodash/-/lodash-4.17.15.tgz#b447f6670a0455bbfeedd11392eff330ea097548"
 
@@ -10411,6 +10520,10 @@ map-visit@^1.0.0:
   resolved "https://registry.yarnpkg.com/map-visit/-/map-visit-1.0.0.tgz#ecdca8f13144e660f1b5bd41f12f3479d98dfb8f"
   dependencies:
     object-visit "^1.0.0"
+
+material-colors@^1.2.1:
+  version "1.2.6"
+  resolved "https://registry.yarnpkg.com/material-colors/-/material-colors-1.2.6.tgz#6d1958871126992ceecc72f4bcc4d8f010865f46"
 
 math-random@^1.0.1:
   version "1.0.4"
@@ -11318,7 +11431,7 @@ oauth-sign@~0.9.0:
   version "0.9.0"
   resolved "https://registry.yarnpkg.com/oauth-sign/-/oauth-sign-0.9.0.tgz#47a7b016baa68b5fa0ecf3dee08a85c679ac6455"
 
-object-assign@4.1.1, object-assign@^4, object-assign@^4.0.1, object-assign@^4.1.0, object-assign@^4.1.1:
+object-assign@4.1.1, object-assign@4.x, object-assign@^4, object-assign@^4.0.1, object-assign@^4.1.0, object-assign@^4.1.1:
   version "4.1.1"
   resolved "https://registry.yarnpkg.com/object-assign/-/object-assign-4.1.1.tgz#2109adc7965887cfc05cbbd442cac8bfbb360863"
 
@@ -11938,6 +12051,10 @@ pluralize@^7.0.0:
 pn@^1.1.0:
   version "1.1.0"
   resolved "https://registry.yarnpkg.com/pn/-/pn-1.1.0.tgz#e2f4cef0e219f463c179ab37463e4e1ecdccbafb"
+
+popper.js@^1.15.0:
+  version "1.16.1"
+  resolved "https://registry.yarnpkg.com/popper.js/-/popper.js-1.16.1.tgz#2a223cb3dc7b6213d740e40372be40de43e65b1b"
 
 portfinder@^1.0.9:
   version "1.0.25"
@@ -12642,7 +12759,7 @@ promzard@^0.3.0:
   dependencies:
     read "1"
 
-prop-types@^15.6.2, prop-types@^15.7.2:
+prop-types@15.x, prop-types@^15.5.10, prop-types@^15.5.8, prop-types@^15.6.2, prop-types@^15.7.2:
   version "15.7.2"
   resolved "https://registry.yarnpkg.com/prop-types/-/prop-types-15.7.2.tgz#52c41e75b8c87e72b9d9360e0206b99dcbffa6c5"
   dependencies:
@@ -12748,6 +12865,10 @@ qs@~6.5.2:
   version "6.5.2"
   resolved "https://registry.yarnpkg.com/qs/-/qs-6.5.2.tgz#cb3ae806e8740444584ef154ce8ee98d403f3e36"
 
+qss@^2.0.3:
+  version "2.0.3"
+  resolved "https://registry.yarnpkg.com/qss/-/qss-2.0.3.tgz#630b38b120931b52d04704f3abfb0f861604a9ec"
+
 querystring-es3@^0.2.0:
   version "0.2.1"
   resolved "https://registry.yarnpkg.com/querystring-es3/-/querystring-es3-0.2.1.tgz#9ec61f79049875707d69414596fd907a4d711e73"
@@ -12767,6 +12888,12 @@ quick-lru@^1.0.0:
 raf@3.4.0:
   version "3.4.0"
   resolved "https://registry.yarnpkg.com/raf/-/raf-3.4.0.tgz#a28876881b4bc2ca9117d4138163ddb80f781575"
+  dependencies:
+    performance-now "^2.1.0"
+
+raf@^3.4.0:
+  version "3.4.1"
+  resolved "https://registry.yarnpkg.com/raf/-/raf-3.4.1.tgz#0742e99a4a6552f445d73e3ee0328af0ff1ede39"
   dependencies:
     performance-now "^2.1.0"
 
@@ -12804,6 +12931,58 @@ raw-body@2.4.0:
     iconv-lite "0.4.24"
     unpipe "1.0.0"
 
+rc-align@2.x:
+  version "2.4.5"
+  resolved "https://registry.yarnpkg.com/rc-align/-/rc-align-2.4.5.tgz#c941a586f59d1017f23a428f0b468663fb7102ab"
+  dependencies:
+    babel-runtime "^6.26.0"
+    dom-align "^1.7.0"
+    prop-types "^15.5.8"
+    rc-util "^4.0.4"
+
+rc-animate@2.x:
+  version "2.11.1"
+  resolved "https://registry.yarnpkg.com/rc-animate/-/rc-animate-2.11.1.tgz#2666eeb6f1f2a495a13b2af09e236712278fdb2c"
+  dependencies:
+    babel-runtime "6.x"
+    classnames "^2.2.6"
+    css-animation "^1.3.2"
+    prop-types "15.x"
+    raf "^3.4.0"
+    rc-util "^4.15.3"
+    react-lifecycles-compat "^3.0.4"
+
+rc-color-picker@^1.1.0:
+  version "1.2.6"
+  resolved "https://registry.yarnpkg.com/rc-color-picker/-/rc-color-picker-1.2.6.tgz#6cd516e46c6dd6f60a192590e1dc6080032b246d"
+  dependencies:
+    classnames "^2.2.5"
+    prop-types "^15.5.8"
+    rc-trigger "1.x"
+    rc-util "^4.0.2"
+    tinycolor2 "^1.4.1"
+
+rc-trigger@1.x:
+  version "1.11.5"
+  resolved "https://registry.yarnpkg.com/rc-trigger/-/rc-trigger-1.11.5.tgz#f88f9f84e0e79f8e0ef1c8d1bf8ac2208b715620"
+  dependencies:
+    babel-runtime "6.x"
+    create-react-class "15.x"
+    prop-types "15.x"
+    rc-align "2.x"
+    rc-animate "2.x"
+    rc-util "4.x"
+
+rc-util@4.x, rc-util@^4.0.2, rc-util@^4.0.4, rc-util@^4.15.3:
+  version "4.20.5"
+  resolved "https://registry.yarnpkg.com/rc-util/-/rc-util-4.20.5.tgz#f7c77569e971ae6a8ad56f899cadd22275398325"
+  dependencies:
+    add-dom-event-listener "^1.1.0"
+    prop-types "^15.5.10"
+    react-is "^16.12.0"
+    react-lifecycles-compat "^3.0.4"
+    shallowequal "^1.1.0"
+
 rc@^1.0.1, rc@^1.1.6, rc@^1.2.7:
   version "1.2.8"
   resolved "https://registry.yarnpkg.com/rc/-/rc-1.2.8.tgz#cd924bf5200a075b83c188cd6b9e211b7fc0d3ed"
@@ -12832,6 +13011,17 @@ react-app-polyfill@^0.1.1:
     promise "8.0.2"
     raf "3.4.0"
     whatwg-fetch "3.0.0"
+
+react-color@^2.18.1:
+  version "2.18.1"
+  resolved "https://registry.yarnpkg.com/react-color/-/react-color-2.18.1.tgz#2cda8cc8e06a9e2c52ad391a30ddad31972472f4"
+  dependencies:
+    "@icons/material" "^0.2.4"
+    lodash "^4.17.11"
+    material-colors "^1.2.1"
+    prop-types "^15.5.10"
+    reactcss "^1.2.0"
+    tinycolor2 "^1.4.1"
 
 react-dev-utils@^6.0.1:
   version "6.1.1"
@@ -12896,9 +13086,46 @@ react-indiana-drag-scroll@^1.6.1:
     debounce "^1.2.0"
     easy-bem "^1.0.0"
 
-react-is@^16.6.0, react-is@^16.7.0, react-is@^16.8.1, react-is@^16.8.4:
+react-input-color@^3.0.0:
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/react-input-color/-/react-input-color-3.0.0.tgz#9bde8a356eb51b865cbeb0ae7205ce0195148fbe"
+  dependencies:
+    "@babel/runtime" "^7.9.2"
+    "@emotion/core" "^10.0.14"
+    "@swiftcarrot/color-fns" "^3.0.4"
+    "@xkit/popover" "^0.1.20"
+    react-input-number "^5.0.18"
+    react-input-slider "^5.1.2"
+
+react-input-colorpicker@^1.0.13:
+  version "1.0.13"
+  resolved "https://registry.yarnpkg.com/react-input-colorpicker/-/react-input-colorpicker-1.0.13.tgz#b0ddf0c683c3fd3702330b01dc75894294413988"
+  dependencies:
+    colr "^1.2.2"
+    rc-color-picker "^1.1.0"
+
+react-input-number@^5.0.18:
+  version "5.0.19"
+  resolved "https://registry.yarnpkg.com/react-input-number/-/react-input-number-5.0.19.tgz#3ce3e9522190c908a0f616364ca735914648c83c"
+  dependencies:
+    "@babel/runtime" "^7.5.5"
+    "@emotion/core" "^10.0.14"
+    lodash "^4.17.15"
+
+react-input-slider@^5.1.2:
+  version "5.1.6"
+  resolved "https://registry.yarnpkg.com/react-input-slider/-/react-input-slider-5.1.6.tgz#0ceb26b8cc1a5e3b6e753822175bc778ef059e69"
+  dependencies:
+    "@babel/runtime" "^7.9.2"
+    "@emotion/core" "^10.0.14"
+
+react-is@^16.12.0, react-is@^16.6.0, react-is@^16.7.0, react-is@^16.8.1, react-is@^16.8.4:
   version "16.13.1"
   resolved "https://registry.yarnpkg.com/react-is/-/react-is-16.13.1.tgz#789729a4dc36de2999dc156dd6c1d9c18cea56a4"
+
+react-lifecycles-compat@^3.0.4:
+  version "3.0.4"
+  resolved "https://registry.yarnpkg.com/react-lifecycles-compat/-/react-lifecycles-compat-3.0.4.tgz#4f1a273afdfc8f3488a8c516bfda78f872352362"
 
 react-router-dom@^5.1.2:
   version "5.1.2"
@@ -13007,6 +13234,12 @@ react-slick@^0.25.2:
     lodash.debounce "^4.0.8"
     resize-observer-polyfill "^1.5.0"
 
+react-slidedown@^2.4.5:
+  version "2.4.5"
+  resolved "https://registry.yarnpkg.com/react-slidedown/-/react-slidedown-2.4.5.tgz#d575404256fa0ba81e60161547a8fa9ff62b935d"
+  dependencies:
+    tslib "^1.9.0"
+
 react-spinners@^0.8.1:
   version "0.8.1"
   resolved "https://registry.yarnpkg.com/react-spinners/-/react-spinners-0.8.1.tgz#210521e9d5b8be70e4c447d547919c1afb609209"
@@ -13026,6 +13259,12 @@ react@^16.9.0:
     loose-envify "^1.1.0"
     object-assign "^4.1.1"
     prop-types "^15.6.2"
+
+reactcss@^1.2.0:
+  version "1.2.3"
+  resolved "https://registry.yarnpkg.com/reactcss/-/reactcss-1.2.3.tgz#c00013875e557b1cf0dfd9a368a1c3dab3b548dd"
+  dependencies:
+    lodash "^4.0.1"
 
 reactjs-popup@^1.5.0:
   version "1.5.0"
@@ -13832,6 +14071,10 @@ shallow-clone@^3.0.0:
   resolved "https://registry.yarnpkg.com/shallow-clone/-/shallow-clone-3.0.1.tgz#8f2981ad92531f55035b01fb230769a40e02efa3"
   dependencies:
     kind-of "^6.0.2"
+
+shallowequal@^1.1.0:
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/shallowequal/-/shallowequal-1.1.0.tgz#188d521de95b9087404fd4dcb68b13df0ae4e7f8"
 
 shebang-command@^1.2.0:
   version "1.2.0"
@@ -14709,6 +14952,10 @@ tiny-warning@^1.0.0, tiny-warning@^1.0.2:
   version "1.0.3"
   resolved "https://registry.yarnpkg.com/tiny-warning/-/tiny-warning-1.0.3.tgz#94a30db453df4c643d0fd566060d60a875d84754"
 
+tinycolor2@^1.4.1:
+  version "1.4.1"
+  resolved "https://registry.yarnpkg.com/tinycolor2/-/tinycolor2-1.4.1.tgz#f4fad333447bc0b07d4dc8e9209d8f39a8ac77e8"
+
 title-case@^2.1.0:
   version "2.1.1"
   resolved "https://registry.yarnpkg.com/title-case/-/title-case-2.1.1.tgz#3e127216da58d2bc5becf137ab91dae3a7cd8faa"
@@ -15291,6 +15538,17 @@ url@^0.11.0:
 use-callback-ref@^1.2.3:
   version "1.2.3"
   resolved "https://registry.yarnpkg.com/use-callback-ref/-/use-callback-ref-1.2.3.tgz#9f939dfb5740807bbf9dd79cdd4e99d27e827756"
+
+use-latest@^1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/use-latest/-/use-latest-1.0.0.tgz#c86d2e4893b15f27def69da574a47136d107facb"
+
+use-onclickoutside@^0.3.1:
+  version "0.3.1"
+  resolved "https://registry.yarnpkg.com/use-onclickoutside/-/use-onclickoutside-0.3.1.tgz#fdd723a6a499046b6bc761e4a03af432eee5917b"
+  dependencies:
+    are-passive-events-supported "^1.1.0"
+    use-latest "^1.0.0"
 
 use@^3.1.0:
   version "3.1.1"
