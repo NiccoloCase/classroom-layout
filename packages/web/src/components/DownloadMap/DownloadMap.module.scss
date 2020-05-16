@@ -1,0 +1,143 @@
+@import "../../styles/variables";
+@import "../../styles/utilities";
+
+.template { display: none; }
+
+.blur {
+    position: fixed;
+    top:0;
+    left:0;
+    bottom: 0;
+    right: 0;
+    backdrop-filter: blur(2px);
+}
+
+.container {
+    background: $dark-grey;
+    z-index: 100;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    padding: 1rem;
+    border-radius: 3px;
+    @include box-shadow;
+    min-width: 30rem;
+
+    button { cursor: pointer; }
+
+    .header {
+        display: flex;
+        .title {
+            // font-family: "Montserrat";
+            font-family: "Arial";
+            color: #fff;
+            font-size: 1.3rem;
+            flex:1;
+        }
+        svg {
+            color: $background-color;
+            transition: color .4s;
+            @include hover-supported { color: #212121; }
+        }
+    }
+
+    .appearanceContainer {
+        padding: 1rem 0;
+        .subtitle {
+            color:$primary-color;
+            font-weight: 800;
+            font-size: 1rem;
+        }
+        .options {
+            display: flex;
+           justify-content: space-between;
+            padding: .5rem 0;
+            .styleOption {
+                display: flex;
+                flex-direction: column;
+                padding: .3rem;
+                border: none;
+                border-radius: 3px;
+                font-family: "Lato";
+                font-weight: 500;
+                background: transparent;
+                transition: all .4s;
+                .optionImg {
+                    width: 8rem;
+                    height: 4rem;
+                    background: $background-color;
+                    border-radius: 2px;
+                    float: left;
+                }
+                label {
+                    color:$background-color;
+                    float: left;
+                    margin-top: .3rem;
+                }
+                &.active {
+                    background: #212121;
+                }
+            }
+        }
+    }
+
+    .saveButton {
+        background: $primary-color;
+        color: $background-color;
+        font-weight: bold;
+        border: none;
+        border-radius: 3px;
+        padding: .5rem 1rem;
+        transition: all .4s;
+        &:focus:before { transform: scale(1.7); }
+        @include hover-supported {  opacity: .8; }
+    }
+
+    .custumOptions {
+        margin-bottom: 1rem;
+        .react-slidedown.my-dropdown-slidedown {
+            transition-duration: .1s;
+        }
+        .colorPickerContainer {
+            margin: .5rem 0;
+            .colorPicker{
+                $r: 1.5rem;
+                height: $r;
+                width: $r;
+                vertical-align: middle;
+                border-radius: 100%;
+                border: none;
+                outline: none;
+                -webkit-appearance: none;
+                &::-webkit-color-swatch {
+                    border: none;
+                    border-radius: 100%;
+                }
+                &::-webkit-color-swatch-wrapper { padding: 0; }
+                &:disabled{  cursor: not-allowed; }
+            }
+            span {  
+                margin: 0 1rem 0 .3rem; 
+                color:$background-color;
+                font-size: .9rem;
+                &.disabled {
+                    text-decoration: line-through;
+                    opacity: .3;
+                }
+            }
+           button {
+                background: transparent;
+                border:none;
+                transition: color .6s;
+                @include hover-supported {
+                    svg { color:$shuttle-grey; }         
+                }
+                svg {
+                    cursor: pointer;
+                    color: $medium-grey;
+                }
+           }
+        }
+    }
+}

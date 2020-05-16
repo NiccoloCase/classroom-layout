@@ -5,6 +5,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faRandom, faDownload } from '@fortawesome/free-solid-svg-icons';
 import { DeskInput, useShuffleDesksMutation } from '../../../generated/graphql';
 import { TitleComponent } from '../../../components/TitleComponent';
+import { DownloadMapComponent } from '../../../components/DownloadMap';
 
 interface MapViewProps {
     classId: string;
@@ -22,6 +23,8 @@ export const MapView: React.FC<MapViewProps> = props => {
     const canvasWrapper = React.useRef<HTMLDivElement>(null);
     // dimensioni canvas 
     const [canvasDims, setCanvasDims] = React.useState<{ width: number, height: number }>();
+    // pop-up per scaricare la mappa
+    const [isMapDownloadPopupOpen, setIsMapDownloadPopupOpen] = React.useState(true);
     // GRAPQHL
     const [shuffleMutation] = useShuffleDesksMutation({ variables: { id: props.classId } });
 
@@ -36,20 +39,6 @@ export const MapView: React.FC<MapViewProps> = props => {
         return () => window.removeEventListener('resize', resizeListener);
     }, [])
 
-
-    /**
-     * Sacrica la piantina della classe
-     */
-    const downloadMap = () => {
-        const canvas: HTMLCanvasElement | null = document.querySelector(".ClassroomPage__MapView canvas");
-        if (!canvas) return;
-        const dataURL = canvas.toDataURL('image/jpg');
-        const link = document.createElement('a');
-        link.download = 'map.jpg';
-        link.href = dataURL;
-        link.click();
-    }
-
     /** Mescola i banchi */
     const shuffleDesks = async () => {
         const { data } = await shuffleMutation();
@@ -57,11 +46,13 @@ export const MapView: React.FC<MapViewProps> = props => {
             props.onDesksAreShuffled(data.shuffleDesks.students);
     }
 
-
     return (
         <div className="ClassroomPage__MapView">
             <TitleComponent title="Gestisci la tua classe" />
-            <h3 className="title">Pianta della tua classe:</h3>
+            <h3 className="title">Piantina della tua classe:</h3>
+            {isMapDownloadPopupOpen &&
+                <DownloadMapComponent desks={props.desks} students={props.students}
+                    popupHasClosed={() => setIsMapDownloadPopupOpen(!isMapDownloadPopupOpen)} />}
             <div className="card">
                 <div className="canvas-wrapper" ref={canvasWrapper}>
                     {canvasDims ?
@@ -76,7 +67,8 @@ export const MapView: React.FC<MapViewProps> = props => {
                     }
                 </div>
                 <div className="functions">
-                    <button className="btn" title="Scarica la mappa dei posti" onClick={downloadMap}>
+                    <button className="btn" title="Scarica la mappa dei posti"
+                        onClick={() => setIsMapDownloadPopupOpen(!isMapDownloadPopupOpen)}>
                         <FontAwesomeIcon icon={faDownload} />
                     </button>
                     <button className="btn" title="Cambia i posti" onClick={shuffleDesks}>

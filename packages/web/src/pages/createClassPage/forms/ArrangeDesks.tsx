@@ -2,8 +2,8 @@ import * as React from 'react';
 import { ClassRoomMap, Desk } from '../../../components/ClassRoomMap';
 import { HashLoader } from "react-spinners"
 import { DeskInput } from '../../../generated/graphql';
-import { FontAwesomeIcon } from '../../../../../../node_modules/@fortawesome/react-fontawesome';
-import { faCircle } from '../../../../../../node_modules/@fortawesome/free-regular-svg-icons';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faCircle } from '@fortawesome/free-regular-svg-icons';
 
 interface ArrangeDesksProps {
     studensNumber?: number | null;
