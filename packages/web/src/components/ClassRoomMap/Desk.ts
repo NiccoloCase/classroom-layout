@@ -141,7 +141,7 @@ export class Desk {
         if (style.desksStrokeColor !== null) ctx.strokeRect(x, y, d, h);
 
         // DISEGNA IL NOME DELL'ALLUNNO SUL BANCO
-        if (this.name) {
+        if (this.name && style.textColor !== null) {
             const defaultSize = d / 6;
             const size = (defaultSize > d / (this.name.length / 1.5)) ?
                 (d) / (this.name.length / 1.5) :
@@ -151,7 +151,7 @@ export class Desk {
             ctx.fillStyle = style.textColor || defaultStyle.textColor!;
             ctx.textBaseline = 'middle';
             ctx.textAlign = "center";
-            if (style.textColor !== null) ctx.fillText(this.name, x + d / 2, y + h / 2);
+            ctx.fillText(this.name, x + d / 2, y + h / 2);
         }
     }
 

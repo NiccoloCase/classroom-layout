@@ -21,6 +21,8 @@ interface ClassRoomMapProps {
     maxDesks?: number;
     /** Se la configurazione non è modificabile */
     notEditable?: boolean;
+    /** Se non mostare gli strumenti (attivabile solo nel caso in cui la mappa sia modificabile) */
+    notShowTools?: boolean;
     /** Banchi */
     desks?: DeskInput[];
     /** Banchi inizali */
@@ -37,6 +39,8 @@ interface ClassRoomMapProps {
     style?: IClassroomMapColors;
     /** Nome della classe HTML */
     className?: string;
+    /** Strumento selezionato */
+    tool?: ToolType;
     // FUNZIONI
     /**
      * Funzione chiamata ogni vole che avviene un cambiamento 
@@ -91,6 +95,11 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
     highlightedDesk?: number | null;
     /** Stato */
     state: ClassRoomMapState;
+    /** Banchi selezionati all'inzio e alla fine del trascinamento del mouse */
+    drag: {
+        initialDesk?: number | null;
+        currentDesk?: number | null;
+    } = {};
 
     constructor(props: ClassRoomMapProps) {
         super(props);
@@ -98,7 +107,7 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
         this.state = {
             width: this.props.width,
             height: this.props.height,
-            tool: this.props.notEditable ? ToolType.POINTER : ToolType.ADD,
+            tool: this.props.tool || (this.props.notEditable ? ToolType.POINTER : ToolType.ADD),
             orientation: Orientation.E,
             recommendedOrientation: { value: null, cell: [] },
             zoom: 1
@@ -126,6 +135,7 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
             this.mouse = new Mouse();
             this.canvas.addEventListener("mousedown", this.onMouseClick);
             this.canvas.addEventListener("mousemove", this.onMouseMove);
+            this.canvas.addEventListener("mouseup", this.onMouseRelease);
         }
         // AVVIA IL LOOP
         this.tick();
@@ -135,6 +145,7 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
         // rimuove gli eventi
         this.canvas.removeEventListener("mousedown", this.onMouseClick);
         this.canvas.removeEventListener("mousemove", this.onMouseMove);
+        this.canvas.removeEventListener("mouseup", this.onMouseRelease);
     }
 
     componentDidUpdate(prevProps: ClassRoomMapProps, prevState: ClassRoomMapState) {
@@ -175,7 +186,7 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
     render() {
         return (
             <div id="ClassroomMap" className={this.props.className}>
-                {!this.props.notEditable && this.drawTools()}
+                {(!this.props.notEditable && !this.props.notShowTools) && this.drawTools()}
                 <canvas ref={c => (this.canvas = c!)} width={this.state.width} height={this.state.height} />
             </div>
         );
@@ -299,8 +310,10 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
         this.mouse.lastClickPosition = { clientX, clientY, gridX, gridY }
         // STRUMENTI
         if (this.state.tool === ToolType.POINTER) this.highlightDesk(gridX, gridY);
-        if (this.state.tool === ToolType.ADD) this.addDesk(gridX, gridY);
+        else if (this.state.tool === ToolType.ADD) this.addDesk(gridX, gridY);
         else if (this.state.tool === ToolType.REMOVE) this.removeDesk(gridX, gridY);
+        else if (this.state.tool === ToolType.SWAP)
+            this.drag.initialDesk = this.getDeskIndexByCoords(gridX, gridY);
     }
 
     /**
@@ -320,6 +333,39 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
         // automaticamente come suggerimento, ripristina l'orinetamento originale
         if (this.state.recommendedOrientation.value != null && (this.state.recommendedOrientation.cell[0] !== gridX || this.state.recommendedOrientation.cell[1] !== gridY)) {
             this.setState({ recommendedOrientation: { value: null, cell: [] } });
+        }
+
+        // SWAP FUNCTION
+        if (this.state.tool === ToolType.SWAP)
+            this.drag.currentDesk = this.getDeskIndexByCoords(gridX, gridY);
+    }
+
+    /**
+     * Funzione chiamata quando il mouse viene rilasciato 
+     */
+    private onMouseRelease = (e: MouseEvent) => {
+        // SWAP FUNCTION
+        // scambia gli studenti
+        const { initialDesk, currentDesk } = this.drag;
+        if (initialDesk) {
+            if (currentDesk && initialDesk !== currentDesk) this.swapStudents(initialDesk, currentDesk);
+            this.drag.initialDesk = null;
+            this.drag.currentDesk = null;
+        }
+    }
+
+    /**
+     * Scambia i banchi ai quali due studenti sono associati 
+     * @param index1 Indice del primo banco 
+     * @param index2 Indice del secondo banco 
+     */
+    private swapStudents(index1: number, index2: number) {
+        if (this.students) {
+            // per comodità scambia i banchi e non gli studenti 
+            [this.desks[index1], this.desks[index2]] = [this.desks[index2], this.desks[index1]];
+            Desk.setNames(this.desks, this.students);
+            // avverte del cambiamento nei banchi
+            this.callback();
         }
     }
 
@@ -431,7 +477,6 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
      * Rimuove un banco
      */
     private removeDesk = (x: number, y: number) => {
-
         for (const index in this.desks) {
             if ((this.desks[index].x1 === x && this.desks[index].y1 === y) ||
                 (this.desks[index].x2 === x && this.desks[index].y2 === y)) {
@@ -469,12 +514,29 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
     }
 
     /**
-     * Applica uo zoom secondo la proprietà passata dallo slider
+     * Applica uno zoom secondo la proprietà passata dallo slider
      */
     private changeZoom = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { value } = e.target;
         this.setState({ zoom: value });
         this.scale = this.defaultScale * Number(value);
+    }
+
+
+    /**
+     * Evidenzia l'area individuata con la posizione e l'orientameno passato
+     */
+    private highlightCell = (x: number, y: number, orientation: Orientation, color: string) => {
+        this.ctx.save();
+        this.ctx.strokeStyle = color;
+        this.ctx.shadowColor = color;
+        this.ctx.shadowBlur = 5;
+        this.ctx.lineWidth = 0.01;
+        if (orientation === Orientation.E) this.ctx.strokeRect(x, y, 2, 1);
+        else if (orientation === Orientation.S) this.ctx.strokeRect(x, y, 1, 2);
+        else if (orientation === Orientation.W) this.ctx.strokeRect(x - 1, y, 2, 1);
+        else if (orientation === Orientation.N) this.ctx.strokeRect(x, y - 1, 1, 2);
+        this.ctx.restore();
     }
 
     /**
@@ -488,23 +550,9 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
             const recommendedOrientation = this.state.recommendedOrientation.value;
             if (recommendedOrientation != null) orientation = recommendedOrientation;
             if (x && y) {
-                // funzione vera e propria 
-                const f = (o: Orientation) => {
-                    this.ctx.save();
-                    this.ctx.strokeStyle = "yellow";
-                    this.ctx.shadowColor = "yellow";
-                    this.ctx.shadowBlur = 5;
-                    this.ctx.lineWidth = 0.01;
-
-                    if (o === Orientation.E) this.ctx.strokeRect(x, y, 2, 1);
-                    else if (o === Orientation.S) this.ctx.strokeRect(x, y, 1, 2);
-                    else if (o === Orientation.W) this.ctx.strokeRect(x - 1, y, 2, 1);
-                    else if (o === Orientation.N) this.ctx.strokeRect(x, y - 1, 1, 2);
-                    this.ctx.restore();
-                }
                 // controlla se non ci sono già dei banchi
                 if (!this.isBusy(x, y, orientation)) {
-                    f(orientation);
+                    this.highlightCell(x, y, orientation, "yellow");
                 } else {
                     // Propone un suggerimento
                     if (orientation === Orientation.E && !this.isBusy(x, y, Orientation.W))
@@ -518,6 +566,91 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
                 }
             }
         }
+    }
+
+    /**
+     * Funzione che evidenzia i due banchi coinvolti nello scambio degli studenti a loro
+     * associati 
+     */
+    private highlightDesksInvolvedInSwap = () => {
+        const { initialDesk: initialDeskIndex, currentDesk: currentDeskIndex } = this.drag;
+
+        if (this.state.tool === ToolType.SWAP && initialDeskIndex) {
+            if (initialDeskIndex) {
+                // Evidenzia il banco de cui è partito il trascinamento del mouse
+                const initialDesk = this.desks[initialDeskIndex];
+                this.highlightCell(initialDesk.x1, initialDesk.y1, initialDesk.orientation, "red");
+
+                if (currentDeskIndex) {
+                    if (currentDeskIndex !== initialDeskIndex) {
+                        // Evideniza il banco al passaggio del mouse
+                        const currentDesk = this.desks[currentDeskIndex];
+                        this.ctx.setLineDash([5 / this.scale, 3 / this.scale]);
+                        this.highlightCell(currentDesk.x1, currentDesk.y1, currentDesk.orientation, "red");
+                        this.ctx.setLineDash([]);
+                        // Disegna una freccia che congiunge i banchi
+                        this.ctx.strokeStyle = "#707070";
+                        this.drawArrow(
+                            (initialDesk.x1 + initialDesk.x2) / 2 + 0.5,
+                            initialDesk.y1 - (initialDesk.y1 - initialDesk.y2) / 2 + 0.5,
+                            (currentDesk.x1 + currentDesk.x2) / 2 + 0.5,
+                            currentDesk.y1 - (currentDesk.y1 - currentDesk.y2) / 2 + 0.5,
+                            0.1, 0.2
+                        );
+                    }
+                }
+                else {
+                    // Disegna una freccia che congiunge il pirmo banco e il mpuse
+                    const [x, y] = this.mouse.getMousePosition(RSType.CANVAS);
+                    if (x && y) {
+                        this.ctx.setLineDash([5 / this.scale, 3 / this.scale]);
+                        this.ctx.strokeStyle = "#abb7b7";
+                        this.drawArrow(
+                            (initialDesk.x1 + initialDesk.x2) / 2 + 0.5,
+                            initialDesk.y1 - (initialDesk.y1 - initialDesk.y2) / 2 + 0.5,
+                            x / this.scale, y / this.scale, 0.1, 0.2
+                        );
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Disegna una linea che inizia e termina con una freccia 
+     * Basato su: https://riptutorial.com/html5-canvas/example/18136/line-with-arrowheads
+     * @param x0 Coordinata x di partenza della freccia 
+     * @param y0 Coordinata y di partenza della freccia 
+     * @param x1 Coordinata x di fine della freccia 
+     * @param y1 Coordinata y di fine della freccia 
+     * @param aWidth Apertura della freccia in larghezza
+     * @param aLength Estensione della freccia in lunghezza 
+     * @param arrowPosition Posizione della freccia 
+     */
+    private drawArrow = (x0: number, y0: number, x1: number, y1: number, aWidth: number, aLength: number, arrowPosition: "start" | "end" | "both" = "both") => {
+        const dx = x1 - x0;
+        const dy = y1 - y0;
+        const angle = Math.atan2(dy, dx);
+        const length = Math.sqrt(dx * dx + dy * dy);
+        this.ctx.save();
+        this.ctx.translate(x0, y0);
+        this.ctx.rotate(angle);
+        this.ctx.beginPath();
+        this.ctx.moveTo(0, 0);
+        this.ctx.lineTo(length, 0);
+        if (arrowPosition === "start" || arrowPosition === "both") {
+            this.ctx.moveTo(aLength, -aWidth);
+            this.ctx.lineTo(0, 0);
+            this.ctx.lineTo(aLength, aWidth);
+        }
+        if (arrowPosition === "end" || arrowPosition === "both") {
+            this.ctx.moveTo(length - aLength, -aWidth);
+            this.ctx.lineTo(length, 0);
+            this.ctx.lineTo(length - aLength, aWidth);
+        }
+        this.ctx.stroke();
+        this.ctx.setTransform(1, 0, 0, 1, 0, 0);
+        this.ctx.restore();
     }
 
     /**
@@ -539,7 +672,6 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
         this.ctx.strokeStyle = "#000";
         this.ctx.stroke();
     }
-
 
     /**
      * Pulisce e disegna lo sfondo
@@ -570,6 +702,8 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
             const isHighlighted = this.highlightedDesk === i;
             this.desks[i].render(this.ctx, { isHighlighted, style });
         }
+        // evidenzia i banchi coinvolti nello scambi di due studenti 
+        this.highlightDesksInvolvedInSwap();
         this.ctx.restore();
 
         requestAnimationFrame(this.tick);

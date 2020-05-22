@@ -2,7 +2,8 @@
 export enum ToolType {
     POINTER,
     ADD,
-    REMOVE
+    REMOVE,
+    SWAP
 }
 /** TIPO DI SISTEMA DI RIFERIMENTO */
 export enum ReferenceSystemType {
