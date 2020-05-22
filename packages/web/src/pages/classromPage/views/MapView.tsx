@@ -7,14 +7,14 @@ import { ClassRoomMap } from '../../../components/ClassRoomMap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faRandom, faDownload, faStar } from '@fortawesome/free-solid-svg-icons';
 import { faStar as faStarOutline } from "@fortawesome/free-regular-svg-icons";
-import { useShuffleDesksMutation, Classroom } from '../../../generated/graphql';
+import { useShuffleDesksMutation, Classroom, DeskInput } from '../../../generated/graphql';
 import { TitleComponent } from '../../../components/TitleComponent';
 import { DownloadMapComponent } from '../../../components/DownloadMap';
 
 interface MapViewProps {
     classroom: Classroom;
     /** Funzione chiamata quando gli studenti sono mescolati */
-    onDesksAreShuffled: (shuffledStudents: string[]) => void;
+    onDesksAreShuffled: (shuffledData: { students?: string[], desks?: DeskInput[] }) => void;
 }
 
 export const MapView: React.FC<MapViewProps> = ({ classroom, onDesksAreShuffled }) => {
@@ -49,7 +49,7 @@ export const MapView: React.FC<MapViewProps> = ({ classroom, onDesksAreShuffled 
     const shuffleDesks = async () => {
         const { data } = await shuffleMutation();
         if (data)
-            onDesksAreShuffled(data.shuffleDesks.students);
+            onDesksAreShuffled({ students: data.shuffleDesks.students });
     }
 
     /**

@@ -1,14 +1,14 @@
 import * as React from 'react';
 import { HashLoader } from 'react-spinners';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faEdit, faHistory, faCog, faMap } from '@fortawesome/free-solid-svg-icons';
+import { faEdit, faRandom, faCog, faMap } from '@fortawesome/free-solid-svg-icons';
 import "./classroomPage.scss";
 import { Route, NavLink, RouteComponentProps, Switch } from "react-router-dom";
-import { useGetClassroomByIdQuery, Classroom } from "../../generated/graphql"
+import { useGetClassroomByIdQuery, Classroom, Desk } from "../../generated/graphql"
 // SCHERMATE
 import { MapView } from './views/MapView';
 import { EditView } from './views/EditView';
-import { HistoryView } from './views/HistoryView';
+import { ShuffleView } from './views/ShuffleView';
 import { SettingsView } from './views/SettingsView';
 import { NotFoundView } from '../../components/NotFound';
 
@@ -29,10 +29,9 @@ export const ClassroomPage: React.FC<RouteComponentProps<IParams>> = props => {
     /**
      * Funzione che viene chimata a seguto del mescolamento dei banchi (studenti)
      */
-    const onDesksAreShuffled = (shuffledStudents: string[]) => {
+    const onDesksAreShuffled = (shuffledData: { students?: string[], desks?: Desk[] }) => {
         if (!classroom) return;
-        const newClassroom = { ...classroom }
-        newClassroom.students = shuffledStudents;
+        const newClassroom = { ...classroom, ...shuffledData }
         setClassroom(newClassroom);
     }
 
@@ -41,12 +40,16 @@ export const ClassroomPage: React.FC<RouteComponentProps<IParams>> = props => {
      */
     const renderRoutes = (room: Classroom) => (
         <Switch>
+            {/* SCHERMATA DELLA MAPPA*/}
             <Route path="/:class_id" exact children={() => (
                 <MapView classroom={room} onDesksAreShuffled={onDesksAreShuffled} />)} />
+            {/* SCHERMATA DI MODIFICA*/}
             <Route path="/:class_id/edit" exact children={() =>
-                <EditView classroom={room} onClassroomIsUpdated={refetch} />}
-            />
-            <Route path="/:class_id/history" exact children={HistoryView} />
+                <EditView classroom={room} onClassroomIsUpdated={refetch} />} />
+            {/* SCHERMATA PER MESCOLARE GLI STUDENTI*/}
+            <Route path="/:class_id/shuffle" exact children={() =>
+                <ShuffleView classroom={room} onDesksAreShuffled={onDesksAreShuffled} />} />
+            {/* SCHERMATA DELLE IMPOSTAZIONI */}
             <Route path="/:class_id/settings" exact children={SettingsView} />
         </Switch>
     );
@@ -64,13 +67,13 @@ export const ClassroomPage: React.FC<RouteComponentProps<IParams>> = props => {
                         title="Mappa della classe" >
                         <FontAwesomeIcon icon={faMap} />
                     </NavLink>
+                    <NavLink to={`/${id}/shuffle`} exact className="navLink"
+                        activeClassName="active" title="Mescola gli studenti">
+                        <FontAwesomeIcon icon={faRandom} />
+                    </NavLink>
                     <NavLink to={`/${id}/edit`} exact className="navLink"
                         activeClassName="active" title="Modifica la classe">
                         <FontAwesomeIcon icon={faEdit} />
-                    </NavLink>
-                    <NavLink to={`/${id}/history`} exact className="navLink"
-                        activeClassName="active" title="Cronologia">
-                        <FontAwesomeIcon icon={faHistory} />
                     </NavLink>
                     <NavLink to={`/${id}/settings`} exact className="navLink"
                         activeClassName="active" title="Impostazioni">
