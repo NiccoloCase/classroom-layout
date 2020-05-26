@@ -5,8 +5,8 @@ import { HashLoader } from '../../../../../../node_modules/react-spinners';
 import { ClassRoomMap, ToolType, Desk } from '../../../components/ClassRoomMap';
 import { Classroom, DeskInput, useEditClassroomMutation } from '../../../generated/graphql';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSave, faUndo, faInfoCircle } from '@fortawesome/free-solid-svg-icons';
-import Popup from 'reactjs-popup';
+import { faSave, faUndo } from '@fortawesome/free-solid-svg-icons';
+import { InfoIcon } from '../../../components/InfoIconComponent';
 
 interface ShuffleViewProps {
     classroom: Classroom;
@@ -74,14 +74,10 @@ export const ShuffleView: React.FC<ShuffleViewProps> = ({ classroom, onDesksAreS
                 <div className="map-wrapper">
                     <span className="info-text">
                         Cambia la collocazione degli studenti manualmente
-                        <Popup closeOnDocumentClick position="bottom center" on="hover"
-                            trigger={<span><FontAwesomeIcon icon={faInfoCircle} /></span>}>
-                            {() => (
-                                <div className="info-popup">
-                                    <h4>Per scambiare due studenti:</h4>
-                                    <p>Selezionare il banco dello studente del quale si vuole cambiare la posizione e trascinare la freccia che si forma sul banco associato all'altro studente da scambiare</p>
-                                </div>)}
-                        </Popup>
+                      <InfoIcon>
+                            <h4>Per scambiare due studenti:</h4>
+                            <p>Selezionare il banco dello studente del quale si vuole cambiare la posizione e trascinare la freccia che si forma sul banco associato all'altro studente da scambiare</p>
+                        </InfoIcon>
                     </span>
                     <div className="canvas-wrapper" ref={canvasWrapper}>
                         {canvasDims ?
@@ -94,6 +90,6 @@ export const ShuffleView: React.FC<ShuffleViewProps> = ({ classroom, onDesksAreS
                     </div>
                 </div>
             </div>
-        </div>
+        </div >
     );
 }

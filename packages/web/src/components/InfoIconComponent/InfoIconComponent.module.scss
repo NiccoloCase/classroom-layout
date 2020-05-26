@@ -1,0 +1,20 @@
+@import "../../styles/variables";
+@import "../../styles/utilities";
+
+.icon {
+    margin-left: .5rem;
+    color: $medium-grey;
+    transition: color .4s;
+    @include hover-supported { color: $shuttle-grey; }
+}
+.popup {
+    padding: .5rem;
+    h4 { 
+        margin-bottom: .3rem;   
+        color: $dark-grey;
+    }
+    p { 
+        font-size: .9rem;     
+        color: $shuttle-grey; 
+    }
+}
