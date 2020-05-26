@@ -5,8 +5,7 @@ import ScrollContainer from "react-indiana-drag-scroll";
 import { Spring } from "react-spring/renderprops.cjs"
 import { ClassRoomMap } from '../../../components/ClassRoomMap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faRandom, faDownload, faStar } from '@fortawesome/free-solid-svg-icons';
-import { faStar as faStarOutline } from "@fortawesome/free-regular-svg-icons";
+import { faRandom, faDownload } from '@fortawesome/free-solid-svg-icons';
 import { useShuffleDesksMutation, Classroom, DeskInput } from '../../../generated/graphql';
 import { TitleComponent } from '../../../components/TitleComponent';
 import { DownloadMapComponent } from '../../../components/DownloadMap';
@@ -24,9 +23,6 @@ export const MapView: React.FC<MapViewProps> = ({ classroom, onDesksAreShuffled 
     const [canvasDims, setCanvasDims] = React.useState<{ width: number, height: number }>();
     // pop-up per scaricare la mappa
     const [isMapDownloadPopupOpen, setIsMapDownloadPopupOpen] = React.useState(false);
-    // è la classe prefirita?
-    const [isFavorite, setIsFavorite] =
-        React.useState(localStorage.getItem("favorite-classroom-id") === classroom.id);
     // contenitore della lista degli studenti 
     const studentsSlider = React.createRef<ScrollContainer>();
     // studente selezionato 
@@ -74,18 +70,6 @@ export const MapView: React.FC<MapViewProps> = ({ classroom, onDesksAreShuffled 
             }
         }
         else setSelectedStudent(null)
-    }
-
-    /**
-     * Imposta / rimuove la classe come preferita
-     */
-    const changeClassFavoriteState = () => {
-        // salva l'id della classe nello storage
-        if (!isFavorite) localStorage.setItem("favorite-classroom-id", classroom.id);
-        // rimove la classe 
-        else localStorage.removeItem("favorite-classroom-id");
-        // aggiorna lo stato
-        setIsFavorite(!isFavorite);
     }
 
     /**
@@ -155,12 +139,6 @@ export const MapView: React.FC<MapViewProps> = ({ classroom, onDesksAreShuffled 
                 {props => (
                     <div className="right-section" style={props}>
                         <div className="classroom-info" >
-                            <span className="classroom-info__title">
-                                <FontAwesomeIcon
-                                    title={isFavorite ? "Rimuovi la classe come preferita" : "Imposta la classe come preferita"}
-                                    icon={isFavorite ? faStar : faStarOutline} onClick={changeClassFavoriteState} />
-                                <h2>Classe</h2>
-                            </span>
                             <h3 className="classroom-info__name">{classroom.name}</h3>
                             <h4 className="classroom-info__id">{`#${classroom.id}`}</h4>
                         </div>

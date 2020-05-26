@@ -1,5 +1,6 @@
 import * as React from "react";
 import classnames from "classnames";
+import { isNil } from "lodash";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus, faMousePointer, faEraser, faTrash, faSearchPlus, faSyncAlt, faTimes, faUndoAlt } from '@fortawesome/free-solid-svg-icons';
 import Popup from "reactjs-popup";
@@ -548,8 +549,8 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
             const [x, y] = this.mouse.getMousePosition(RSType.GRID);
             let { orientation } = this.state;
             const recommendedOrientation = this.state.recommendedOrientation.value;
-            if (recommendedOrientation != null) orientation = recommendedOrientation;
-            if (x && y) {
+            if (recommendedOrientation !== null) orientation = recommendedOrientation;
+            if (!isNil(x) && !isNil(y)) {
                 // controlla se non ci sono già dei banchi
                 if (!this.isBusy(x, y, orientation)) {
                     this.highlightCell(x, y, orientation, "yellow");
@@ -575,13 +576,13 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
     private highlightDesksInvolvedInSwap = () => {
         const { initialDesk: initialDeskIndex, currentDesk: currentDeskIndex } = this.drag;
 
-        if (this.state.tool === ToolType.SWAP && initialDeskIndex) {
-            if (initialDeskIndex) {
+        if (this.state.tool === ToolType.SWAP) {
+            if (!isNil(initialDeskIndex)) {
                 // Evidenzia il banco de cui è partito il trascinamento del mouse
                 const initialDesk = this.desks[initialDeskIndex];
                 this.highlightCell(initialDesk.x1, initialDesk.y1, initialDesk.orientation, "red");
 
-                if (currentDeskIndex) {
+                if (!isNil(currentDeskIndex)) {
                     if (currentDeskIndex !== initialDeskIndex) {
                         // Evideniza il banco al passaggio del mouse
                         const currentDesk = this.desks[currentDeskIndex];

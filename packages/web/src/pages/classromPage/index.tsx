@@ -50,7 +50,7 @@ export const ClassroomPage: React.FC<RouteComponentProps<IParams>> = props => {
             <Route path="/:class_id/shuffle" exact children={() =>
                 <ShuffleView classroom={room} onDesksAreShuffled={onDesksAreShuffled} />} />
             {/* SCHERMATA DELLE IMPOSTAZIONI */}
-            <Route path="/:class_id/settings" exact children={SettingsView} />
+            <Route path="/:class_id/settings" exact children={() => <SettingsView classID={room.id} />} />
         </Switch>
     );
 
