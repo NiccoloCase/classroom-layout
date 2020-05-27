@@ -198,7 +198,7 @@ $max-form-height: 80vh;
                 .input-box {
                     display: flex;
                     button {
-                        background: #57B845;
+                        background: #4A4A4A;
                         color:#fff;
                         font-family: 1.3rem;
                         margin: 1.5rem 0;
@@ -212,12 +212,8 @@ $max-form-height: 80vh;
                             opacity: .5;
                             cursor: not-allowed;
                         }
-                        &:active:enabled{
-                            transform: scale(1.2);
-                        }
-                        &:hover:enabled{
-                            background: #4A4A4A;
-                        }
+                        &:active:enabled { transform: scale(1.2); }
+                        &:hover:enabled { background: #57B845; }
                     }
                 }
             }
@@ -248,10 +244,7 @@ $max-form-height: 80vh;
             @mixin mobile {
                 flex-direction: column; 
                 padding-bottom: 0;
-                .left {
-                    flex:1;
-                    .input-box button { background: #4A4A4A !important; }
-                }
+                .left { flex:1; }
                 .right {
                     margin:0;
                     .student-card{

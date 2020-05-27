@@ -38,7 +38,7 @@
         svg {
             color: $background-color;
             transition: color .4s;
-            @include hover-supported { color: #212121; }
+            @include hover-supported { color: $primary-color}
         }
     }
 

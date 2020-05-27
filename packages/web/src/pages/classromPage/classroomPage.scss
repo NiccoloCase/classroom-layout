@@ -140,21 +140,24 @@
             display: flex;
             flex-direction: column;
             min-width: 13rem;
+            max-width: 17rem;
             @include side-shadow(left);
     
             .classroom-info {
                 margin-top: 2rem;
                 padding: 1rem;
-                font-family: "Lato";
                 text-align: right;
                 color: $dark-grey;
-               // &__title { text-transform: uppercase; }
                 &__name { 
                     text-transform: uppercase;
-                    font-weight: 600; 
-                    font-size: 1.5rem;
+                    font-weight: bold; 
+                    font-size: 1.3rem;
+                    font-family: Arial;
+                    overflow: hidden;
+                    text-overflow: ellipsis; 
                 }
                 &__id {
+                    font-family: "Lato";
                     font-weight:300;
                     color:$medium-grey;
                     user-select: all;

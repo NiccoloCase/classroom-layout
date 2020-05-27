@@ -1,7 +1,7 @@
 import * as React from "react";
 import styles from "./Footer.module.scss";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faEnvelope } from '@fortawesome/free-solid-svg-icons';
+import { faEnvelope, faArrowRight } from '@fortawesome/free-solid-svg-icons';
 import { faTwitter } from "@fortawesome/free-brands-svg-icons"
 import { NavLink, withRouter, RouteComponentProps } from 'react-router-dom';
 
@@ -36,7 +36,10 @@ const FooterComponent: React.FC<RouteComponentProps> = ({ history }) => {
                         value={searchValue} onChange={e => setSearchValue(e.target.value)}
                         onKeyPress={e => { if (e.key === "Enter") serachClass(); }}
                         placeholder="Inserisci l'ID associato alla classse" />
-                    <button className={styles.searchButton} onClick={serachClass}>Vai alla classe</button>
+                    <button className={styles.searchButton} onClick={serachClass}>
+                        Vai alla classe
+                        <FontAwesomeIcon icon={faArrowRight} />
+                    </button>
                 </div>
                 <div className={styles.navigationSection}>
                     <div className={styles.links}>
