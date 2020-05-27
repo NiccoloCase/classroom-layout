@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { isEmpty } from "lodash";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faTimes } from '@fortawesome/free-solid-svg-icons'
 import { faCircle } from '@fortawesome/free-regular-svg-icons';
@@ -109,7 +110,7 @@ export const StundentsForm: React.FC<StundentsFormProps> = ({ storeValues, id, c
                     </div>
                     <button
                         onClick={addStudent}
-                        disabled={!studentsValidation.hasPassed}
+                        disabled={isEmpty(inputValue) || !studentsValidation.hasPassed}
                         title={studentsValidation.msg ? studentsValidation.msg : undefined}>
                         Aggiungi
                     </button>

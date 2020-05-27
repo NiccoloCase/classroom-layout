@@ -52,24 +52,34 @@
             flex:1.5;
             display: flex;
             flex-direction: column;
+            $text-color:  $medium-grey;
+            ::placeholder { 
+                color: $text-color;
+                opacity: 1; 
+            }
+            :-ms-input-placeholder { color: $text-color;  }
+            ::-ms-input-placeholder { color: $text-color;   }
             .searchBar {
                 background: lighten($dark-grey, 10%);
-                color: lighten($dark-grey, 50%);
+                color: $background-color;
                 border: none;
-                border-radius: 5px;
+                border-radius: 4px;
                 width: 100%;
-                padding: .5rem .3rem;
+                padding: .5rem;
                 margin: .5rem 0 .3rem 0;
             }
             .searchButton {
                 border: none;
-                border-radius: 5px;
                 padding: .5rem;
-                color: #fff;
-                background: $primary-color;
-                align-self: flex-end;
-                transition: background .4s;
-                @include hover-supported { background: darken($primary-color, 20%) }
+                border-radius: 3px;
+                border: solid 2px transparent;
+                background: transparent;
+                color:  $text-color;
+                width: fit-content;
+                font-weight: bold;
+                transition: border .4s;
+                svg { margin-left: 1rem; }
+                @include hover-supported { border-color: lighten($dark-grey, 10%); }
             }
         }
 
@@ -80,6 +90,7 @@
                 flex-direction: column;
                 justify-content: center;
                 padding: .5rem;
+                padding-top: 0;
                 .link {
                     text-decoration: none;
                     color: $medium-grey;
@@ -94,6 +105,7 @@
             flex:1;
             .contacts {
                 padding: .5rem;
+                padding-top: 0;
                 .contact {
                     display: flex;
                     align-items: center;

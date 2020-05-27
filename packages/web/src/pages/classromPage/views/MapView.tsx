@@ -139,7 +139,7 @@ export const MapView: React.FC<MapViewProps> = ({ classroom, onDesksAreShuffled 
                 {props => (
                     <div className="right-section" style={props}>
                         <div className="classroom-info" >
-                            <h3 className="classroom-info__name">{classroom.name}</h3>
+                            <h3 className="classroom-info__name" title={classroom.name}>{classroom.name}</h3>
                             <h4 className="classroom-info__id">{`#${classroom.id}`}</h4>
                         </div>
                         {renderStudents(classroom.students)}
