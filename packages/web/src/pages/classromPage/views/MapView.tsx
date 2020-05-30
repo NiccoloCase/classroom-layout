@@ -137,13 +137,17 @@ export const MapView: React.FC<MapViewProps> = ({ classroom, onDesksAreShuffled 
             {/* MENU LATERALE DI DESTRA */}
             <Spring from={{ opacity: 0 }} to={{ opacity: 1 }}>
                 {props => (
-                    <div className="right-section" style={props}>
-                        <div className="classroom-info" >
-                            <h3 className="classroom-info__name" title={classroom.name}>{classroom.name}</h3>
-                            <h4 className="classroom-info__id">{`#${classroom.id}`}</h4>
+                    <>
+                        <h3 className="title title-right-section">Dati della classe:</h3>
+                        <div className="right-section" style={props}>
+                            <div className="classroom-info" >
+                                <h3 className="classroom-info__name" title={classroom.name}>{classroom.name}</h3>
+                                <h4 className="classroom-info__id">{`#${classroom.id}`}</h4>
+                            </div>
+                            {renderStudents(classroom.students)}
                         </div>
-                        {renderStudents(classroom.students)}
-                    </div>)}
+                    </>
+                )}
             </Spring>
         </div>
     );

@@ -2,14 +2,13 @@
 @import "../../styles/utilities";
 
 .ClassroomPage {
-    height: calc(100% - #{$top-menu-navigation-height});
+    min-height: calc(100% - #{$top-menu-navigation-height});
     display: flex;
 
     .left-menu {
-        background: $dark-grey;
         width: $left-menu-width;
+        background: $dark-grey;
         @include side-shadow(right);
-
         .navLinks {
             display: flex;
             flex-direction: column;
@@ -39,7 +38,6 @@
         display: flex;
         justify-content: center;
         align-items: center;
-
         .title {
             font-family: "Montserrat";
             font-weight: 500;
@@ -47,7 +45,33 @@
             margin-bottom: .5rem;
         }
     }
-    
+
+    @include tabletAndPhone {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        .left-menu { 
+            width: 100%;
+            @include box-shadow;
+            .navLinks {
+                margin:0;
+                padding:0;
+                height: 100%;
+                flex-direction: row !important;
+                justify-content: space-around;
+                align-items: center;
+                .navLink { margin-bottom: 0; }
+            }
+        }
+        .content {
+            margin: 1rem 0;
+            padding: .5rem;
+            align-items: initial;
+            justify-content: initial;
+            flex-direction: column;
+        }
+    }
+
     /*
     -------------------------
         SCHERMATE 
@@ -117,6 +141,7 @@
         .left-section {
             flex:1;
             padding: $view_padding;
+
             .card {
                 flex-direction: column;
                 padding: 1rem;
@@ -135,14 +160,15 @@
                 }
             }
         }
+        .title-right-section { display: none; }
         .right-section {
             background: #fff;
             display: flex;
             flex-direction: column;
             min-width: 13rem;
             max-width: 17rem;
+            max-height: calc(100vh - #{$top-menu-navigation-height});
             @include side-shadow(left);
-    
             .classroom-info {
                 margin-top: 2rem;
                 padding: 1rem;
@@ -176,10 +202,8 @@
                     text-align: center;
                     padding: 1rem;
                 }
-
                 .students-container {
                     flex:1;
-                    
                     .student {
                         display: flex;
                         align-items: center;
@@ -223,6 +247,35 @@
                 }
             }
         }
+        @include tabletAndPhone {
+            flex-direction: column;
+            .left-section {
+                padding: 0;
+                margin-bottom: 1.5rem;
+                .card { height: 20rem; }
+            }
+            .title-right-section { display: initial; }
+            .right-section {
+                border-radius: 3px;   
+                max-width: none;
+                min-width: none;
+                .classroom-info {
+                    text-align: left;
+                    margin-top: 1rem;
+                }
+                .students {
+                    .section-title { 
+                        text-align: left; 
+                        padding: 1.5rem 0;
+                    }
+                    .students-container {
+                        display: grid;
+                        grid-template-columns: repeat(auto-fill, minmax(9em, 1fr));
+                        .student { width:fit-content; }
+                    }
+                }
+            }
+        } 
     }
     /*
     -------------------------
@@ -232,8 +285,8 @@
 
     &__EditView {
         padding: $view_padding;
+        $border-radius: 3px;
         .card {
-            $border-radius: 3px;
             border-radius: $border-radius;
             .card__tab-menu {
                 background: darken($background-color, 6%);
@@ -274,7 +327,7 @@
                 display: flex;
                 flex-direction: column;
 
-                .edit-info-tab, .edit-students-tab, .edit-map-tab{ height: 100%;  }
+                .edit-info-tab, .edit-students-tab, .edit-map-tab{ flex:1; }
                 .section-title {
                     font-weight: 500;
                     color:$shuttle-grey;
@@ -398,6 +451,41 @@
                 }
             }
         }
+
+        @include tabletAndPhone {
+            padding: 0;
+            flex:1;
+            display: flex;
+            flex-direction: column;
+
+            .card {
+                min-height: 100%;
+                flex-direction: column;
+                flex:1; 
+                .card__tab-menu {
+                    border-bottom-left-radius: 0;
+                    border-top-right-radius: $border-radius;
+                    .tabs {
+                        margin-top: 0 !important;
+                        flex-direction: row !important;
+                        :last-child { border-top-right-radius:  $border-radius; }
+                        :first-child { border-top-left-radius:  $border-radius;}
+                        .tab {
+                            padding: 1rem;
+                            border-left: none !important;
+                            border-top: solid 3px transparent !important;
+                            &.current {
+                                border-top-color: $primary-color !important;
+                            }
+                        }
+                    }
+                }
+            }
+            .card__content { padding: 1rem !important; }
+        }
+        @include phone {
+            .edit-info-tab .fields { width: 100% !important; }
+        }
     }
 
     /*
@@ -430,7 +518,7 @@
                     svg {
                         margin-right: .5rem;
                         font-size: 1rem;
-                       vertical-align: middle;
+                        vertical-align: middle;
                     }
                 }
                 .shuffle-btn {  
@@ -480,23 +568,35 @@
                     }
                 }
             }
-           .map-wrapper {
-            flex:1;
-            .info-text {  color: $shuttle-grey; }
-            .canvas-wrapper {
-                height: 100%;
+            .map-wrapper {
+                flex:1;
+                flex-direction: column;
                 display: flex;
-                justify-content: center;
-                align-items: center;
-                position: relative;
-                #ClassroomMap { 
-                    position: absolute; 
-                    top:0; 
-                    left:0;
-                    canvas {  padding: 5px 0; }
+                .info-text {  color: $shuttle-grey; }
+                .canvas-wrapper {
+                    flex:1;
+                    position: relative;
+                    #ClassroomMap { 
+                        position: absolute; 
+                        top:0; 
+                        left:0;
+                        canvas {  padding: 5px 0; }
+                    }
                 }
-             }
            }
+        }
+        @include tabletAndPhone {
+            padding: 0;
+            flex:1;
+            display: flex;
+            flex-direction: column;
+            .card { 
+                flex-direction: column;
+                flex:1;
+                .buttons {
+                    margin-bottom: 1rem;
+                }
+            }
         }
     }
     
@@ -512,12 +612,10 @@
             border-radius: 5px;
             padding: 1rem;
             flex-direction: column;
-            
             .setting {
                 background: $background-color;
                 border-radius: 3px;
                 padding: .5rem 1rem;
-                //height: fit-content;
                 display: flex;
                 align-items: center; 
                 span {
@@ -526,6 +624,13 @@
                     font-weight: 500;
                 }
             }
+        }
+        @include tabletAndPhone {
+            padding: 0;
+            flex:1;
+            display: flex;
+            flex-direction: column;
+            .card { flex:1; }
         }
     }
 }

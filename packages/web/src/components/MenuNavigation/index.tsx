@@ -1,14 +1,34 @@
-import * as React from "react";
+import React, { useState, useRef } from "react";
 import classnames from "classnames";
 import { NavLink, withRouter, Link } from "react-router-dom";
 import * as styles from "./MenuNavigation.module.scss";
 
 const MenuNavigation: React.FC = () => {
   // se il manu ad humburger è aperto
-  const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  // menu
+  const refNavigation = useRef<HTMLDivElement>(null);
+  // ultimo valore dello scrol
+  //  const prevScrollPos = useRef<number>(window.pageYOffset);
+
+  let prevScrollPos = window.pageYOffset;
+
+  React.useEffect(() => {
+    const onScroll = () => {
+      if (!refNavigation.current) return;
+
+      const currentScrollPos = window.pageYOffset;
+      refNavigation.current.style.top = (prevScrollPos > currentScrollPos || currentScrollPos < 100) ?
+        "0" : "-51px";
+
+      prevScrollPos = currentScrollPos;
+    }
+    window.addEventListener("scroll", onScroll);
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   return (
-    <div className={styles.menuNavigation} id="TopMenuNavigation">
+    <div id="top-menu-navigation" className={styles.menuNavigation} ref={refNavigation}>
       {/* LOGO */}
       <div className={styles.logoContainer}>
         <div className={styles.logoImage}>
