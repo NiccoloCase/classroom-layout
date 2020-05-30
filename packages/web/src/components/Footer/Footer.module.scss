@@ -6,6 +6,9 @@
     .main {
         background: $dark-grey;
         display: flex;
+
+
+ 
         padding: 1rem 2rem;
 
         .sectionTitle {
@@ -129,6 +132,22 @@
         align-items: center;
         justify-content: center;
         .copyright { color: #fff; }
+    }
+
+    @include tablet {
+        .main {
+            flex-wrap: wrap;
+            .navigationSection, .contactsSection  {
+                flex: 1 0 50%;
+                align-items: flex-start;
+                flex:none;
+            }
+            .searchSection {
+                flex: 0 1 100%;
+                order: 3;
+                margin-top: 1rem;
+            }
+        }
     }
 
     @include phone {
