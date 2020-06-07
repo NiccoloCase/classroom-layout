@@ -14,6 +14,7 @@ $max-form-height: 80vh;
     align-items: center;
     justify-content: center;
     height: $page-height;
+
     @media (max-height:450px) { height: fit-content; }
     @include phone {  background: #fff; }
 
@@ -22,11 +23,18 @@ $max-form-height: 80vh;
 
         .title { 
             font-family: "Lato";
-            color:$primary-color;
+            //color:$primary-color;
+            color: $dark-grey;
             font-weight: 900;
             padding:$horizontal-padding;
             font-size: 2rem;
-            @include phone { font-size: 1.5rem; }
+            @include phone { 
+                font-size: 1.5rem;
+                width:fit-content;
+                padding-bottom: calc(#{$horizontal-padding} / 2);
+                margin-bottom:  calc(#{$horizontal-padding} / 2);
+                border-bottom: solid 1.5px $primary-color;
+            }
         }
         // FORM
         .form {
@@ -39,13 +47,16 @@ $max-form-height: 80vh;
             max-width: $max-form-width;
             height: $form-height;
 
+            @media screen and (max-width: 800px){
+                height: $max-form-height; 
+                width: 90vw;
+            }
             @media (max-height:450px) { height: fit-content;}
             @include phone {
                 height: $max-form-height; 
                 width:100vw;
                 min-width: 0;
                 background: transparent;
-                border-top: solid 2px $medium-grey;
                 @include remove-shadow;
             }
             
@@ -100,6 +111,11 @@ $max-form-height: 80vh;
                         color: $red;
                     }
                 }
+                .paragraph {
+                    padding-left: .6rem;
+                    border-left: solid 2px $primary-color;
+                }
+
             }
 
             // PARTE INFERIORE CON I BOTTONI PER LA NAVIGAZIONE
@@ -166,28 +182,37 @@ $max-form-height: 80vh;
                 }
             }
             .image {
+                margin-left: 2rem;
                 flex:1;
                 display: flex;
                 justify-content: center;
                 align-items: center;
                 flex-direction: column;
-                $image-width: 17rem;
-                p {
-                    margin:1rem;
-                    width:$image-width;
-                    letter-spacing: 2px;
+                p { margin:1rem; }
+                .img  { 
+                    flex: 1;  
+                    background-image: url("../../assets/images//pc-email.svg");
+                    background-repeat:no-repeat;
+                    background-position: center center;
+                    width:100%;
                 }
-                img { width:$image-width; }
             }
+
             // Dipositivi che si sviuluppano in altezza
-            @media (min-height: 950px) { 
+            @media screen and (min-height: 950px), screen and (max-width:800px) { 
                 flex-direction: column; 
                 .fields { padding: 0 2rem; }
+                .image {
+                    margin-left: 0;
+                    padding: 0 1rem;
+                    flex-direction: row-reverse;
+                    p { flex:1; }
+                   .img  { 
+                        width: auto;
+                        height: 100%;
+                    } 
+                }
             }
-            // dispositivi corti
-            @media (max-height:450px) { .image { display: none; } }
-            // telefoni verticali
-            @include phone { .image { display: none; } }
         }
        // II FORM (STUDENTI DELLA CLASSE)
         .StudentsForm {
@@ -202,10 +227,10 @@ $max-form-height: 80vh;
                         color:#fff;
                         font-family: 1.3rem;
                         margin: 1.5rem 0;
+                        margin-left: .5rem;
                         padding: 0.7rem 0.5rem;
                         border: none;
                         border-radius: 5px;
-                        margin-left: .5rem;
                         transition: all .4s;
                         pointer-events: auto;
                         &:disabled {
@@ -215,6 +240,11 @@ $max-form-height: 80vh;
                         &:active:enabled { transform: scale(1.2); }
                         &:hover:enabled { background: #57B845; }
                     }
+                }
+                .students-number {
+                    color: $dark-grey;
+                    margin-bottom: .5rem;
+                    display: block;
                 }
             }
             .right {
@@ -244,7 +274,10 @@ $max-form-height: 80vh;
             @mixin mobile {
                 flex-direction: column; 
                 padding-bottom: 0;
-                .left { flex:1; }
+                .left { 
+                    flex:1;
+                    .paragraph { margin-bottom: 1rem; }
+                }
                 .right {
                     margin:0;
                     .student-card{
@@ -299,14 +332,13 @@ $max-form-height: 80vh;
                 justify-content: center;
             }
             .success-box {
-                $green: #57B845;
                 h1 {
                     color: $shuttle-grey;
                     font-size: 1.5rem;
-                    svg {color: $green; }
+                    svg { color: $primary-color; }
                 }
                 p {
-                    margin: 1.5rem 0;
+                    margin: 1.5rem 0 3rem 0;
                     font-size: 1rem;
                     color: $dark-grey;
                 }
@@ -325,18 +357,19 @@ $max-form-height: 80vh;
                         user-select: all;
                     }
                     button {
-                        margin-left: .5rem;
+                        margin-right: 1rem;
                         background: transparent;
                         border:none;
                         color:$dark-grey;
-                        font-size: 1rem;
                         transition: all .4s;
                         &:active { transform: scale(1.2); }
                         &:hover { color:#000; }
+                        svg { font-size: 1rem; }
                     }
                 }
                 .class-link-button {
-                    background: $green;
+                    //background: #F9A66C;   
+                    background: $primary-color; 
                     margin: 1.5rem 0;
                     padding: 0.7rem 2rem;
                     border: none;
