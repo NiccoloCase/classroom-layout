@@ -1,38 +1,45 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useContext } from "react";
 import classnames from "classnames";
 import { NavLink, withRouter, Link } from "react-router-dom";
 import * as styles from "./MenuNavigation.module.scss";
+import { ThemeContext } from '../../context';
 
 const MenuNavigation: React.FC = () => {
+  const refNavigation = useRef<HTMLDivElement>(null);
   // se il manu ad humburger è aperto
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  // menu
-  const refNavigation = useRef<HTMLDivElement>(null);
+  // context
+  const themeCtx = useContext(ThemeContext)
   // ultimo valore dello scrol
-  //  const prevScrollPos = useRef<number>(window.pageYOffset);
-
   let prevScrollPos = window.pageYOffset;
 
   React.useEffect(() => {
     const onScroll = () => {
       if (!refNavigation.current) return;
-
       const currentScrollPos = window.pageYOffset;
-      refNavigation.current.style.top = (prevScrollPos > currentScrollPos || currentScrollPos < 100) ?
-        "0" : "-51px";
+
+      if (isMenuOpen || prevScrollPos > currentScrollPos || currentScrollPos < 100) {
+        refNavigation.current.style.top = "0";
+        // imposta quando la barra deve essere trasparente 
+        if (currentScrollPos === 0) refNavigation.current.classList.remove(styles.nonTransparent);
+        else refNavigation.current.classList.add(styles.nonTransparent);
+      }
+      else refNavigation.current.style.top = "-51px";
 
       prevScrollPos = currentScrollPos;
     }
     window.addEventListener("scroll", onScroll);
     return () => window.removeEventListener("scroll", onScroll);
-  }, []);
+  }, [isMenuOpen]);
 
   return (
-    <div id="top-menu-navigation" className={styles.menuNavigation} ref={refNavigation}>
+    <div id="top-menu-navigation" ref={refNavigation}
+      className={classnames(styles.menuNavigation, { [styles.light]: themeCtx.navBarStyle === "light" })} >
       {/* LOGO */}
       <div className={styles.logoContainer}>
         <div className={styles.logoImage}>
-          <img src={require("../../assets/images/logo.png")} alt="LOGO" />
+          <img alt="LOGO" src={
+            require(`../../assets/images/logo-${themeCtx.navBarStyle === "light" ? "dark" : "light"}.png`)} />
         </div>
         <Link to="/" className={styles.logo}>Classroom layout</Link>
       </div>

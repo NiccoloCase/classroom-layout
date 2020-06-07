@@ -25,18 +25,20 @@ export const validateClassroomName = (value: string): ValidationResult => {
  * Valida il valore dell'EMAIL associata a una classe
  * @param value Email
  */
-export const validateClassroomEmail = async (value: string): Promise<ValidationResult> => {
+export const validateClassroomEmail = async (value: string, options: { allowAlreadyUsedEmail?: string } = {}): Promise<ValidationResult> => {
     /** Messaggio di errore */
     let msg = "";
 
     if (validator.isEmpty(value)) msg = "Questo campo è richisto";
     else if (!validator.isEmail(value)) msg = "È richiesta un'email coretta";
     else {
-        // Controlla che l'email non sia già stata utilizzata
-        const { data } = await apolloClient.query<IsEmailAlreadyUsedQuery>({
-            query: isEmailAlreadyUsedQuery, variables: { email: value }
-        });
-        if (data.isEmailAlreadyUsed) msg = "L'email è già associata a un altra classe";
+        if (!options.allowAlreadyUsedEmail) {
+            // Controlla che l'email non sia già stata utilizzata
+            const { data } = await apolloClient.query<IsEmailAlreadyUsedQuery>({
+                query: isEmailAlreadyUsedQuery, variables: { email: value }
+            });
+            if (data.isEmailAlreadyUsed) msg = "L'email è già associata a un altra classe";
+        }
         // validazione passata con successo
         else return { hasPassed: true };
     }

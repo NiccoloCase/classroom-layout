@@ -1,0 +1,39 @@
+@import "../../styles/variables";
+@import "../../styles/utilities";
+
+.wrap {
+    display: inline-block;
+    position: relative;
+    display: flex;
+    width: fit-content;
+
+    .input, .display { color: $shuttle-grey; }
+
+    .display {
+        background: $background-color;
+        border-radius: 3px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative; 
+        font-weight: 400;     
+    }
+    
+    .input {
+        z-index: 2;
+        position: absolute;
+        border: none;
+        text-align: center;
+        background-color: transparent;
+        outline: none;
+    }
+
+    .shadows {
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        right: 0;
+        box-shadow: 0 0 0 4px rgba(58, 151, 212, 0.28);
+      }
+}

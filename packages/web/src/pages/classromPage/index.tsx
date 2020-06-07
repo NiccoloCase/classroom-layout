@@ -21,9 +21,35 @@ export const ClassroomPage: React.FC<RouteComponentProps<IParams>> = props => {
     const id = props.match.params.class_id;
     const { loading, error, data, refetch } = useGetClassroomByIdQuery({ variables: { id } });
 
-    // GRAOHQL
     React.useEffect(() => {
-        if (data) setClassroom(data.getClassroomById as Classroom | undefined);
+        if (!data) return;
+        setClassroom(data.getClassroomById as Classroom);
+
+        // SALVA LA CLASSE CERCATA NELLO STORAGE
+        // salvataggi 
+        const recentClassrooms = JSON.parse(localStorage.getItem("recent-classrooms") || "[]");
+        if (!Array.isArray(recentClassrooms)) return;
+
+        // elimina eventuali copie della stessa classe
+        const cl = recentClassrooms.find(c => c.id === id);
+        const index = recentClassrooms.indexOf(cl);
+        if (index > -1) recentClassrooms.splice(index, 1);
+
+        // aggiunge una nuova classe
+        recentClassrooms.unshift({
+            name: data.getClassroomById.name,
+            email: data.getClassroomById.email,
+            id: data.getClassroomById.id
+        });
+
+        // limita il numero di classi salvate
+        const maxClassrooms = 5;
+        if (recentClassrooms.length > maxClassrooms)
+            recentClassrooms.length = maxClassrooms;
+
+        // salva le modifiche
+        localStorage.setItem("recent-classrooms", JSON.stringify(recentClassrooms));
+
     }, [data]);
 
     /**

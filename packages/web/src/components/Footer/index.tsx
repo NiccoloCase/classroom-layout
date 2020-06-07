@@ -26,7 +26,7 @@ const FooterComponent: React.FC<RouteComponentProps> = ({ history }) => {
             <div className={styles.main}>
                 <div className={styles.logoSection}>
                     <div className={styles.logoWrapper}>
-                        <img src={require("../../assets/images/logo.png")} alt="LOGO" />
+                        <img src={require("../../assets/images/logo-light.png")} alt="LOGO" />
                         <h2>Classroom <br /> Layout </h2>
                     </div>
                 </div>

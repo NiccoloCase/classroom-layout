@@ -1,5 +1,7 @@
 @import "../../styles/variables";
 
+$max-width-media: 700px;
+
 .menuNavigation {
   height: $top-menu-navigation-height;
   z-index: 1;
@@ -8,7 +10,7 @@
   display: flex;
   align-items: center;
   background: $primary-color;
-  transition: top .4s;
+  transition: all .2s, top .4s;
   a { text-decoration: none; }
 
   // LOGO (DI SINSTRA)
@@ -69,9 +71,10 @@
     }
   }
   // PER DISPOSITIVI PICCOLI
-	@media (max-width: 700px) { 
+	@media (max-width: $max-width-media) { 
     &Nav {flex:none}
     .navLinks  {
+      color: #fff !important;
       z-index: 2;
       top:0;
       position: fixed;
@@ -124,7 +127,27 @@
   }
   
   &.light {
-    background: #fff;
+    position: fixed;
+    width:100%;
+    background: transparent;
+    &.nonTransparent {
+      background: #fff;
+      .navLink {
+         color: $shuttle-grey; 
+         @media (max-width: $max-width-media) {  color: #fff; }
+      }
+      .hamburger .line {
+        &, &::before, &::after { background: $dark-grey; }
+        &.close {
+          background: transparent;
+          &::before, &::after { background: #fff; }
+        }
+      }
+    }
+   .logoContainer {
+      .logoImage { background: transparent; }
+      .logo { color: $dark-grey; }
+    }
   }
 }
 

@@ -1,10 +1,10 @@
 import { Module, MiddlewareConsumer, RequestMethod } from '@nestjs/common';
-import { ServeStaticModule } from "@nestjs/serve-static"
 import { join } from "path";
 import { GraphQLModule } from "@nestjs/graphql";
 import { MongooseModule } from "@nestjs/mongoose"
 import { ClassroomModule } from './classroom/classroom.module';
 import { ServeWebAppMiddleware } from './shared/app.middleware';
+import { EmailModule } from './email/email.module';
 import config from "@crl/config";
 
 @Module({
@@ -22,8 +22,9 @@ import config from "@crl/config";
         path: join(process.cwd(), 'src/graphql.ts'),
       },
     }),
-    ClassroomModule,
-    // ServeStaticModule.forRoot({ rootPath: join(__dirname, '../../web/build'), exclude: ['/api*'] }),
+    // altro
+    EmailModule,
+    ClassroomModule
   ]
 })
 

@@ -1,14 +1,18 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException, InternalServerErrorException } from '@nestjs/common';
 import * as _ from "lodash";
 import { InjectModel } from '@nestjs/mongoose';
-import { Classroom, Desk } from '../graphql';
+import { Classroom } from '../graphql';
 import { IClassroomModel } from './classroom.schema';
 import { Model } from 'mongoose';
 import { NewClassroomDTO, EditClassroomDTO } from './classroom.dto';
+import { EmailService } from '../email/email.service';
 
 @Injectable()
 export class ClassroomService {
-    constructor(@InjectModel("Classroom") private readonly classroomModel: Model<IClassroomModel>) { }
+    constructor(
+        @InjectModel("Classroom") private readonly classroomModel: Model<IClassroomModel>,
+        private readonly emailService: EmailService
+    ) { }
 
     /**
      * Restituisce la classe associata all'ID dato
@@ -83,5 +87,17 @@ export class ClassroomService {
         catch (err) {
             throw new BadRequestException();
         }
+    }
+
+    /**
+     * Spedisce un email contenete l'ID dell classe associata all'email
+     */
+    async  sendIdByEmail(email: string) {
+        // cerca la classe associata all'email
+        const classroom = await this.findClassroomByEmail(email);
+        if (!classroom) throw new BadRequestException();
+        // spedisce l'email con l'ID 
+        const res = await this.emailService.sendClassroomId(email, classroom.id);
+        if (res.success === false) throw new InternalServerErrorException();
     }
 }

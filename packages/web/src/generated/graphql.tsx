@@ -37,11 +37,18 @@ export type DeskInput = {
   orientation: Scalars['Int'];
 };
 
+export type EmailResponse = {
+   __typename?: 'EmailResponse';
+  recipient: Scalars['String'];
+  success: Scalars['Boolean'];
+};
+
 export type Mutation = {
    __typename?: 'Mutation';
   createClassroom: Classroom;
   editClassroom: Classroom;
   shuffleDesks: Classroom;
+  sendClassroomIdByEmail: EmailResponse;
 };
 
 
@@ -64,6 +71,11 @@ export type MutationEditClassroomArgs = {
 
 export type MutationShuffleDesksArgs = {
   classId: Scalars['ID'];
+};
+
+
+export type MutationSendClassroomIdByEmailArgs = {
+  email: Scalars['String'];
 };
 
 export type Query = {
@@ -97,7 +109,7 @@ export type GetClassroomByIdQuery = (
   { __typename?: 'Query' }
   & { getClassroomById: (
     { __typename?: 'Classroom' }
-    & Pick<Classroom, 'name' | 'email' | 'students'>
+    & Pick<Classroom, 'id' | 'name' | 'email' | 'students'>
     & { desks: Array<(
       { __typename?: 'Desk' }
       & Pick<Desk, 'x' | 'y' | 'orientation'>
@@ -161,10 +173,24 @@ export type EditClassroomMutation = (
   ) }
 );
 
+export type SendClassroomIdByEmailMutationVariables = {
+  email: Scalars['String'];
+};
+
+
+export type SendClassroomIdByEmailMutation = (
+  { __typename?: 'Mutation' }
+  & { sendClassroomIdByEmail: (
+    { __typename?: 'EmailResponse' }
+    & Pick<EmailResponse, 'recipient'>
+  ) }
+);
+
 
 export const GetClassroomByIdDocument = gql`
     query GetClassroomById($id: ID!) {
   getClassroomById(id: $id) {
+    id
     name
     email
     students
@@ -366,3 +392,41 @@ export function useEditClassroomMutation(baseOptions?: ApolloReactHooks.Mutation
 export type EditClassroomMutationHookResult = ReturnType<typeof useEditClassroomMutation>;
 export type EditClassroomMutationResult = ApolloReactCommon.MutationResult<EditClassroomMutation>;
 export type EditClassroomMutationOptions = ApolloReactCommon.BaseMutationOptions<EditClassroomMutation, EditClassroomMutationVariables>;
+export const SendClassroomIdByEmailDocument = gql`
+    mutation SendClassroomIdByEmail($email: String!) {
+  sendClassroomIdByEmail(email: $email) {
+    recipient
+  }
+}
+    `;
+export type SendClassroomIdByEmailMutationFn = ApolloReactCommon.MutationFunction<SendClassroomIdByEmailMutation, SendClassroomIdByEmailMutationVariables>;
+export type SendClassroomIdByEmailComponentProps = Omit<ApolloReactComponents.MutationComponentOptions<SendClassroomIdByEmailMutation, SendClassroomIdByEmailMutationVariables>, 'mutation'>;
+
+    export const SendClassroomIdByEmailComponent = (props: SendClassroomIdByEmailComponentProps) => (
+      <ApolloReactComponents.Mutation<SendClassroomIdByEmailMutation, SendClassroomIdByEmailMutationVariables> mutation={SendClassroomIdByEmailDocument} {...props} />
+    );
+    
+
+/**
+ * __useSendClassroomIdByEmailMutation__
+ *
+ * To run a mutation, you first call `useSendClassroomIdByEmailMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useSendClassroomIdByEmailMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [sendClassroomIdByEmailMutation, { data, loading, error }] = useSendClassroomIdByEmailMutation({
+ *   variables: {
+ *      email: // value for 'email'
+ *   },
+ * });
+ */
+export function useSendClassroomIdByEmailMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<SendClassroomIdByEmailMutation, SendClassroomIdByEmailMutationVariables>) {
+        return ApolloReactHooks.useMutation<SendClassroomIdByEmailMutation, SendClassroomIdByEmailMutationVariables>(SendClassroomIdByEmailDocument, baseOptions);
+      }
+export type SendClassroomIdByEmailMutationHookResult = ReturnType<typeof useSendClassroomIdByEmailMutation>;
+export type SendClassroomIdByEmailMutationResult = ApolloReactCommon.MutationResult<SendClassroomIdByEmailMutation>;
+export type SendClassroomIdByEmailMutationOptions = ApolloReactCommon.BaseMutationOptions<SendClassroomIdByEmailMutation, SendClassroomIdByEmailMutationVariables>;
