@@ -348,8 +348,8 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
         // SWAP FUNCTION
         // scambia gli studenti
         const { initialDesk, currentDesk } = this.drag;
-        if (initialDesk) {
-            if (currentDesk && initialDesk !== currentDesk) this.swapStudents(initialDesk, currentDesk);
+        if (!isNil(initialDesk)) {
+            if (!isNil(currentDesk) && initialDesk !== currentDesk) this.swapStudents(initialDesk, currentDesk);
             this.drag.initialDesk = null;
             this.drag.currentDesk = null;
         }
