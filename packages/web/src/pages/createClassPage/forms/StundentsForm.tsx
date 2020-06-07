@@ -9,7 +9,7 @@ import config from "@crl/config";
 /** Numero massimo degli studenti */
 const MAX_STDUENTS = 30;
 
-const defaultStudents = config.isProduction ? [] : ["Prova 1", "Prova 2", "Prova 3", "Prova 4"];
+const defaultStudents = config.isProduction ? [] : ["TEST 1", "TEST 2", "TEST 3", "TEST 4"];
 
 interface StundentsFormProps {
     storeValues: (students: null | string[], id?: number | string) => void;
@@ -115,7 +115,11 @@ export const StundentsForm: React.FC<StundentsFormProps> = ({ storeValues, id, c
                         Aggiungi
                     </button>
                 </div>
-                <span>{studentsNumber()} </span>
+
+                <p className="paragraph">
+                    <b className="students-number">{studentsNumber()}</b>
+                    La tua classe può essere composta da un minimo di 2 studenti a un massimo di 30. Ogni studente è identificato da un appellativo la cui lunghezza deve rientrare tra i 3 e i 20 caratteri.
+                </p>
             </div>
             <div className="right" ref={studentsContainer as any}>
                 {renderStudents()}

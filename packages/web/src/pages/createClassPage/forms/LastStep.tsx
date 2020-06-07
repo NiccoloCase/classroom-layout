@@ -1,11 +1,13 @@
-import * as React from "react";
+import React, { useRef, useState } from "react";
 import VisibilitySensor from "react-visibility-sensor";
 import { useCreateClassroomMutation, DeskInput } from '../../../generated/graphql';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faExclamationCircle, faCheckSquare, faCopy, faChevronRight } from '@fortawesome/free-solid-svg-icons';
+import { faExclamationCircle, faCheckSquare, faCopy, faChevronRight, faLink } from '@fortawesome/free-solid-svg-icons';
 import { Link } from 'react-router-dom';
 import { FadeLoader } from 'react-spinners';
 import { faCircle } from '@fortawesome/free-regular-svg-icons';
+import config from "@crl/config";
+import { faSlackHash } from '../../../../../../node_modules/@fortawesome/free-brands-svg-icons';
 
 interface LastStepProps {
     name?: string;
@@ -15,13 +17,13 @@ interface LastStepProps {
 }
 
 export const LastStep: React.FC<LastStepProps> = ({ name, email, desks, students }) => {
-    const idInput = React.useRef<HTMLInputElement>(null);
+    const idInput = useRef<HTMLInputElement>(null);
+    const [isLinkShown, setIsLinkShown] = useState(false);
     // GRAPQHL
     const [addClass, { data, error }] = useCreateClassroomMutation();
 
-    // For the development
-    /* 
-    name = "shsih";
+    // TEST
+    /* name = "shsih";
     email = Math.random() * 100 + "abc@gmail.com";
     desks = [{ x: 0, y: 0, orientation: 1 }, { x: 3, y: 3, orientation: 1 }];
     students = ["abcd", "abcde"]; */
@@ -79,12 +81,20 @@ export const LastStep: React.FC<LastStepProps> = ({ name, email, desks, students
             return (
                 <div className="success-box">
                     <h1><FontAwesomeIcon icon={faCheckSquare} /> La registrazione è andata a buon fine</h1>
-                    <p>
+                    <p className="paragraph">
                         L'ID riportato sotto è quello associato alla classe appena creata ed è indispensabile per accedervi. <br /> Nel caso in cui sia perso, è comunque possibile ottenerne un altro tramite l'email inserita in fase di registrazione.
                     </p>
                     <span className="id-box">
-                        <input type="text" value={id} ref={idInput} readOnly />
-                        <button onClick={copyId}><FontAwesomeIcon icon={faCopy} /> </button>
+                        <input type="text" readOnly ref={idInput}
+                            value={isLinkShown ? `${config.server.WEB_APP_DOMAIN}/${id}` : id}
+                        />
+                        <button onClick={copyId} title={`Copia ${!isLinkShown ? "l'ID" : "il link"}`}>
+                            <FontAwesomeIcon icon={faCopy} />
+                        </button>
+                        <button onClick={() => setIsLinkShown(!isLinkShown)}
+                            title={`Mostra ${isLinkShown ? "l'ID" : "il link"}`}>
+                            <FontAwesomeIcon icon={isLinkShown ? faSlackHash : faLink} />
+                        </button>
                     </span>
                     <br />
                     <button className="class-link-button">
