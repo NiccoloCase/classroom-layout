@@ -11,15 +11,7 @@ const FooterComponent: React.FC<RouteComponentProps> = ({ history }) => {
     const serachClass = () => {
         history.push(`/${searchValue}`);
         setSearchValue("");
-        scrollUp();
     }
-
-    const scrollUp = () =>
-        window.scrollTo({
-            top: 0,
-            left: 0,
-            behavior: 'smooth'
-        });
 
     return (
         <div className={styles.footer}>
@@ -44,10 +36,10 @@ const FooterComponent: React.FC<RouteComponentProps> = ({ history }) => {
                 <div className={styles.navigationSection}>
                     <div className={styles.links}>
                         <h4 className={styles.sectionTitle}>Navigazione</h4>
-                        <NavLink to="/" className={styles.link} onClick={scrollUp}>Home</NavLink>
-                        <NavLink to="/new" className={styles.link} onClick={scrollUp}>Registra classe</NavLink>
-                        <NavLink to="/info" className={styles.link} onClick={scrollUp}>Informazioni</NavLink>
-                        <NavLink to="/faq" className={styles.link} onClick={scrollUp}>Domande frequenti</NavLink>
+                        <NavLink to="/" className={styles.link}>Home</NavLink>
+                        <NavLink to="/new" className={styles.link}>Registra classe</NavLink>
+                        <NavLink to="/info" className={styles.link}>Informazioni</NavLink>
+                        <NavLink to="/faq" className={styles.link}>Domande frequenti</NavLink>
                     </div>
                 </div>
                 <div className={styles.contactsSection}>

@@ -1,5 +1,5 @@
-import * as React from "react";
-import { BrowserRouter as Router, Route, Switch, RouteComponentProps } from "react-router-dom";
+import React, { useEffect } from "react";
+import { BrowserRouter as Router, Route, Switch, RouteComponentProps, useLocation } from "react-router-dom";
 import MenuNavigation from '../components/MenuNavigation';
 import { TitleComponent } from '../components/TitleComponent';
 // PAGINE
@@ -7,6 +7,15 @@ import { LandingPage } from '../pages/landingPage';
 import { ClassroomPage } from '../pages/classromPage';
 import { CreateClassPage } from "../pages/createClassPage"
 import FooterComponent from '../components/Footer';
+
+
+
+export default function ScrollToTop() {
+  const { pathname } = useLocation();
+  useEffect(() => window.scrollTo(0, 0), [pathname]);
+  return null;
+}
+
 
 /**
  * Funzione che decide se indirizzare il client a una classe salvata o alla landing page 
@@ -23,6 +32,7 @@ const SwitchMainPage: React.FC<RouteComponentProps> = ({ history }) => {
 export const Routes = () => {
   return (
     <Router >
+      <ScrollToTop />
       <TitleComponent />
       <MenuNavigation />
       <Switch>
