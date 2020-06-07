@@ -11,3 +11,4 @@ export const hamburger: string;
 export const line: string;
 export const close: string;
 export const light: string;
+export const nonTransparent: string;

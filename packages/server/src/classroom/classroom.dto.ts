@@ -49,3 +49,8 @@ export class EditClassroomDTO {
     @IsString({ each: true })
     students?: string[];
 }
+
+export class GetIdByEmailDTO {
+    @IsEmail()
+    email: string;
+}

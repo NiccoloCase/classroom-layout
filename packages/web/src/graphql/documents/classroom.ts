@@ -6,6 +6,7 @@ import gql from "graphql-tag";
 export const getClassroomByIdQuery = gql`
     query GetClassroomById($id: ID!) {
         getClassroomById(id: $id) {
+            id
             name
             email
             students
@@ -50,12 +51,23 @@ export const shuffleDesksMutation = gql`
 `
 
 /**
- * Cabia i banchi
+ * Cambia i banchi
  */
 export const editClassroomMutation = gql`
     mutation EditClassroom($id: ID!, $name: String, $email: String, $desks: [DeskInput!], $students: [String!]){
         editClassroom(id: $id, name: $name, email: $email, desks: $desks, students: $students) {
             id
+        }
+    }
+`
+
+/**
+ * Spedisce un email contenete l'ID della classe associata
+ */
+export const sendClassroomIdByEmailMutation = gql`
+    mutation SendClassroomIdByEmail($email: String!){
+        sendClassroomIdByEmail(email: $email) {
+            recipient
         }
     }
 `

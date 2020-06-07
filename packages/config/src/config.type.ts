@@ -6,9 +6,19 @@ export interface IConfiguration {
     server: {
         /** Porta del server */
         PORT: number;
+        /** Dominio della webapp */
+        WEB_APP_DOMAIN: string;
     },
     database: {
         /** URI di conessione al server */
         URI: string;
+    },
+    emailService: {
+        /** Dominio dell'email */
+        SENDER: string;
+        /** Utente dell'API */
+        USER: string;
+        /** Password dell'API */
+        PASSWORD: string;
     }
 }

@@ -1,0 +1,4 @@
+type EmailResponse {
+    recipient: String!
+    success: Boolean!
+}

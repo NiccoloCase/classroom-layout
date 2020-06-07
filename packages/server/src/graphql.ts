@@ -27,10 +27,16 @@ export interface Desk {
     orientation: number;
 }
 
+export interface EmailResponse {
+    recipient: string;
+    success: boolean;
+}
+
 export interface IMutation {
     createClassroom(email: string, name: string, desks: DeskInput[], students: string[]): Classroom | Promise<Classroom>;
     editClassroom(id: string, name?: string, email?: string, desks?: DeskInput[], students?: string[]): Classroom | Promise<Classroom>;
     shuffleDesks(classId: string): Classroom | Promise<Classroom>;
+    sendClassroomIdByEmail(email: string): EmailResponse | Promise<EmailResponse>;
 }
 
 export interface IQuery {
