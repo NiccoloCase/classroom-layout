@@ -1,4 +1,4 @@
-import * as React from 'react';
+import React, { useState, useEffect } from 'react';
 import { HashLoader } from 'react-spinners';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEdit, faRandom, faCog, faMap } from '@fortawesome/free-solid-svg-icons';
@@ -16,12 +16,12 @@ interface IParams { class_id: string };
 
 export const ClassroomPage: React.FC<RouteComponentProps<IParams>> = props => {
     // classe
-    const [classroom, setClassroom] = React.useState<Classroom | undefined>(undefined);
+    const [classroom, setClassroom] = useState<Classroom | undefined>(undefined);
     // GRAPHQL
     const id = props.match.params.class_id;
     const { loading, error, data, refetch } = useGetClassroomByIdQuery({ variables: { id } });
 
-    React.useEffect(() => {
+    useEffect(() => {
         if (!data) return;
         setClassroom(data.getClassroomById as Classroom);
 

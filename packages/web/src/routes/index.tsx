@@ -8,14 +8,11 @@ import { ClassroomPage } from '../pages/classromPage';
 import { CreateClassPage } from "../pages/createClassPage"
 import FooterComponent from '../components/Footer';
 
-
-
 export default function ScrollToTop() {
   const { pathname } = useLocation();
   useEffect(() => window.scrollTo(0, 0), [pathname]);
   return null;
 }
-
 
 /**
  * Funzione che decide se indirizzare il client a una classe salvata o alla landing page 
@@ -31,7 +28,7 @@ const SwitchMainPage: React.FC<RouteComponentProps> = ({ history }) => {
 
 export const Routes = () => {
   return (
-    <Router >
+    <Router>
       <ScrollToTop />
       <TitleComponent />
       <MenuNavigation />
