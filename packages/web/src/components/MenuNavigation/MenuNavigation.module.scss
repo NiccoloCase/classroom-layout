@@ -134,6 +134,7 @@ $max-width-media: 700px;
       background: #fff;
       .navLink {
          color: $shuttle-grey; 
+         &.active { background: darken(#fff, 5%); }
          @media (max-width: $max-width-media) {  color: #fff; }
       }
       .hamburger .line {
