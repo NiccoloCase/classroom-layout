@@ -38,6 +38,8 @@ export const validateClassroomEmail = async (value: string, options: { allowAlre
                 query: isEmailAlreadyUsedQuery, variables: { email: value }
             });
             if (data.isEmailAlreadyUsed) msg = "L'email è già associata a un altra classe";
+            // validazione passata con successo
+            else return { hasPassed: true };
         }
         // validazione passata con successo
         else return { hasPassed: true };
