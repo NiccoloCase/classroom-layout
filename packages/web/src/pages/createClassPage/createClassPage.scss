@@ -14,6 +14,7 @@ $max-form-height: 80vh;
     align-items: center;
     justify-content: center;
     height: $page-height;
+    position: relative;
 
     @media (max-height:450px) { height: fit-content; }
     @include phone {  background: #fff; }

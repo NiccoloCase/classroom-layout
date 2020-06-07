@@ -10,7 +10,7 @@ import { MapView } from './views/MapView';
 import { EditView } from './views/EditView';
 import { ShuffleView } from './views/ShuffleView';
 import { SettingsView } from './views/SettingsView';
-import { NotFoundView } from '../../components/NotFound';
+import { NotFoundView, ServerErrorView } from '../../components/errorComponents';
 
 interface IParams { class_id: string };
 
@@ -120,17 +120,9 @@ export const ClassroomPage: React.FC<RouteComponentProps<IParams>> = props => {
         const err = error.graphQLErrors[0];
         // la classe non è stata trovata
         if (err && err.extensions && err.extensions.exception.status === 404)
-            return (
-                <div className="content">
-                    <NotFoundView />
-                </div>
-            );
+            return <NotFoundView />;
         // errore sconosciuto
-        return (
-            <div className="content">
-                <h1>C'è stato un errore, riprova piu'tardi</h1>
-            </div>
-        );
+        return <ServerErrorView />
     }
 
     /**
@@ -145,7 +137,7 @@ export const ClassroomPage: React.FC<RouteComponentProps<IParams>> = props => {
     const renderCorrectView = () => {
         if (error) return renderErrorView();
         else if (loading || !classroom) return loadingView;
-        return renderMainView(classroom);
+        return renderMainView(classroom as any);
     }
 
     return (
