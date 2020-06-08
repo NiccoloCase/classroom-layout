@@ -1,12 +1,14 @@
 import React, { useEffect } from "react";
 import { BrowserRouter as Router, Route, Switch, RouteComponentProps, useLocation } from "react-router-dom";
 import MenuNavigation from '../components/MenuNavigation';
+import FooterComponent from '../components/Footer';
 import { TitleComponent } from '../components/TitleComponent';
 // PAGINE
 import { LandingPage } from '../pages/landingPage';
 import { ClassroomPage } from '../pages/classromPage';
 import { CreateClassPage } from "../pages/createClassPage"
-import FooterComponent from '../components/Footer';
+import { FAQPage } from '../pages/FAQPage';
+
 
 export default function ScrollToTop() {
   const { pathname } = useLocation();
@@ -36,6 +38,7 @@ export const Routes = () => {
         <Route path={["/", "/home"]} exact component={SwitchMainPage} />
         <Route path="/landing" exact component={LandingPage} />
         <Route path="/new" exact component={CreateClassPage} />
+        <Route path="/faq" component={FAQPage} />
         <Route path="/:class_id" component={ClassroomPage} />
       </Switch>
       <FooterComponent />

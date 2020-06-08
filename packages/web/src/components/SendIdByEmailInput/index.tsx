@@ -1,25 +1,18 @@
-import React, { useState, FormEvent, useRef, ReactNode, useEffect } from "react";
+import React, { useState, useEffect, FormEvent, ReactNode } from "react";
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faPaperPlane, faCheck, faExclamationCircle } from '@fortawesome/free-solid-svg-icons';
 import { isEmpty } from "lodash";
 import * as classnames from "classnames";
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPaperPlane, faTimes, faCheck, faExclamationCircle } from '@fortawesome/free-solid-svg-icons';
-import { useIsEmailAlreadyUsedLazyQuery, useSendClassroomIdByEmailMutation } from '../../generated/graphql';
-import { useValueValidation, validateClassroomEmail, useOutsideClickDetector } from '../../helper';
-import { DotLoader } from 'react-spinners';
+import { useValueValidation, validateClassroomEmail } from '../../helper';
+import { useSendClassroomIdByEmailMutation, useIsEmailAlreadyUsedLazyQuery } from '../../generated/graphql';
+import { DotLoader } from '../../../../../node_modules/react-spinners';
 
-interface SendEmailFormProps {
-    popupHasClosed: () => void;
-    className?: string;
-}
-
-export const SendEmailForm: React.FC<SendEmailFormProps> = ({ popupHasClosed, className }) => {
+export const SendIdByEmailInput = () => {
     const [emailValidation, validateEmail] = useValueValidation(validateClassroomEmail);
     const [email, setEmail] = useState("");
     //  tempo che manca prima che si possa spedrire un'altra email
     const [timeLeft, setTimeLeft] = useState<number | null>(null);
-    // rivela quando il client clica al di fuori del pop-up 
-    const container = useRef<HTMLDivElement | null>(null);
-    useOutsideClickDetector(container, popupHasClosed);
+
     // GRAPQHL
     const [checkIfEmailIsAlreadyUsed, checkIfEmailIsAlreadyUsedResponse] = useIsEmailAlreadyUsedLazyQuery();
     const [sendEmail, { data, error, loading }] = useSendClassroomIdByEmailMutation();
@@ -58,6 +51,7 @@ export const SendEmailForm: React.FC<SendEmailFormProps> = ({ popupHasClosed, cl
             return emailValidation.hasPassed && checkIfEmailIsAlreadyUsedResponse.data.isEmailAlreadyUsed
         return emailValidation.hasPassed;
     }
+
 
     /**
      * Renderizza il testo sotto l'input box. Può essere un messaggio di successo o uno di errore
@@ -131,24 +125,15 @@ export const SendEmailForm: React.FC<SendEmailFormProps> = ({ popupHasClosed, cl
     }
 
     return (
-        <>
-            <div className={classnames("email-form", className)} ref={container}>
-                <button className="close-btn" onClick={popupHasClosed}>
-                    <FontAwesomeIcon icon={faTimes} />
+        <div className="email-input">
+            <p>Se hai dimenticato l'ID puoi sempre recuperarlo con l'email che hai utilizzato in fase di registrazione della classe. Inseriscila nella capo sottostante e ti verrà mando l'ID della tua classe per email</p>
+            <div className="input-box">
+                <input type="email" placeholder="Email associata alla classe" value={email} onChange={handleEmailChange} />
+                <button disabled={!!timeLeft || !isEmailVaid()} onClick={submit}>
+                    {renderButtonContent()}
                 </button>
-                <h1 className="title">ID dimenticato?</h1>
-                <div className="email-input">
-                    <p>Se hai dimenticato l'ID puoi sempre recuperarlo con l'email che hai utilizzato in fase di registrazione della classe. Inseriscila nella capo sottostante e ti verrà manda l'ID della tua classe per email</p>
-                    <div className="input-box">
-                        <input type="email" placeholder="Email associata alla classe" value={email} onChange={handleEmailChange} />
-                        <button disabled={!!timeLeft || !isEmailVaid()} onClick={submit}>
-                            {renderButtonContent()}
-                        </button>
-                    </div>
-                    {renderText()}
-                </div>
             </div>
-            <div className="blur" />
-        </>
+            {renderText()}
+        </div>
     );
 }

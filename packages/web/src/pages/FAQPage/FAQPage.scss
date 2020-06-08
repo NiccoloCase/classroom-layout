@@ -1,0 +1,152 @@
+@import "../../styles/variables";
+@import "../../styles/utilities";
+
+.FAQPage {
+    min-height: calc(100vh - #{$top-menu-navigation-height});
+    display: flex;
+    background: $background-color;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1.5rem;
+
+    .container {
+        width: 100%;
+        max-width: 80rem;
+        padding: 0 2.5rem;
+        margin: 0;
+        background: #fff;
+        border-radius: 3px;
+        color: $dark-grey;
+        @include box-shadow;
+
+        .title {
+            width:100%;
+            padding: 2rem 0;
+            text-align: center;
+            font-size: 1.8rem;
+            font-weight: 300;
+        }
+
+        .accordion {
+            &-item {
+                border-radius: 3px;
+                padding: 1rem;
+                border-bottom: solid 2px #F7F7F7;
+            }   
+            &-toggle {
+                position: absolute;
+                display: none;         
+                &:checked ~ .accordion-answer {
+                    max-height: 100vh;
+                    //overflow: auto;
+                    overflow-y: hidden;
+                }
+                &:checked ~ .accordion-question svg {
+                    transform: rotate(-90deg);
+                }
+            }
+            &-question {
+                position: relative;
+                font-size: 1.2rem;
+                font-weight: 500;
+                text-decoration: none;
+                width: 100%;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                padding: 1rem 0;
+                cursor: pointer;
+                svg {
+                    color: 1rem;
+                    transition: transform .3s;
+                    color: $light-grey;
+                    transition: all .4s;
+                    @include hover-supported {
+                        color: $primary-color;
+                    }
+                }
+            }
+            &-answer {
+                position: relative;
+                overflow: hidden;
+                max-height: 0;
+                background: #F7F7F7;
+                transition: max-height 650ms;
+                &::before {
+                    content: "";
+                    position: absolute;
+                    top:50%;
+                    left: 0;
+                    transform: translateY(-50%);
+                    width: .25rem;
+                    height: 100%;
+                    background-color: $primary-color; 
+                }
+            }
+            &-content{          
+                padding: 2rem;
+                p {
+                    font-size: 1.2rem;
+                    color: $shuttle-grey;
+                }
+
+
+                // 1° domanda
+                .email-input {
+                    p { margin-bottom: 1rem; }
+                    .input-box {
+                        margin-bottom: .5rem;
+                        input, button {
+                            font-size: 1rem;
+                            padding:.5rem 1rem;
+                            border-radius: 3px;
+                        }
+                        input {
+                            border:none;
+                            background: $light-grey;
+                            color: $shuttle-grey;
+                            border-radius: 3px;
+                            margin-right: .3rem;
+                            margin-bottom: .4rem;
+                        }
+                        button {
+                            border:none;
+                            background: $light-grey;
+                            color:$dark-grey;
+                            font-weight: bold;
+                            transition: color .4s;
+                            vertical-align: middle;
+                            &:disabled {
+                                opacity: .5;
+                                cursor: not-allowed;
+                            }
+                            &:active{ @include hover-supported { color: $primary-color; } }
+                            svg, .spinner { margin-left: .5rem; font-size: 1rem; }
+                            .spinner {
+                                vertical-align: middle;
+                                display: inline-block;
+                            }
+                        }
+                    }
+                    span {
+                        color: rgb(67, 180, 67);
+                        transition: opacity .2s;
+                        &.error { color: rgb(255, 50, 50); }
+                        svg { margin-right: .5rem; }
+                    }
+                }
+            }
+        }
+    }
+
+    @include phone {
+        padding: 0;
+        background-color: #fff;
+        
+        .container {
+            padding: 0 1rem;
+            @include remove-shadow;
+        }
+    }
+}

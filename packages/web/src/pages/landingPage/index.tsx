@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState, useRef } from 'react';
 import * as classnames from "classnames";
 import { Link, RouteChildrenProps } from 'react-router-dom';
 import "./landingPage.scss";
@@ -6,15 +6,19 @@ import { ThemeContext } from '../../context';
 import { InputId } from '../../components/InputIdComponent';
 import { useGetClassroomByIdLazyQuery } from '../../generated/graphql';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faExclamationCircle } from '@fortawesome/free-solid-svg-icons';
-import { SendEmailForm } from './SendEmailForm';
+import { faExclamationCircle, faTimes } from '@fortawesome/free-solid-svg-icons';
 import RecentClassroomsSection from './RecentClassroomsSection';
 import heroImage from "../../assets/images/landing-hero.svg";
+import { SendIdByEmailInput } from '../../components/SendIdByEmailInput';
+import { useOutsideClickDetector } from '../../helper';
 
 export const LandingPage: React.FC<RouteChildrenProps> = ({ history }) => {
     // context
     const ctx = useContext(ThemeContext);
     const [isEmailPopupOpen, setIsEmailPopupOpen] = useState(false);
+    // Rileva quando il client clica al di fuori del pop-up 
+    const sendEmailForm = useRef<HTMLDivElement | null>(null);
+    useOutsideClickDetector(sendEmailForm, () => setIsEmailPopupOpen(false));
     // GRAPQHL
     const [checkIfClassExists, checkIfClassExistsResponse] = useGetClassroomByIdLazyQuery();
     useEffect(() => {
@@ -43,7 +47,7 @@ export const LandingPage: React.FC<RouteChildrenProps> = ({ history }) => {
                 </div>
             </main>
             <RecentClassroomsSection />
-            <section className="search-section">
+            <section className="search-section" id="search">
                 <div className="id-form">
                     <h1 className="title">Vai alla tua classe</h1>
                     <div className="search-bar">
@@ -60,11 +64,16 @@ export const LandingPage: React.FC<RouteChildrenProps> = ({ history }) => {
                         ID dimenticato?
                     </button>
                 </div>
-                <SendEmailForm
-                    className={classnames({ popupOpen: isEmailPopupOpen })}
-                    popupHasClosed={() => setIsEmailPopupOpen(false)} />
+                <div ref={sendEmailForm}
+                    className={classnames("email-form", { popupOpen: isEmailPopupOpen })} >
+                    <button className="close-btn" onClick={() => setIsEmailPopupOpen(false)}>
+                        <FontAwesomeIcon icon={faTimes} />
+                    </button>
+                    <h1 className="title">ID dimenticato?</h1>
+                    <SendIdByEmailInput />
+                </div>
+                <div className="blur" />
             </section>
-
         </div>
     );
 }
