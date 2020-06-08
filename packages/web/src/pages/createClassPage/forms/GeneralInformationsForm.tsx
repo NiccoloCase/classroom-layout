@@ -1,6 +1,7 @@
 import * as React from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCircle } from '@fortawesome/free-regular-svg-icons';
+import image from "../../../assets/images/pc-email.svg";
 
 // validazione
 import { useValueValidation, validateClassroomName, validateClassroomEmail } from '../../../helper';
@@ -63,7 +64,9 @@ export const GeneralInformationsForm: React.FC<GeneralInformationsFormProps> = (
                 </div>
             </div>
             <div className="image">
-                <div className="img" />
+                <div className="img-wrapper">
+                    <img src={image} />
+                </div>
                 <p className="paragraph">È richiesta un'email valida nell’eventualità di avere la necessità do recuperare l’ID della classe associata.</p>
             </div>
         </div>

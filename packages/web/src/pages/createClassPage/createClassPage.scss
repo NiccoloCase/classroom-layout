@@ -190,12 +190,18 @@ $max-form-height: 80vh;
                 align-items: center;
                 flex-direction: column;
                 p { margin:1rem; }
-                .img  { 
-                    flex: 1;  
-                    background-image: url("../../assets/images/pc-email.svg");
-                    background-repeat:no-repeat;
-                    background-position: center center;
+                .img-wrapper { 
+                    flex: 1;               
                     width:100%;
+                    position: relative;
+                    img {
+                        position: absolute;
+                        top: 50%;
+                        transform: translateY(-50%);
+                        max-width: 100%;
+                        max-height: 100%;
+                        display: block;
+                    }
                 }
             }
 
@@ -208,7 +214,7 @@ $max-form-height: 80vh;
                     padding: 0 1rem;
                     flex-direction: row-reverse;
                     p { flex:1; }
-                   .img  { 
+                    .img-wrapper  { 
                         width: auto;
                         height: 100%;
                     } 
