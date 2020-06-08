@@ -134,9 +134,15 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
         // EVENTI
         if (!this.props.static) {
             this.mouse = new Mouse();
+            // mouse
             this.canvas.addEventListener("mousedown", this.onMouseClick);
             this.canvas.addEventListener("mousemove", this.onMouseMove);
             this.canvas.addEventListener("mouseup", this.onMouseRelease);
+            // touch
+            this.canvas.addEventListener("touchstart", this.touchHandler, true);
+            this.canvas.addEventListener("touchmove", this.touchHandler, true);
+            this.canvas.addEventListener("touchend", this.touchHandler, true);
+            this.canvas.addEventListener("touchcancel", this.touchHandler, true);
         }
         // AVVIA IL LOOP
         this.tick();
@@ -147,6 +153,11 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
         this.canvas.removeEventListener("mousedown", this.onMouseClick);
         this.canvas.removeEventListener("mousemove", this.onMouseMove);
         this.canvas.removeEventListener("mouseup", this.onMouseRelease);
+        this.canvas.removeEventListener("touchstart", this.touchHandler);
+        this.canvas.removeEventListener("touchmove", this.touchHandler);
+        this.canvas.removeEventListener("touchend", this.touchHandler);
+        this.canvas.removeEventListener("touchcancel", this.touchHandler);
+
     }
 
     componentDidUpdate(prevProps: ClassRoomMapProps, prevState: ClassRoomMapState) {
@@ -297,6 +308,32 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
         if (this.desksHistory.length === 0) this.forceUpdate();
         // chiama la funzione callback
         this.callback();
+    }
+
+    /**
+     * Funzione che gestisce gli eventi legati al touch trasformandoli in eventi 
+     * del mouse
+     * credit: https://stackoverflow.com/a/1781750/10117858
+     */
+    private touchHandler(event: TouchEvent) {
+        const touches = event.changedTouches;
+        const first = touches[0];
+        let type = "";
+
+        switch (event.type) {
+            case "touchstart": type = "mousedown"; break;
+            case "touchmove": type = "mousemove"; break;
+            case "touchend": type = "mouseup"; break;
+            default: return;
+        }
+        const simulatedEvent = document.createEvent("MouseEvent");
+        simulatedEvent.initMouseEvent(type, true, true, window, 1,
+            first.screenX, first.screenY,
+            first.clientX, first.clientY, false,
+            false, false, false, 0, null);
+
+        first.target.dispatchEvent(simulatedEvent);
+        event.preventDefault();
     }
 
     /**
