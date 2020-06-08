@@ -1,1 +1,0 @@
-- Verificare nel server ad ogni modifica che il numero di banchi sia ugaule a quello di studenti
