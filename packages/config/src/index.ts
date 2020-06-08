@@ -1,12 +1,15 @@
 import { IConfiguration } from "./config.type";
+/* import dotenv from "dotenv";
+
+const dotenvResult = dotenv.config()
+if (dotenvResult.error) throw dotenvResult.error;
+ */
 
 const config: IConfiguration = (function (env) {
 
     switch (env) {
         case 'production':
             return require("./config_production").productionKeys;
-        case 'test':
-            return require("./config_development").developmentKeys;
         default:
             try {
                 // controlla che il modulo esista 
@@ -15,6 +18,7 @@ const config: IConfiguration = (function (env) {
             }
             catch (e) {
                 console.error("it is not possible to load the configuration module for development");
+                return null;
             }
     }
 })(process.env.NODE_ENV);
