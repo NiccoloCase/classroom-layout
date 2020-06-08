@@ -17,7 +17,7 @@ export class EmailService {
                 to,
                 subject: "ID della tua classe",
                 text: `Questo è l'ID della classe che è associata alla tua email: ${id}`,
-                template: "sendClassroomId",
+                template: "classroomIdEmail",
                 context: { id, link: `http://${config.server.WEB_APP_DOMAIN}/${id}` }
             });
             return { success: true };
