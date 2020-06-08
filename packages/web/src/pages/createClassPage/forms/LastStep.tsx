@@ -3,11 +3,11 @@ import VisibilitySensor from "react-visibility-sensor";
 import { useCreateClassroomMutation, DeskInput } from '../../../generated/graphql';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faExclamationCircle, faCheckSquare, faCopy, faChevronRight, faLink } from '@fortawesome/free-solid-svg-icons';
+import { faSlackHash } from '@fortawesome/free-brands-svg-icons';
 import { Link } from 'react-router-dom';
-import { FadeLoader } from 'react-spinners';
+import { DotLoader } from 'react-spinners';
 import { faCircle } from '@fortawesome/free-regular-svg-icons';
 import config from "@crl/config";
-import { faSlackHash } from '../../../../../../node_modules/@fortawesome/free-brands-svg-icons';
 
 interface LastStepProps {
     name?: string;
@@ -23,10 +23,10 @@ export const LastStep: React.FC<LastStepProps> = ({ name, email, desks, students
     const [addClass, { data, error }] = useCreateClassroomMutation();
 
     // TEST
-    /* name = "shsih";
-    email = Math.random() * 100 + "abc@gmail.com";
+    name = "test";
+    email = Math.random() * 100 + "test@gmail.com";
     desks = [{ x: 0, y: 0, orientation: 1 }, { x: 3, y: 3, orientation: 1 }];
-    students = ["abcd", "abcde"]; */
+    students = ["abcd", "abcde"];
 
     /**
      * Funzione chiamata quando il componente entra o esce dallo schermo
@@ -97,10 +97,10 @@ export const LastStep: React.FC<LastStepProps> = ({ name, email, desks, students
                         </button>
                     </span>
                     <br />
-                    <button className="class-link-button">
-                        <Link to={`/${id}`}>Vai alla classe</Link>
+                    <Link to={`/${id}`} className="class-link-button">
+                        Vai alla classe
                         <FontAwesomeIcon icon={faChevronRight} />
-                    </button>
+                    </Link>
                 </div>
             );
         }
@@ -108,7 +108,7 @@ export const LastStep: React.FC<LastStepProps> = ({ name, email, desks, students
         // CARICAMENTO
         else return (
             <div className="loading-box">
-                <FadeLoader color="#dadfe1" />
+                <DotLoader color="#dadfe1" />
             </div>
         );
     }

@@ -5,7 +5,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPaperPlane, faTimes, faCheck, faExclamationCircle } from '@fortawesome/free-solid-svg-icons';
 import { useIsEmailAlreadyUsedLazyQuery, useSendClassroomIdByEmailMutation } from '../../generated/graphql';
 import { useValueValidation, validateClassroomEmail, useOutsideClickDetector } from '../../helper';
-import { DotLoader } from '../../../../../node_modules/react-spinners';
+import { DotLoader } from 'react-spinners';
 
 interface SendEmailFormProps {
     popupHasClosed: () => void;
