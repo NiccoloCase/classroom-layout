@@ -10,7 +10,7 @@ import { useValueValidation, validateFeedbackTextarea } from '../../helper';
 import { useSendFeedbackMutation } from '../../generated/graphql';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCheck } from '@fortawesome/free-solid-svg-icons';
-import { NotFoundView } from '../../components/errorComponents';
+import { UnauthorizedComponent } from '../../components/errorComponents';
 
 // SELECT INPUT
 const animatedComponents = makeAnimated();
@@ -56,7 +56,7 @@ export const DeletedClassroomPage: React.FC = () => {
     // Router
     const location = useLocation<{ email?: string, classroomName?: string }>();
     if (!location.state || !location.state.email || !location.state.classroomName)
-        return <NotFoundView />
+        return <UnauthorizedComponent />
 
     const onTextareaChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
         const { value } = e.target;
