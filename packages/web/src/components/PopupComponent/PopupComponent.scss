@@ -1,0 +1,73 @@
+@import "../../styles/variables";
+@import "../../styles/utilities";
+
+.PopupComponent {
+    z-index: 6;
+    position: fixed;
+    border-radius: 3px;
+    background: #fff;
+    top:50%; 
+    left:50%; 
+    transform:translate(-50%, -50%); 
+    padding: 1rem 2rem;
+    color: $dark-grey;
+    @include box-shadow;
+    pointer-events: none;
+    opacity: 0;
+    display: flex;
+    flex-direction: column;
+    transition: all .3s;
+    width:100vw;
+    max-width: 50rem;
+    margin: 1rem;
+
+    &__header{
+        display: flex;
+        align-items: center;
+        margin-bottom: 2rem;
+    }
+
+    &__title { 
+        font-weight: 400;
+        color: $primary-color; 
+        flex:1;
+        font-size: 1.7rem;
+        margin-right: 1rem;
+    }
+
+    &__close-btn {
+        border:none;
+        background: transparent;
+        svg {
+            font-size: 1rem;
+            color: $dark-grey;
+        }
+        &:hover svg { color: $red; }
+    }
+
+    &.popupOpen {
+        opacity: 1;  
+        pointer-events: all; 
+        & + .PopupComponent-blur  { 
+            display: initial; 
+        }
+    }
+
+    @include phone {
+        height: 100%;
+        margin:0;
+        border-radius: 0;
+        padding-top: 3rem;
+    }
+}
+
+.PopupComponent-blur {
+    display: none;  
+    z-index: 5;
+    position: fixed;
+    top:0;
+    left:0;
+    bottom: 0;
+    right: 0;
+    backdrop-filter: blur(2px);
+}

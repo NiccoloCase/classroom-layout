@@ -3,7 +3,7 @@ import * as classnames from "classnames";
 import { Link, RouteChildrenProps } from 'react-router-dom';
 import "./landingPage.scss";
 import { ThemeContext } from '../../context';
-import { InputId } from '../../components/InputIdComponent';
+import { InputCode } from '../../components/InputCodeComponent';
 import { useGetClassroomByIdLazyQuery } from '../../generated/graphql';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faExclamationCircle, faTimes } from '@fortawesome/free-solid-svg-icons';
@@ -11,6 +11,7 @@ import RecentClassroomsSection from './RecentClassroomsSection';
 import heroImage from "../../assets/images/landing-hero.svg";
 import { SendIdByEmailInput } from '../../components/SendIdByEmailInput';
 import { useOutsideClickDetector } from '../../helper';
+import { TitleComponent } from '../../components/TitleComponent';
 
 export const LandingPage: React.FC<RouteChildrenProps> = ({ history }) => {
     // context
@@ -34,6 +35,7 @@ export const LandingPage: React.FC<RouteChildrenProps> = ({ history }) => {
 
     return (
         <div className="LandingPage" >
+            <TitleComponent />
             <main className="main-section">
                 <div className="left-section">
                     <div className="text-section">
@@ -52,7 +54,7 @@ export const LandingPage: React.FC<RouteChildrenProps> = ({ history }) => {
                     <h1 className="title">Vai alla tua classe</h1>
                     <div className="search-bar">
                         <span className="search-bar__info">Inserisci l'ID a 9 cifre associato alla classe:</span>
-                        <InputId className="search-bar__input" cellsNumber={9}
+                        <InputCode className="search-bar__input" cellsNumber={9}
                             onCompleted={(id: string) => checkIfClassExists({ variables: { id } })} />
                         <span className="search-bar__error"
                             style={{ opacity: checkIfClassExistsResponse.error ? 1 : 0 }}>

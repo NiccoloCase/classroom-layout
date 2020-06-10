@@ -1,12 +1,12 @@
 import * as React from "react";
 import _ from "lodash";
-import { TitleComponent } from '../../../components/TitleComponent';
-import { HashLoader } from '../../../../../../node_modules/react-spinners';
-import { ClassRoomMap, ToolType, Desk } from '../../../components/ClassRoomMap';
-import { Classroom, DeskInput, useEditClassroomMutation } from '../../../generated/graphql';
+import { TitleComponent } from '../../../../components/TitleComponent';
+import { HashLoader } from 'react-spinners';
+import { ClassRoomMap, ToolType, Desk } from '../../../../components/ClassRoomMap';
+import { Classroom, DeskInput, useEditClassroomMutation } from '../../../../generated/graphql';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSave, faUndo } from '@fortawesome/free-solid-svg-icons';
-import { InfoIcon } from '../../../components/InfoIconComponent';
+import { InfoIcon } from '../../../../components/InfoIconComponent';
 
 interface ShuffleViewProps {
     classroom: Classroom;

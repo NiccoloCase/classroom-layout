@@ -8,6 +8,7 @@ import { LandingPage } from '../pages/landingPage';
 import { ClassroomPage } from '../pages/classromPage';
 import { CreateClassPage } from "../pages/createClassPage"
 import { FAQPage } from '../pages/FAQPage';
+import { DeletedClassroomPage } from "../pages/DeletedClassroomPage"
 
 
 export default function ScrollToTop() {
@@ -38,7 +39,8 @@ export const Routes = () => {
         <Route path={["/", "/home"]} exact component={SwitchMainPage} />
         <Route path="/landing" exact component={LandingPage} />
         <Route path="/new" exact component={CreateClassPage} />
-        <Route path="/faq" component={FAQPage} />
+        <Route path="/faq" exact component={FAQPage} />
+        <Route path="/deleted-classroom" exact component={DeletedClassroomPage} />
         <Route path="/:class_id" component={ClassroomPage} />
       </Switch>
       <FooterComponent />

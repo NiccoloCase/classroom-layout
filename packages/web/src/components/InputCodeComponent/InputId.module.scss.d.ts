@@ -1,3 +1,4 @@
+export const primaryColor: string;
 export const wrap: string;
 export const input: string;
 export const display: string;

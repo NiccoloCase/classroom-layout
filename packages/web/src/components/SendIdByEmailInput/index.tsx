@@ -5,7 +5,7 @@ import { isEmpty } from "lodash";
 import * as classnames from "classnames";
 import { useValueValidation, validateClassroomEmail } from '../../helper';
 import { useSendClassroomIdByEmailMutation, useIsEmailAlreadyUsedLazyQuery } from '../../generated/graphql';
-import { DotLoader } from '../../../../../node_modules/react-spinners';
+import { DotLoader } from 'react-spinners';
 
 export const SendIdByEmailInput = () => {
     const [emailValidation, validateEmail] = useValueValidation(validateClassroomEmail);
@@ -20,7 +20,6 @@ export const SendIdByEmailInput = () => {
     useEffect(() => {
         if (timeLeft === 0) setTimeLeft(null)
         if (!timeLeft) return;
-
         const intervalId = setInterval(() => setTimeLeft(timeLeft - 1), 1000);
         return () => clearInterval(intervalId);
     }, [timeLeft]);
@@ -129,7 +128,7 @@ export const SendIdByEmailInput = () => {
             <p>Se hai dimenticato l'ID puoi sempre recuperarlo con l'email che hai utilizzato in fase di registrazione della classe. Inseriscila nella capo sottostante e ti verrà mando l'ID della tua classe per email</p>
             <div className="input-box">
                 <input type="email" placeholder="Email associata alla classe" value={email} onChange={handleEmailChange} />
-                <button disabled={!!timeLeft || !isEmailVaid()} onClick={submit}>
+                <button disabled={!!timeLeft || !isEmailVaid() || loading} onClick={submit}>
                     {renderButtonContent()}
                 </button>
             </div>

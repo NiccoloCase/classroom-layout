@@ -1,0 +1,9 @@
+type Feedback {
+    selectedValues: [String!]!
+    textField: String
+    email: String!
+}
+
+type Mutation {
+    sendFeedback(email: String!, selectedValues: [String!]!, textField: String): ProcessResult!
+}

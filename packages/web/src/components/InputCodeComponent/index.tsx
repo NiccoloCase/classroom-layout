@@ -2,14 +2,16 @@ import React, { useState, useRef, KeyboardEvent } from "react";
 import * as classnames from "classnames";
 import * as styles from "./InputId.module.scss";
 
-interface InputIdProps {
+interface InputCodeProps {
     cellsNumber: number;
     className?: string;
     /** Funzione chiamata quando tutte le caselle sono state riempite */
     onCompleted?: (value: string) => void;
+    /** Funzione chiamata quando viene digitata una lettera */
+    onType?: (value: string) => void;
 }
 
-export const InputId: React.FC<InputIdProps> = ({ cellsNumber, className, onCompleted }) => {
+export const InputCode: React.FC<InputCodeProps> = ({ cellsNumber, className, onCompleted, onType }) => {
     const input = useRef<HTMLInputElement | null>(null);
     const [value, setValue] = useState("");
     const values = value.split("");
@@ -31,6 +33,8 @@ export const InputId: React.FC<InputIdProps> = ({ cellsNumber, className, onComp
         if (value.length < cells.length) {
             const newValue = (value + targetValue).slice(0, cells.length)
             setValue(newValue);
+            // chiama il callback se passato
+            if (typeof onType === "function") onType(newValue);
             // chiama il callback se ogni cella è stata riempita
             if (newValue.length === cells.length && typeof onCompleted === "function")
                 onCompleted(newValue);
@@ -41,8 +45,12 @@ export const InputId: React.FC<InputIdProps> = ({ cellsNumber, className, onComp
      * Funzione chiamata alla pressione di un tasto 
      */
     const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-        if (e.key === "Backspace")
-            setValue(value.slice(0, value.length - 1));
+        if (e.key === "Backspace") {
+            const newValue = value.slice(0, value.length - 1);
+            setValue(newValue);
+            // chiama il callback se passato
+            if (typeof onType === "function") onType(newValue);
+        }
     };
 
     // index della cella selezionata 

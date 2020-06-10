@@ -30,4 +30,6 @@ type Mutation {
     editClassroom(id: ID!, name: String, email: String, desks: [DeskInput!], students: [String!]): Classroom!
     shuffleDesks(classId: ID!):Classroom!
     sendClassroomIdByEmail(email: String!): EmailResponse!
+    requestClassroomDeletion (id: String!): TokenGenerationResult!
+    deleteClassroom(token: String!): ProcessResult!
 }

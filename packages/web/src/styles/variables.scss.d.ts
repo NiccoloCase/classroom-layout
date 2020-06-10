@@ -1,1 +1,1 @@
-export const wobble: string;
+export const primaryColor: string;

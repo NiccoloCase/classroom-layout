@@ -1,3 +1,4 @@
+export const primaryColor: string;
 export const template: string;
 export const blur: string;
 export const container: string;

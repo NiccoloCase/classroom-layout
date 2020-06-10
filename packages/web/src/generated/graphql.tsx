@@ -43,12 +43,22 @@ export type EmailResponse = {
   success: Scalars['Boolean'];
 };
 
+export type Feedback = {
+   __typename?: 'Feedback';
+  selectedValues: Array<Scalars['String']>;
+  textField?: Maybe<Scalars['String']>;
+  email: Scalars['String'];
+};
+
 export type Mutation = {
    __typename?: 'Mutation';
   createClassroom: Classroom;
   editClassroom: Classroom;
   shuffleDesks: Classroom;
   sendClassroomIdByEmail: EmailResponse;
+  requestClassroomDeletion: TokenGenerationResult;
+  deleteClassroom: ProcessResult;
+  sendFeedback: ProcessResult;
 };
 
 
@@ -78,6 +88,28 @@ export type MutationSendClassroomIdByEmailArgs = {
   email: Scalars['String'];
 };
 
+
+export type MutationRequestClassroomDeletionArgs = {
+  id: Scalars['String'];
+};
+
+
+export type MutationDeleteClassroomArgs = {
+  token: Scalars['String'];
+};
+
+
+export type MutationSendFeedbackArgs = {
+  email: Scalars['String'];
+  selectedValues: Array<Scalars['String']>;
+  textField?: Maybe<Scalars['String']>;
+};
+
+export type ProcessResult = {
+   __typename?: 'ProcessResult';
+  success: Scalars['Boolean'];
+};
+
 export type Query = {
    __typename?: 'Query';
   getClassroomById: Classroom;
@@ -99,6 +131,23 @@ export type QueryGetClassroomByEmailArgs = {
 export type QueryIsEmailAlreadyUsedArgs = {
   email: Scalars['String'];
 };
+
+export type Token = {
+   __typename?: 'Token';
+  id: Scalars['ID'];
+  email: Scalars['String'];
+  scope: TokenScope;
+};
+
+export type TokenGenerationResult = {
+   __typename?: 'TokenGenerationResult';
+  email: Scalars['String'];
+  tokenDigits: Scalars['Int'];
+};
+
+export enum TokenScope {
+  DeleteClassroom = 'DELETE_CLASSROOM'
+}
 
 export type GetClassroomByIdQueryVariables = {
   id: Scalars['ID'];
@@ -183,6 +232,47 @@ export type SendClassroomIdByEmailMutation = (
   & { sendClassroomIdByEmail: (
     { __typename?: 'EmailResponse' }
     & Pick<EmailResponse, 'recipient'>
+  ) }
+);
+
+export type RequestClassroomDeletionMutationVariables = {
+  id: Scalars['String'];
+};
+
+
+export type RequestClassroomDeletionMutation = (
+  { __typename?: 'Mutation' }
+  & { requestClassroomDeletion: (
+    { __typename?: 'TokenGenerationResult' }
+    & Pick<TokenGenerationResult, 'tokenDigits' | 'email'>
+  ) }
+);
+
+export type DeleteClassroomMutationVariables = {
+  token: Scalars['String'];
+};
+
+
+export type DeleteClassroomMutation = (
+  { __typename?: 'Mutation' }
+  & { deleteClassroom: (
+    { __typename?: 'ProcessResult' }
+    & Pick<ProcessResult, 'success'>
+  ) }
+);
+
+export type SendFeedbackMutationVariables = {
+  email: Scalars['String'];
+  selectedValues: Array<Scalars['String']>;
+  textField?: Maybe<Scalars['String']>;
+};
+
+
+export type SendFeedbackMutation = (
+  { __typename?: 'Mutation' }
+  & { sendFeedback: (
+    { __typename?: 'ProcessResult' }
+    & Pick<ProcessResult, 'success'>
   ) }
 );
 
@@ -430,3 +520,120 @@ export function useSendClassroomIdByEmailMutation(baseOptions?: ApolloReactHooks
 export type SendClassroomIdByEmailMutationHookResult = ReturnType<typeof useSendClassroomIdByEmailMutation>;
 export type SendClassroomIdByEmailMutationResult = ApolloReactCommon.MutationResult<SendClassroomIdByEmailMutation>;
 export type SendClassroomIdByEmailMutationOptions = ApolloReactCommon.BaseMutationOptions<SendClassroomIdByEmailMutation, SendClassroomIdByEmailMutationVariables>;
+export const RequestClassroomDeletionDocument = gql`
+    mutation RequestClassroomDeletion($id: String!) {
+  requestClassroomDeletion(id: $id) {
+    tokenDigits
+    email
+  }
+}
+    `;
+export type RequestClassroomDeletionMutationFn = ApolloReactCommon.MutationFunction<RequestClassroomDeletionMutation, RequestClassroomDeletionMutationVariables>;
+export type RequestClassroomDeletionComponentProps = Omit<ApolloReactComponents.MutationComponentOptions<RequestClassroomDeletionMutation, RequestClassroomDeletionMutationVariables>, 'mutation'>;
+
+    export const RequestClassroomDeletionComponent = (props: RequestClassroomDeletionComponentProps) => (
+      <ApolloReactComponents.Mutation<RequestClassroomDeletionMutation, RequestClassroomDeletionMutationVariables> mutation={RequestClassroomDeletionDocument} {...props} />
+    );
+    
+
+/**
+ * __useRequestClassroomDeletionMutation__
+ *
+ * To run a mutation, you first call `useRequestClassroomDeletionMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useRequestClassroomDeletionMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [requestClassroomDeletionMutation, { data, loading, error }] = useRequestClassroomDeletionMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useRequestClassroomDeletionMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<RequestClassroomDeletionMutation, RequestClassroomDeletionMutationVariables>) {
+        return ApolloReactHooks.useMutation<RequestClassroomDeletionMutation, RequestClassroomDeletionMutationVariables>(RequestClassroomDeletionDocument, baseOptions);
+      }
+export type RequestClassroomDeletionMutationHookResult = ReturnType<typeof useRequestClassroomDeletionMutation>;
+export type RequestClassroomDeletionMutationResult = ApolloReactCommon.MutationResult<RequestClassroomDeletionMutation>;
+export type RequestClassroomDeletionMutationOptions = ApolloReactCommon.BaseMutationOptions<RequestClassroomDeletionMutation, RequestClassroomDeletionMutationVariables>;
+export const DeleteClassroomDocument = gql`
+    mutation DeleteClassroom($token: String!) {
+  deleteClassroom(token: $token) {
+    success
+  }
+}
+    `;
+export type DeleteClassroomMutationFn = ApolloReactCommon.MutationFunction<DeleteClassroomMutation, DeleteClassroomMutationVariables>;
+export type DeleteClassroomComponentProps = Omit<ApolloReactComponents.MutationComponentOptions<DeleteClassroomMutation, DeleteClassroomMutationVariables>, 'mutation'>;
+
+    export const DeleteClassroomComponent = (props: DeleteClassroomComponentProps) => (
+      <ApolloReactComponents.Mutation<DeleteClassroomMutation, DeleteClassroomMutationVariables> mutation={DeleteClassroomDocument} {...props} />
+    );
+    
+
+/**
+ * __useDeleteClassroomMutation__
+ *
+ * To run a mutation, you first call `useDeleteClassroomMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useDeleteClassroomMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [deleteClassroomMutation, { data, loading, error }] = useDeleteClassroomMutation({
+ *   variables: {
+ *      token: // value for 'token'
+ *   },
+ * });
+ */
+export function useDeleteClassroomMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<DeleteClassroomMutation, DeleteClassroomMutationVariables>) {
+        return ApolloReactHooks.useMutation<DeleteClassroomMutation, DeleteClassroomMutationVariables>(DeleteClassroomDocument, baseOptions);
+      }
+export type DeleteClassroomMutationHookResult = ReturnType<typeof useDeleteClassroomMutation>;
+export type DeleteClassroomMutationResult = ApolloReactCommon.MutationResult<DeleteClassroomMutation>;
+export type DeleteClassroomMutationOptions = ApolloReactCommon.BaseMutationOptions<DeleteClassroomMutation, DeleteClassroomMutationVariables>;
+export const SendFeedbackDocument = gql`
+    mutation SendFeedback($email: String!, $selectedValues: [String!]!, $textField: String) {
+  sendFeedback(email: $email, selectedValues: $selectedValues, textField: $textField) {
+    success
+  }
+}
+    `;
+export type SendFeedbackMutationFn = ApolloReactCommon.MutationFunction<SendFeedbackMutation, SendFeedbackMutationVariables>;
+export type SendFeedbackComponentProps = Omit<ApolloReactComponents.MutationComponentOptions<SendFeedbackMutation, SendFeedbackMutationVariables>, 'mutation'>;
+
+    export const SendFeedbackComponent = (props: SendFeedbackComponentProps) => (
+      <ApolloReactComponents.Mutation<SendFeedbackMutation, SendFeedbackMutationVariables> mutation={SendFeedbackDocument} {...props} />
+    );
+    
+
+/**
+ * __useSendFeedbackMutation__
+ *
+ * To run a mutation, you first call `useSendFeedbackMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useSendFeedbackMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [sendFeedbackMutation, { data, loading, error }] = useSendFeedbackMutation({
+ *   variables: {
+ *      email: // value for 'email'
+ *      selectedValues: // value for 'selectedValues'
+ *      textField: // value for 'textField'
+ *   },
+ * });
+ */
+export function useSendFeedbackMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<SendFeedbackMutation, SendFeedbackMutationVariables>) {
+        return ApolloReactHooks.useMutation<SendFeedbackMutation, SendFeedbackMutationVariables>(SendFeedbackDocument, baseOptions);
+      }
+export type SendFeedbackMutationHookResult = ReturnType<typeof useSendFeedbackMutation>;
+export type SendFeedbackMutationResult = ApolloReactCommon.MutationResult<SendFeedbackMutation>;
+export type SendFeedbackMutationOptions = ApolloReactCommon.BaseMutationOptions<SendFeedbackMutation, SendFeedbackMutationVariables>;

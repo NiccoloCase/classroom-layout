@@ -3,6 +3,7 @@ import "./FAQPage.scss";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faChevronLeft } from '@fortawesome/free-solid-svg-icons';
 import { SendIdByEmailInput } from '../../components/SendIdByEmailInput';
+import { TitleComponent } from '../../components/TitleComponent';
 
 interface IQuestion {
     text: string;
@@ -53,6 +54,7 @@ export const FAQPage = () => {
 
     return (
         <div className="FAQPage">
+            <TitleComponent title="Domande frequenti" />
             <div className="container">
                 <h1 className="title">Domande frequenti</h1>
                 <div className="accordion">

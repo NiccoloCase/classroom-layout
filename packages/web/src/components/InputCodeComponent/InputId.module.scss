@@ -2,7 +2,6 @@
 @import "../../styles/utilities";
 
 .wrap {
-    display: inline-block;
     position: relative;
     display: flex;
     width: fit-content;
@@ -34,6 +33,8 @@
         top: 0;
         bottom: 0;
         right: 0;
-        box-shadow: 0 0 0 4px rgba(58, 151, 212, 0.28);
+        box-shadow: 0 0 0 1px rgba($primary-color, .3);
+        border-radius: 3px;
+        z-index: 10;
       }
 }

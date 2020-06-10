@@ -52,4 +52,14 @@ export class ClassroomResolver {
             success: true
         };
     }
+
+    @Mutation()
+    requestClassroomDeletion(@Args("id") id: string) {
+        return this.classroomService.requestClassroomDeletion(id);
+    }
+
+    @Mutation()
+    deleteClassroom(@Args("token") token: string) {
+        return this.classroomService.deleteClassroom(token);
+    }
 }

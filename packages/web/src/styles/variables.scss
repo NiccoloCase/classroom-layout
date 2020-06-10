@@ -31,3 +31,9 @@ $medium-grey: #abb7b7;
 $light-grey: #dadce0;
 /* ROSSO */
 $red: #f03434;
+/* VERDE */
+$success-green: #3FC59D;
+
+:export {
+	#{'primaryColor'}: $primary-color
+}

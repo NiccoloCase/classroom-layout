@@ -1,3 +1,4 @@
+export const primaryColor: string;
 export const menuNavigation: string;
 export const logoContainer: string;
 export const logoImage: string;

@@ -1,6 +1,8 @@
+- indici
+- 404 anche uando è /edit
+- cambiare id tramite email
 - combiare link immagine del logo nelle email
 - cambiare dominio
-
 
 //
 

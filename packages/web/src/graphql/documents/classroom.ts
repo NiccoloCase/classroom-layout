@@ -72,3 +72,25 @@ export const sendClassroomIdByEmailMutation = gql`
     }
 `
 
+/**
+ * Richiede un token per l'eliminazione di una classe
+ */
+export const requestClassroomDeletionMutation = gql`
+    mutation RequestClassroomDeletion($id: String!){
+        requestClassroomDeletion(id: $id) {
+            tokenDigits
+            email
+        }
+    }
+`
+/**
+ * Elimina una classe 
+ */
+export const deleteClassroomMutation = gql`
+    mutation DeleteClassroom($token: String!){
+        deleteClassroom(token: $token) {
+            success
+        }
+    }
+`
+

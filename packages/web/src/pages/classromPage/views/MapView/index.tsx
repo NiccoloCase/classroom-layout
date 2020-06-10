@@ -3,12 +3,12 @@ import classnames from "classnames";
 import { HashLoader } from 'react-spinners';
 import ScrollContainer from "react-indiana-drag-scroll";
 import { Spring } from "react-spring/renderprops.cjs"
-import { ClassRoomMap } from '../../../components/ClassRoomMap';
+import { ClassRoomMap } from '../../../../components/ClassRoomMap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faRandom, faDownload } from '@fortawesome/free-solid-svg-icons';
-import { useShuffleDesksMutation, Classroom, DeskInput } from '../../../generated/graphql';
-import { TitleComponent } from '../../../components/TitleComponent';
-import { DownloadMapComponent } from '../../../components/DownloadMap';
+import { useShuffleDesksMutation, Classroom, DeskInput } from '../../../../generated/graphql';
+import { TitleComponent } from '../../../../components/TitleComponent';
+import { DownloadMapComponent } from '../../../../components/DownloadMap';
 
 interface MapViewProps {
     classroom: Classroom;

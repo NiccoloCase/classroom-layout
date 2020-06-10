@@ -23,10 +23,10 @@ export const LastStep: React.FC<LastStepProps> = ({ name, email, desks, students
     const [addClass, { data, error }] = useCreateClassroomMutation();
 
     // TEST
-    name = "test";
-    email = Math.random() * 100 + "test@gmail.com";
-    desks = [{ x: 0, y: 0, orientation: 1 }, { x: 3, y: 3, orientation: 1 }];
-    students = ["abcd", "abcde"];
+    /*     name = "test";
+        email = Math.random() * 100 + "test@gmail.com";
+        desks = [{ x: 0, y: 0, orientation: 1 }, { x: 3, y: 3, orientation: 1 }];
+        students = ["abcd", "abcde"]; */
 
     /**
      * Funzione chiamata quando il componente entra o esce dallo schermo
@@ -82,7 +82,7 @@ export const LastStep: React.FC<LastStepProps> = ({ name, email, desks, students
                 <div className="success-box">
                     <h1><FontAwesomeIcon icon={faCheckSquare} /> La registrazione è andata a buon fine</h1>
                     <p className="paragraph">
-                        L'ID riportato sotto è quello associato alla classe appena creata ed è indispensabile per accedervi. <br /> Nel caso in cui sia perso, è comunque possibile ottenerne un altro tramite l'email inserita in fase di registrazione.
+                        L'ID (e il link) riportato sotto è quello associato alla classe appena creata ed è indispensabile per accedervi. <br /> Nel caso in cui sia perso, è comunque possibile ottenerne un altro tramite l'email inserita in fase di registrazione. <br /> È fondamentale che non sia divulgato a persone indesiderate, poiché tramite esso è possibile il controllo totale della classe, compresa l’eliminazione.
                     </p>
                     <span className="id-box">
                         <input type="text" readOnly ref={idInput}

@@ -5,6 +5,8 @@ import { MongooseModule } from "@nestjs/mongoose"
 import { ClassroomModule } from './classroom/classroom.module';
 import { ServeWebAppMiddleware } from './shared/app.middleware';
 import { EmailModule } from './email/email.module';
+import { TokenModule } from './token/token.module';
+import { FeedbackModule } from './feedback/feedback.module';
 import config from "@crl/config";
 
 @Module({
@@ -24,8 +26,11 @@ import config from "@crl/config";
     }),
     // altro
     EmailModule,
-    ClassroomModule
-  ]
+    ClassroomModule,
+    TokenModule,
+    FeedbackModule
+  ],
+  providers: []
 })
 
 export class AppModule {

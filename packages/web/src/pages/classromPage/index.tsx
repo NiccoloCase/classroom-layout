@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { HashLoader } from 'react-spinners';
+import { DotLoader } from 'react-spinners';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEdit, faRandom, faCog, faMap } from '@fortawesome/free-solid-svg-icons';
 import "./classroomPage.scss";
@@ -76,7 +76,9 @@ export const ClassroomPage: React.FC<RouteComponentProps<IParams>> = props => {
             <Route path="/:class_id/shuffle" exact children={() =>
                 <ShuffleView classroom={room} onDesksAreShuffled={onDesksAreShuffled} />} />
             {/* SCHERMATA DELLE IMPOSTAZIONI */}
-            <Route path="/:class_id/settings" exact children={() => <SettingsView classID={room.id} />} />
+            <Route path="/:class_id/settings" exact children={() =>
+                <SettingsView classID={room.id} classEmail={room.email} className={room.name} />
+            } />
         </Switch>
     );
 
@@ -130,7 +132,7 @@ export const ClassroomPage: React.FC<RouteComponentProps<IParams>> = props => {
      */
     const loadingView = (
         <div className="content">
-            <HashLoader color="#dadfe1" />
+            <DotLoader color="#dadfe1" />
         </div>
     );
 

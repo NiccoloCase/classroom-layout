@@ -1,3 +1,4 @@
+export const primaryColor: string;
 export const landingPage: string;
 export const mainSection: string;
 export const leftSection: string;

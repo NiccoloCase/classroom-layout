@@ -1,3 +1,4 @@
+export const primaryColor: string;
 export const footer: string;
 export const main: string;
 export const sectionTitle: string;

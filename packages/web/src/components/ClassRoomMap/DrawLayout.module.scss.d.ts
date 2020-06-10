@@ -1,3 +1,4 @@
+export const primaryColor: string;
 export const tools: string;
 export const tool: string;
 export const action: string;

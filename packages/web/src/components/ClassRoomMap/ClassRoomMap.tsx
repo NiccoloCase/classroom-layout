@@ -9,7 +9,7 @@ import { DeskInput } from '../../generated/graphql';
 import { ToolType, ReferenceSystemType as RSType, Orientation } from './enums';
 import { Mouse } from './Mouse';
 import { Desk } from "./Desk";
-import { IClassroomMapColors } from "./";
+import { IClassroomMapColors } from ".";
 
 interface ClassRoomMapProps {
     /** Se la mappa è statica o interattiva */

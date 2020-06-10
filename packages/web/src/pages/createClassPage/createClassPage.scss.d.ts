@@ -1,3 +1,4 @@
+export const primaryColor: string;
 export const createClassPage: string;
 export const container: string;
 export const title: string;
@@ -21,7 +22,7 @@ export const generalInformationsForm: string;
 export const inputs: string;
 export const fields: string;
 export const image: string;
-export const img: string;
+export const imgWrapper: string;
 export const studentsForm: string;
 export const left: string;
 export const inputBox: string;
