@@ -1,4 +1,6 @@
 export const primaryColor: string;
+export const classroomMap: string;
+export const wrapper: string;
 export const tools: string;
 export const tool: string;
 export const action: string;
@@ -9,4 +11,5 @@ export const left: string;
 export const wobble: string;
 export const right: string;
 export const zoomPopUp: string;
+export const floatingButtons: string;
 export const sideShadow: string;

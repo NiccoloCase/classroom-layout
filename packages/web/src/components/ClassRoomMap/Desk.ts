@@ -6,7 +6,7 @@ import { classroomMapColors } from "."
 interface DeskRenderOptions {
     /** Se il banco è selezionato */
     isHighlighted?: boolean;
-    /** Stile */
+    /** Stile personalizzato deò banco */
     style?: {
         desksFillColor?: string | null;
         desksStrokeColor?: string | null;
@@ -108,9 +108,7 @@ export class Desk {
      * @param options 
      */
     render(ctx: CanvasRenderingContext2D, options: DeskRenderOptions = {}) {
-        // CALCOLA LE DIMENSIONI
-        const x = this.x1 < this.x2 ? this.x1 : this.x2;
-        const y = this.y1 > this.y2 ? this.y2 : this.y1;
+        // CALCOLA LE DIMENSIONI E LA POSIZIONE
         let d;
         let h;
         if (this.orientation === Orientation.N || this.orientation === Orientation.S) {
@@ -120,6 +118,8 @@ export class Desk {
             d = 2;
             h = 1;
         }
+        const x = this.x1 < this.x2 ? this.x1 : this.x2;
+        const y = this.y1 > this.y2 ? this.y2 : this.y1;
 
         // DISEGNA I BANCHI
         const defaultStyle = classroomMapColors.light;

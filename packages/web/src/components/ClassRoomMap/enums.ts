@@ -8,7 +8,8 @@ export enum ToolType {
 /** TIPO DI SISTEMA DI RIFERIMENTO */
 export enum ReferenceSystemType {
     CANVAS,
-    GRID
+    GRID,
+    SCREEN
 }
 
 export enum Orientation { N, E, S, W }

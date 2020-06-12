@@ -113,10 +113,12 @@ export const MapView: React.FC<MapViewProps> = ({ classroom, onDesksAreShuffled 
                     <div className="canvas-wrapper" ref={canvasWrapper}>
                         {canvasDims ?
                             <ClassRoomMap
+                                highlightableDesks notEditable
+                                showFloatingButtons
                                 width={canvasDims.width}
                                 height={canvasDims.height}
                                 students={classroom.students}
-                                desks={classroom.desks} notEditable
+                                desks={classroom.desks}
                                 onDeskIsHighlighted={onDeskIsHighlighted}
                                 highlightedDesk={selectedStudent ?
                                     classroom.students.indexOf(selectedStudent) : undefined} /> :

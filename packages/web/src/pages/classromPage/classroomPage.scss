@@ -100,7 +100,7 @@
                     color: $medium-grey;
                  }
                 .btn {
-                    border-radius: 5px;
+                    border-radius: 3px;
                     border: 2px solid transparent;
                     padding: .5rem 1rem;
                     font-size: 1rem;
@@ -152,6 +152,7 @@
                     align-items: center;
                     position: relative;
                     #ClassroomMap { 
+                        cursor: move;
                         position: absolute; 
                         top:0; 
                         left:0;
@@ -221,6 +222,7 @@
                         -moz-user-select: none;     
                         -ms-user-select: none;    
                         user-select: none;        
+                        cursor: pointer;
                         &.active { background: $medium-grey; }
                         // THUMBNAIL
                         $colors: #F5D1D1, #D1F5E9, #D1D7F9, #FFEDCB, #D1EFF9;

@@ -2,7 +2,7 @@ import * as React from "react";
 import classnames from "classnames";
 import { isNil } from "lodash";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPlus, faMousePointer, faEraser, faTrash, faSearchPlus, faSyncAlt, faTimes, faUndoAlt } from '@fortawesome/free-solid-svg-icons';
+import { faPlus, faMousePointer, faEraser, faTrash, faSearchPlus, faSyncAlt, faTimes, faUndoAlt, faCrosshairs, faSearchMinus, faCompress } from '@fortawesome/free-solid-svg-icons';
 import Popup from "reactjs-popup";
 import * as styles from "./DrawLayout.module.scss";
 import { DeskInput } from '../../generated/graphql';
@@ -10,6 +10,10 @@ import { ToolType, ReferenceSystemType as RSType, Orientation } from './enums';
 import { Mouse } from './Mouse';
 import { Desk } from "./Desk";
 import { IClassroomMapColors } from ".";
+
+// Costanti
+const MAX_ZOOM = 2;
+const MIN_ZOOM = 0.2
 
 interface ClassRoomMapProps {
     /** Se la mappa è statica o interattiva */
@@ -24,6 +28,8 @@ interface ClassRoomMapProps {
     notEditable?: boolean;
     /** Se non mostare gli strumenti (attivabile solo nel caso in cui la mappa sia modificabile) */
     notShowTools?: boolean;
+    /** Se mostrare gli strumenti rapidi sopra il canvas */
+    showFloatingButtons?: boolean;
     /** Banchi */
     desks?: DeskInput[];
     /** Banchi inizali */
@@ -32,7 +38,9 @@ interface ClassRoomMapProps {
     scale?: number;
     /** Array di studenti */
     students?: string[];
-    /** Indice del banco evidenziato */
+    /** Se i banchi sono selezionabili */
+    highlightableDesks?: boolean;
+    /** Index del banco evidenziato */
     highlightedDesk?: number;
     /** Disattiva la funzione che centra i banchi ad ogni loro cambiamento */
     disableAutofocus?: boolean;
@@ -72,10 +80,14 @@ interface ClassRoomMapState {
         cell: number[]
     },
     /** Valore dello zoom */
-    zoom: number
+    zoom: number;
+    /** Se la schermata è in fullscreen */
+    isFullscreen: boolean;
 }
 
 class ClassRoomMap extends React.Component<ClassRoomMapProps> {
+    HTMLParent: HTMLDivElement;
+    wrapper: HTMLDivElement;
     // CANVAS
     canvas: HTMLCanvasElement;
     ctx: CanvasRenderingContext2D;
@@ -101,6 +113,9 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
         initialDesk?: number | null;
         currentDesk?: number | null;
     } = {};
+    /** Traslazione della visuale del canvas */
+    panX: number = 0;
+    panY: number = 0;
 
     constructor(props: ClassRoomMapProps) {
         super(props);
@@ -111,7 +126,8 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
             tool: this.props.tool || (this.props.notEditable ? ToolType.POINTER : ToolType.ADD),
             orientation: Orientation.E,
             recommendedOrientation: { value: null, cell: [] },
-            zoom: 1
+            zoom: 1,
+            isFullscreen: false
         };
         // BANCHI
         this.highlightedDesk = props.highlightedDesk;
@@ -131,51 +147,71 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
     componentDidMount() {
         // CANVAS
         this.ctx = this.canvas.getContext("2d")!;
-        // EVENTI
+        // AGGIUNGE GLI EVENTI
         if (!this.props.static) {
-            this.mouse = new Mouse();
             // mouse
+            this.mouse = new Mouse();
             this.canvas.addEventListener("mousedown", this.onMouseClick);
             this.canvas.addEventListener("mousemove", this.onMouseMove);
-            this.canvas.addEventListener("mouseup", this.onMouseRelease);
+            window.addEventListener("mouseup", this.onMouseRelease);
+            this.canvas.addEventListener("mousewheel", this.handleMouseWheel);
+            this.canvas.addEventListener("DOMMouseScroll", this.handleMouseWheel);
             // touch
             this.canvas.addEventListener("touchstart", this.touchHandler, true);
             this.canvas.addEventListener("touchmove", this.touchHandler, true);
             this.canvas.addEventListener("touchend", this.touchHandler, true);
             this.canvas.addEventListener("touchcancel", this.touchHandler, true);
+            // fullscreen
+            this.HTMLParent.addEventListener('fullscreenchange', this.onFullscreenChange);
+            this.HTMLParent.addEventListener('mozfullscreenchange', this.onFullscreenChange);
+            this.HTMLParent.addEventListener('MSFullscreenChange', this.onFullscreenChange);
+            this.HTMLParent.addEventListener('webkitfullscreenchange', this.onFullscreenChange);
         }
+
         // AVVIA IL LOOP
         this.tick();
     }
 
     componentWillUnmount() {
         // rimuove gli eventi
+        // mouse
         this.canvas.removeEventListener("mousedown", this.onMouseClick);
         this.canvas.removeEventListener("mousemove", this.onMouseMove);
-        this.canvas.removeEventListener("mouseup", this.onMouseRelease);
+        window.removeEventListener("mouseup", this.onMouseRelease);
+        this.canvas.removeEventListener("mousewheel", this.handleMouseWheel);
+        this.canvas.removeEventListener("DOMMouseScroll", this.handleMouseWheel);
+        // touch
         this.canvas.removeEventListener("touchstart", this.touchHandler);
         this.canvas.removeEventListener("touchmove", this.touchHandler);
         this.canvas.removeEventListener("touchend", this.touchHandler);
         this.canvas.removeEventListener("touchcancel", this.touchHandler);
-
+        // fullscreen
+        this.HTMLParent.removeEventListener('fullscreenchange', this.onFullscreenChange);
+        this.HTMLParent.removeEventListener('mozfullscreenchange', this.onFullscreenChange);
+        this.HTMLParent.removeEventListener('MSFullscreenChange', this.onFullscreenChange);
+        this.HTMLParent.removeEventListener('webkitfullscreenchange', this.onFullscreenChange);
     }
 
     componentDidUpdate(prevProps: ClassRoomMapProps, prevState: ClassRoomMapState) {
         // VARIAZIONE NEI BANCHI
-        if (this.props.desks && this.desks !== Desk.objsToDesks(this.props.desks)) {
-            // controlla se deve centare i banchi
-            if (!this.props.disableAutofocus) {
-                this.desks = Desk.centerDesks(this.props.desks);
-                // imposta la nuova scala
-                this.defaultScale = this.getScale(this.props.width, this.props.height, this.desks);
-                this.scale = this.defaultScale;
+        if (this.props.desks) {
+            const newDesks = [...this.props.desks];
+            newDesks.forEach((d: any) => delete d.__typename);
+            if (JSON.stringify(Desk.desksToObjs(this.desks)) !== JSON.stringify(newDesks)) {
+                // controlla se deve centare i banchi
+                if (!this.props.disableAutofocus) {
+                    this.desks = Desk.centerDesks(newDesks);
+                    // imposta la nuova scala
+                    this.defaultScale = this.getScale(this.props.width, this.props.height, this.desks);
+                    this.scale = this.defaultScale;
+                }
+                else this.desks = Desk.objsToDesks(newDesks);
+                // associa gli studenti ai nuovi banchi 
+                if (this.students) Desk.setNames(this.desks, this.students);
             }
-            else this.desks = Desk.objsToDesks(this.props.desks);
-            // associa gli studenti ai nuovi banchi 
-            if (this.students) Desk.setNames(this.desks, this.students);
         }
 
-        // VARIAZIONE DEGLI STUDENT
+        // VARIAZIONE NEGLI STUDENTI 
         if (this.props.students !== this.students) {
             this.students = this.props.students;
             if (this.students) Desk.setNames(this.desks, this.students);
@@ -186,7 +222,8 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
             this.highlightedDesk = this.props.highlightedDesk;
 
         // VARIAZIONE DELLE DIMENSIONI
-        if (this.props.width !== prevState.width || this.props.height !== prevState.height) {
+        if ((this.props.width !== prevState.width || this.props.height !== prevState.height) &&
+            !this.state.isFullscreen) {
             // aggiorna le dimensioni
             this.setState({ width: this.props.width, height: this.props.height });
             // imposta la nuova scala
@@ -197,9 +234,13 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
 
     render() {
         return (
-            <div id="ClassroomMap" className={this.props.className}>
-                {(!this.props.notEditable && !this.props.notShowTools) && this.drawTools()}
-                <canvas ref={c => (this.canvas = c!)} width={this.state.width} height={this.state.height} />
+            <div id="ClassroomMap" ref={e => (this.HTMLParent = e!)}
+                className={classnames(this.props.className, styles.classroomMap)}>
+                <div ref={e => (this.wrapper = e!)} className={styles.wrapper}>
+                    {(!this.props.notEditable && !this.props.notShowTools) && this.drawTools()}
+                    {this.props.showFloatingButtons && this.drawFloatingButtons()}
+                    <canvas ref={e => (this.canvas = e!)} width={this.state.width} height={this.state.height} />
+                </div>
             </div>
         );
     }
@@ -210,35 +251,48 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
     private drawTools = () => (
         <div className={styles.tools}>
             {/* Puntatore */}
-            <button onClick={() => this.switchTool(ToolType.POINTER)} className={classnames(styles.tool, { [styles.active]: this.state.tool === ToolType.POINTER })}>
+            <button onClick={() => this.switchTool(ToolType.POINTER)} title="Puntatore"
+                className={classnames(styles.tool, { [styles.active]: this.state.tool === ToolType.POINTER })}>
                 <FontAwesomeIcon icon={faMousePointer} />
             </button>
             {/* Strumento aggiungi */}
-            <button onClick={() => this.switchTool(ToolType.ADD)} className={classnames(styles.tool, { [styles.active]: this.state.tool === ToolType.ADD })}>
+            <button onClick={() => this.switchTool(ToolType.ADD)} title="Aggiungi banchi"
+                className={classnames(styles.tool, { [styles.active]: this.state.tool === ToolType.ADD })}>
                 <FontAwesomeIcon icon={faPlus} />
             </button>
             {/* Strumento rimuovi */}
-            <button onClick={() => this.switchTool(ToolType.REMOVE)} className={classnames(styles.tool, { [styles.active]: this.state.tool === ToolType.REMOVE })} >
+            <button title="Rimuovi banchi" onClick={() => this.switchTool(ToolType.REMOVE)}
+                className={classnames(styles.tool, { [styles.active]: this.state.tool === ToolType.REMOVE })} >
                 <FontAwesomeIcon icon={faEraser} />
             </button>
-            <div className={styles.actions}>
+            <div className={styles.actions} title="Routa">
                 {/* Orientamento banchi */}
                 <button onClick={() => this.swtichOrientation()} className={styles.action}>
                     <FontAwesomeIcon icon={faSyncAlt} />
                 </button>
                 {/* Zoom */}
                 <Popup trigger={
-                    <button className={styles.action}>
+                    <button className={styles.action} title="Zoom">
                         <FontAwesomeIcon icon={faSearchPlus} />
                     </button>} closeOnDocumentClick position="bottom center">
                     <div className={styles.zoomPopUp}>
-                        <input type="range" min={0.2} max={2} step={0.1}
+                        <input type="range" min={MIN_ZOOM} max={MAX_ZOOM} step={0.1}
                             value={this.state.zoom} onChange={this.changeZoom} />
                     </div>
                 </Popup>
+                {/* Centra la visuale */}
+                <button onClick={() => this.viewAllDesks()} className={styles.action}
+                    title="Visualizza tutti i banchi">
+                    <FontAwesomeIcon icon={faCrosshairs} />
+                </button>
+                {/* Mette a schermo intero */}
+                <button onClick={this.toggleFullScreen} className={styles.action}
+                    title={this.state.isFullscreen ? "Esci dallo schermo intero" : "Schermo intero"}>
+                    <FontAwesomeIcon icon={faCompress} />
+                </button>
                 {/* Cestino */}
                 <Popup trigger={
-                    <button className={styles.action}>
+                    <button className={styles.action} title="Elimina tutti i banchi">
                         <FontAwesomeIcon icon={faTrash} />
                     </button>} closeOnDocumentClick position="bottom center">
                     {close => (
@@ -254,11 +308,32 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
                 </Popup>
                 {/* Torna indietro */}
                 <button onClick={this.undo} className={styles.action}
-                    disabled={this.desksHistory.length < 1}>
+                    title="Torna indietro" disabled={this.desksHistory.length < 1}>
                     <FontAwesomeIcon icon={faUndoAlt} />
                 </button>
             </div>
         </div>);
+
+    /**
+     * Disegna dei pulasnti al di sopra del canvas
+     */
+    private drawFloatingButtons = () => (
+        <div className={styles.floatingButtons}>
+            <button title="Centra la visuale" onClick={() => this.viewAllDesks()}>
+                <FontAwesomeIcon icon={faCrosshairs} />
+            </button>
+            <button onClick={this.zoomIn}>
+                <FontAwesomeIcon icon={faSearchPlus} />
+            </button>
+            <button onClick={this.zoomOut}>
+                <FontAwesomeIcon icon={faSearchMinus} />
+            </button>
+            <button onClick={this.toggleFullScreen}
+                title={this.state.isFullscreen ? "Esci dallo schermo intero" : "Schermo intero"}>
+                <FontAwesomeIcon icon={faCompress} />
+            </button>
+        </div>
+    );
 
     /**
      * Chaiama la funzione passata tra le proprietà 
@@ -272,9 +347,8 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
     /**
      * Cambia il tipo di strumento selezionato
      */
-    private switchTool = (tool: ToolType) => {
+    private switchTool = (tool: ToolType) =>
         this.setState({ tool });
-    }
 
     /**
      * Cambia l'orientamento dei banchi che veranno aggiunti.
@@ -311,11 +385,67 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
     }
 
     /**
+     * Ripristina la visuale mettendo in mostra tutti i banchi
+     * (Possono essere passati anche i valori della larghezza e dell'altezza del canvas, 
+     * nel caso in cui lo stato non sia aggiornato)
+     */
+    private viewAllDesks = (width?: number, height?: number) => {
+        // azzera la traslazione dei banchi
+        this.panX = 0;
+        this.panY = 0;
+        // riprista lo zoom
+        this.setState({ zoom: 1 });
+
+        if (this.desks.length > 0) {
+            // trasla i banchi
+            this.desks = Desk.centerDesks(Desk.desksToObjs(this.desks));
+            if (this.students && this.desks.length > 0) Desk.setNames(this.desks, this.students);
+            // imposta lo zoom corretto 
+            this.scale = this.getScale(width || this.state.width, height || this.state.height, this.desks);
+        }
+    }
+
+    /**
+     * Funzione chiamata quando la finestra entra o esce dallo schermo intero
+     */
+    private onFullscreenChange = () => {
+        if ((document as any).webkitIsFullScreen ||
+            (document as any).mozFullScreen ||
+            (document as any).msFullscreenElement) {
+            // schermo intero
+            const { width, height: wrapperHeight } = this.wrapper.getBoundingClientRect();
+            const offsetY = 50;
+            const height = wrapperHeight -
+                ((!this.props.notEditable && !this.props.notShowTools) ? offsetY : 0)
+            this.canvas.width = width;
+            this.canvas.height = height;
+            this.setState({ width, height });
+            this.viewAllDesks(width, height);
+        }
+        else {
+            // Disattiva la modalità schermo intero
+            const { width, height } = this.props;
+            this.setState({ width, height });
+            this.viewAllDesks(width, height);
+            this.setState({ isFullscreen: false })
+        }
+    }
+
+    /**
+     * Attiva / disattiva la modalità schermo intero
+     */
+    private toggleFullScreen = () => {
+        if (this.state.isFullscreen) document.exitFullscreen();
+        else this.HTMLParent.requestFullscreen();
+        this.setState({ isFullscreen: !this.state.isFullscreen })
+    }
+
+    /**
      * Funzione che gestisce gli eventi legati al touch trasformandoli in eventi 
      * del mouse
      * credit: https://stackoverflow.com/a/1781750/10117858
      */
-    private touchHandler(event: TouchEvent) {
+    private touchHandler = (event: TouchEvent) => {
         const touches = event.changedTouches;
         const first = touches[0];
         let type = "";
@@ -337,17 +467,32 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
     }
 
     /**
+     * Funzione chiamata qundo viene usata la rotella del mouse 
+     */
+    private handleMouseWheel = (event: WheelEvent) => {
+        if (event.deltaY < 0 || event.detail > 0) this.zoomIn();
+        else this.zoomOut();
+        event.preventDefault();
+    }
+
+    /**
      * Funzione chiamata quando viene cliccato il mouse all'interno del canvas
      */
     private onMouseClick = (e: MouseEvent) => {
         const rect = this.canvas.getBoundingClientRect();
-        const clientX = e.clientX - rect.left;
-        const clientY = e.clientY - rect.top;
-        const [gridX, gridY] = this.switchToGridCoord(clientX, clientY);
-        // ragistra la posizione del click
-        this.mouse.lastClickPosition = { clientX, clientY, gridX, gridY }
-        // STRUMENTI
-        if (this.state.tool === ToolType.POINTER) this.highlightDesk(gridX, gridY);
+        const screenX = e.clientX;
+        const screenY = e.clientY;
+        const canvasX = e.clientX - rect.left + this.panX * this.scale;
+        const canvasY = e.clientY - rect.top + this.panY * this.scale;
+        const [gridX, gridY] = this.switchToGridCoord(canvasX, canvasY);
+        // Aggiorna i valori del mouse
+        this.mouse.lastClickPosition = { canvasX, canvasY, gridX, gridY, screenX, screenY }
+        this.mouse.mousePosition = { canvasX, canvasY, gridX, gridY, screenX, screenY }
+        this.mouse.mouseHeld = true;
+
+        // FUNZIONI
+        if (this.state.tool === ToolType.POINTER && this.props.highlightableDesks)
+            this.highlightDesk(gridX, gridY);
         else if (this.state.tool === ToolType.ADD) this.addDesk(gridX, gridY);
         else if (this.state.tool === ToolType.REMOVE) this.removeDesk(gridX, gridY);
         else if (this.state.tool === ToolType.SWAP)
@@ -361,11 +506,25 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
         // AGGIORNA LA POSIZIONE DEL MOUSE
         // calcola la posizione attuale del mouse
         const rect = this.canvas.getBoundingClientRect();
-        const clientX = e.clientX - rect.left;
-        const clientY = e.clientY - rect.top;
-        const [gridX, gridY] = this.switchToGridCoord(clientX, clientY);
-        // imposta la posizione attuale del mouse
-        this.mouse.mousePosition = { clientX, clientY, gridX, gridY }
+        const screenX = e.clientX;
+        const screenY = e.clientY;
+        const canvasX = e.clientX - rect.left + this.panX * this.scale;
+        const canvasY = e.clientY - rect.top + this.panY * this.scale;
+        const [gridX, gridY] = this.switchToGridCoord(canvasX, canvasY);
+        // salva la vecchia posizione del mouse
+        const [oldMouseX, oldMouseY] = this.mouse.getMousePosition(RSType.SCREEN);
+        // Imposta la posizione attuale del mouse
+        this.mouse.mousePosition = { canvasX, canvasY, gridX, gridY, screenX, screenY }
+
+        // MUOVE LA VISUALE DEL CANVAS
+        if (this.state.tool === ToolType.POINTER && this.mouse.mouseHeld &&
+            !isNil(oldMouseX) && !isNil(oldMouseY)) {
+            this.panX += oldMouseX / this.scale - screenX / this.scale;
+            this.panY += oldMouseY / this.scale - screenY / this.scale;
+        }
+
+        // Imposta il cursore del mouse 
+        this.setMouseCursor(gridX, gridY);
 
         // Se l'utente ha mosso il cursore dalla cella in cui era stato cambiata l'orientamento 
         // automaticamente come suggerimento, ripristina l'orinetamento originale
@@ -382,6 +541,9 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
      * Funzione chiamata quando il mouse viene rilasciato 
      */
     private onMouseRelease = (e: MouseEvent) => {
+        // imposta i valori attuali del mouse
+        this.mouse.mouseHeld = false;
+
         // SWAP FUNCTION
         // scambia gli studenti
         const { initialDesk, currentDesk } = this.drag;
@@ -405,6 +567,18 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
             // avverte del cambiamento nei banchi
             this.callback();
         }
+    }
+
+    /**
+     * Imposta il cursore del mouse più adeguato in base alla posizione del mouse
+     */
+    private setMouseCursor = (mouseX: number, mouseY: number) => {
+        if (this.isBusy(mouseX, mouseY) && this.state.tool === ToolType.POINTER)
+            this.canvas.style.cursor = "pointer";
+        else if (this.state.tool === ToolType.POINTER)
+            this.canvas.style.cursor = "move";
+        else
+            this.canvas.style.cursor = "default";
     }
 
     /**
@@ -560,6 +734,28 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
         this.scale = this.defaultScale * Number(value);
     }
 
+    /**
+     * Aumenta lo zoom
+     */
+    private zoomIn = () => {
+        let zoom = this.state.zoom * 1.1;
+        // limita il valore 
+        zoom = Math.min(Math.max(zoom, MIN_ZOOM), MAX_ZOOM);
+        this.setState({ zoom });
+        this.scale = this.defaultScale * zoom;
+    }
+
+    /**
+     * Diminuisce lo zoom
+     */
+    private zoomOut = () => {
+        let zoom = this.state.zoom * 0.9;
+        // limita il valore 
+        zoom = Math.min(Math.max(zoom, MIN_ZOOM), MAX_ZOOM);
+        this.setState({ zoom });
+        this.scale = this.defaultScale * zoom;
+    }
+
 
     /**
      * Evidenzia l'area individuata con la posizione e l'orientameno passato
@@ -698,14 +894,23 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
         const { width, height } = this.state;
         if (!width || !height) return;
         this.ctx.beginPath();
-        for (let i = 0; i < width / this.scale; i++) {
-            this.ctx.moveTo(i * this.scale, 0);
-            this.ctx.lineTo(i * this.scale, height);
+
+        // traslazione dei punti
+        const offsetX = - this.panX * this.scale;
+        const offsetY = - this.panY * this.scale;
+        // traslazione della visuale
+        const viewX = Math.floor(this.panX) * this.scale * 2;
+        const viewY = Math.floor(this.panY) * this.scale * 2;
+
+        for (let i = (viewX < 0 ? viewX : 0); i < width + (viewX > 0 ? viewX : 0); i += this.scale) {
+            this.ctx.moveTo(i + offsetX, 0);
+            this.ctx.lineTo(i + offsetX, height);
         }
-        for (let i = 0; i < height / (this.scale); i++) {
-            this.ctx.moveTo(0, i * this.scale);
-            this.ctx.lineTo(width, i * this.scale);
+        for (let i = (viewY < 0 ? viewY : 0); i < height + (viewY > 0 ? viewY : 0); i += this.scale) {
+            this.ctx.moveTo(0, i + offsetY);
+            this.ctx.lineTo(width, i + offsetY);
         }
+
         this.ctx.lineWidth = 0.05;
         this.ctx.strokeStyle = "#000";
         this.ctx.stroke();
@@ -723,6 +928,7 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
             this.ctx.fillStyle = this.props.style.backgroundColor;
             this.ctx.fillRect(0, 0, this.state.width, this.state.height);
         }
+
         // disegna la griglia 
         if (!this.props.notEditable) this.renderGrid();
     }
@@ -731,15 +937,29 @@ class ClassRoomMap extends React.Component<ClassRoomMapProps> {
         // disegna lo sfondo
         this.drawBackground();
         this.ctx.save();
+        this.ctx.translate(-this.panX * this.scale, -this.panY * this.scale);
         this.ctx.scale(this.scale, this.scale);
         // evidenzia la zona in cui può essere piazzato un banco
         this.highlightCursor();
         // disegna i banchi
         const { style } = this.props;
+
         for (let i = 0; i < this.desks.length; i++) {
-            const isHighlighted = this.highlightedDesk === i;
-            this.desks[i].render(this.ctx, { isHighlighted, style });
+            const desk = this.desks[i];
+            // Renderizza il banco soltanto se si torva entro l'area visualizzata 
+            if (Math.min(desk.x1, desk.x2) < this.state.width / this.scale + this.panX &&
+                Math.max(desk.x1, desk.x2) + 1 > this.panX &&
+                Math.min(desk.y1, desk.y2) < this.state.height / this.scale + this.panY &&
+                Math.max(desk.y1, desk.y2) + 1 > this.panY
+            ) {
+                const isHighlighted = this.highlightedDesk === i;
+                desk.render(this.ctx, {
+                    style,
+                    isHighlighted
+                });
+            }
         }
+
         // evidenzia i banchi coinvolti nello scambi di due studenti 
         this.highlightDesksInvolvedInSwap();
         this.ctx.restore();

@@ -82,6 +82,7 @@ export const ShuffleView: React.FC<ShuffleViewProps> = ({ classroom, onDesksAreS
                     <div className="canvas-wrapper" ref={canvasWrapper}>
                         {canvasDims ?
                             <ClassRoomMap
+                                showFloatingButtons
                                 width={canvasDims.width} height={canvasDims.height}
                                 students={classroom.students} desks={desks}
                                 handleChanges={setDesks}

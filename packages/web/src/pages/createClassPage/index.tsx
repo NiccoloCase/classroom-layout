@@ -18,7 +18,7 @@ export class CreateClassPage extends React.Component {
 
     state = {
         /** Schermata corrente */
-        step: 0,
+        step: 2,
         /** Valori del form */
         form: [
             { classroomName: undefined, email: undefined },
