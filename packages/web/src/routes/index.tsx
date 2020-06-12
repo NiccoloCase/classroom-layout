@@ -8,8 +8,7 @@ import { LandingPage } from '../pages/landingPage';
 import { ClassroomPage } from '../pages/classromPage';
 import { CreateClassPage } from "../pages/createClassPage"
 import { FAQPage } from '../pages/FAQPage';
-import { DeletedClassroomPage } from "../pages/deletedClassroomPage"
-
+import { DeletedClassroomPage } from "../pages/successfulDeletionPage"
 
 export default function ScrollToTop() {
   const { pathname } = useLocation();
