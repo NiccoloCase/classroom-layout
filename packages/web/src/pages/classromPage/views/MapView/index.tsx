@@ -1,6 +1,6 @@
 import * as React from "react";
 import classnames from "classnames";
-import { HashLoader } from 'react-spinners';
+import { DotLoader } from 'react-spinners';
 import ScrollContainer from "react-indiana-drag-scroll";
 import { Spring } from "react-spring/renderprops.cjs"
 import { ClassRoomMap } from '../../../../components/ClassRoomMap';
@@ -122,7 +122,7 @@ export const MapView: React.FC<MapViewProps> = ({ classroom, onDesksAreShuffled 
                                 onDeskIsHighlighted={onDeskIsHighlighted}
                                 highlightedDesk={selectedStudent ?
                                     classroom.students.indexOf(selectedStudent) : undefined} /> :
-                            <HashLoader color="#dadfe1" />
+                            <DotLoader color="#dadfe1" />
                         }
                     </div>
                     <div className="functions">

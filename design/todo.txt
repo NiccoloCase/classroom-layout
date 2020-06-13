@@ -1,9 +1,7 @@
 - indici
-- 404 anche uando è /edit
 - cambiare id tramite email
 - combiare link immagine del logo nelle email
 - cambiare dominio
-
 //
 
  [{"name":"Niccolò caselli","email":"casellqwewi.niccolo@gmail.com","id":"NamLD2M1S"},{"name":"Niccolò caswfefwelli","email":"efffe@wdef.efewf","id":"V4VyX-vtd"},{"name":"wew","email":"weweweeewe@wewe.w.comd","id":"CSDXPbuGm"},{"name":"Niccolò caselli","email":"caselli.eweniccolo@gmail.com","id":"Co7jNoWse"}]

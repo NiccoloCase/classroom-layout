@@ -1,7 +1,7 @@
 import * as React from "react";
 import _ from "lodash";
 import { TitleComponent } from '../../../../components/TitleComponent';
-import { HashLoader } from 'react-spinners';
+import { DotLoader } from 'react-spinners';
 import { ClassRoomMap, ToolType, Desk } from '../../../../components/ClassRoomMap';
 import { Classroom, DeskInput, useEditClassroomMutation } from '../../../../generated/graphql';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -87,7 +87,7 @@ export const ShuffleView: React.FC<ShuffleViewProps> = ({ classroom, onDesksAreS
                                 students={classroom.students} desks={desks}
                                 handleChanges={setDesks}
                                 tool={ToolType.SWAP} notShowTools /> :
-                            <HashLoader color="#dadfe1" />}
+                            <DotLoader color="#dadfe1" />}
                     </div>
                 </div>
             </div>

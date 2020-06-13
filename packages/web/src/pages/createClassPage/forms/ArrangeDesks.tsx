@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { ClassRoomMap, Desk } from '../../../components/ClassRoomMap';
-import { HashLoader } from "react-spinners"
+import { DotLoader } from "react-spinners"
 import { DeskInput } from '../../../generated/graphql';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCircle } from '@fortawesome/free-regular-svg-icons';
@@ -83,7 +83,7 @@ export const ArrangeDesks: React.FC<ArrangeDesksProps> =
                                 handleChanges={setDesks}
                             />
                         </div>
-                    ) : <HashLoader color="#dadfe1" />}
+                    ) : <DotLoader color="#dadfe1" />}
                 </div>
             </div>
         );

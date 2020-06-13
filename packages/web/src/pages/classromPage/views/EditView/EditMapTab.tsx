@@ -1,6 +1,6 @@
 import * as React from "react";
 import classnames from "classnames";
-import { HashLoader } from 'react-spinners';
+import { DotLoader } from 'react-spinners';
 import { DeskInput, Classroom, MutationEditClassroomArgs, Omit } from '../../../../generated/graphql';
 import { ClassRoomMap, /* Desk */ } from '../../../../components/ClassRoomMap';
 import { TabsEditsErrors } from '.';
@@ -80,7 +80,7 @@ export const EditMapTab: React.FC<EditMapTabProps> = ({ classroom, sendEdits, ed
                         desks={desks}
                         maxDesks={studentsNumber}
                         disableAutofocus /> :
-                    <HashLoader color="#dadfe1" />
+                    <DotLoader color="#dadfe1" />
                 }
             </div>
         </div>
