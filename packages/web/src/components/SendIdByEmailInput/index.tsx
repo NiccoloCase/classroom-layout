@@ -38,8 +38,7 @@ export const SendIdByEmailInput = () => {
         const newEmail = e.currentTarget.value;
         setEmail(newEmail);
         const { hasPassed } = await validateEmail(newEmail, { allowAlreadyUsedEmail: true });
-        if (hasPassed && !isEmpty(email)) 
-        checkIfEmailIsAlreadyUsed({ variables: { email: newEmail } });
+        if (hasPassed && !isEmpty(email)) checkIfEmailIsAlreadyUsed({ variables: { email: newEmail } });
     }
 
     /**

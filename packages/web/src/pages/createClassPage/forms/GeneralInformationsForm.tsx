@@ -67,7 +67,7 @@ export const GeneralInformationsForm: React.FC<GeneralInformationsFormProps> = (
                 <div className="img-wrapper">
                     <img src={image} />
                 </div>
-                <p className="paragraph">È richiesta un'email valida nell’eventualità di avere la necessità do recuperare l’ID della classe associata.</p>
+                <p className="paragraph">È richiesta un'email valida nell’eventuale necessita di recuperare l’ID della classe associata.</p>
             </div>
         </div>
     )
