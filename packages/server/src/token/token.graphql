@@ -1,17 +1,17 @@
 # ambito del token
 enum TokenScope {
-    DELETE_CLASSROOM
+  DELETE_CLASSROOM
 }
 
 # modello di un token
 type Token {
-    id: ID!
-    email: String!
-    scope: TokenScope!
+  id: ID!
+  email: String!
+  scope: TokenScope!
 }
 
 # risultato del processo di generazione di un token
 type TokenGenerationResult {
-    email: String!
-    tokenDigits: Int!
+  email: String!
+  tokenDigits: Int!
 }
