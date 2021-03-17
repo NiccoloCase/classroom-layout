@@ -12,12 +12,8 @@
   "devDependencies": {
     "lerna": "^3.20.2"
   },
-
-
   "dependencies": {
-    "yarn": "^1.22.10"
+    "yarn": "^1.22.10",
+    "typescript": "^3.7.4"
   }
-
-
-
 }
